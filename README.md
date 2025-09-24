@@ -5,7 +5,7 @@ A modern Python web server built with FastAPI, featuring structured logging, com
 ## Features
 
 - **FastAPI**: Modern, fast web framework for building APIs
-- **Async/Await**: Full async support with uvloop for improved performance
+- **Async/Await**: Full async support for improved performance
 - **Structured Logging**: Using structlog for better log management
 - **Type Safety**: Full type hints with mypy validation
 - **Code Quality**: Black formatting, isort, and ruff linting
@@ -16,14 +16,14 @@ A modern Python web server built with FastAPI, featuring structured logging, com
 
 ### Prerequisites
 
-- Python 3.11+
-- Poetry
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Installation
 
 ```bash
 # Install dependencies
-poetry install
+uv sync
 
 # Copy environment file
 cp .env.example .env
@@ -31,18 +31,43 @@ cp .env.example .env
 
 ### Development
 
+You can either use the provided development scripts or run commands directly with uv:
+
+#### Using development scripts:
+
 ```bash
 # Start development server
-python scripts/dev.py serve
+uv run python scripts/dev.py serve
 
 # Run tests
-python scripts/dev.py test
+uv run python scripts/dev.py test
 
 # Format code
-python scripts/dev.py format
+uv run python scripts/dev.py format
 
 # Run linting
-python scripts/dev.py lint
+uv run python scripts/dev.py lint
+```
+
+#### Using uv directly:
+
+```bash
+# Start development server
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run tests
+uv run pytest -v --cov=app --cov-report=term-missing
+
+# Format code
+uv run black .
+uv run isort .
+uv run ruff check --fix .
+
+# Run linting
+uv run ruff check .
+uv run black --check .
+uv run isort --check-only .
+uv run mypy app
 ```
 
 ### API Endpoints
@@ -52,7 +77,7 @@ python scripts/dev.py lint
 
 ## Project Structure
 
-```
+```text
 ├── app/
 │   ├── __init__.py
 │   ├── main.py          # FastAPI application
