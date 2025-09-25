@@ -83,6 +83,16 @@ rm -rf .pytest_cache .coverage dist build .mypy_cache .ruff_cache .venv
 find . -type d -name "__pycache__" -exec rm -rf {} +
 ```
 
+#### Dependency Management
+
+If you manually modify dependencies in `pyproject.toml`, you need to run:
+
+```bash
+uv lock
+```
+
+This command updates the `uv.lock` file to reflect your changes. The lock file contains exact versions and dependency resolution for reproducible installations across different environments. This ensures all developers and deployment environments use identical dependency versions.
+
 ### API Endpoints
 
 - `GET /` - Hello World endpoint
