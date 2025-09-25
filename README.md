@@ -85,6 +85,12 @@ find . -type d -name "__pycache__" -exec rm -rf {} +
 
 #### Dependency Management
 
+Always check if your lock file is up-to-date.
+
+```bash
+uv lock --check
+```
+
 If you manually modify dependencies in `pyproject.toml`, you need to run:
 
 ```bash
