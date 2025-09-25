@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Development scripts for the Python server project."""
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -81,11 +82,77 @@ def dev_server() -> int:
     )
 
 
+def clean() -> int:
+    """Clean up test results, coverage, and build artifacts."""
+    print("🧹 Cleaning up generated files...")
+
+    paths_to_remove = [
+        ".pytest_cache",
+        ".coverage",
+        "dist",
+        "build",
+    ]
+
+    for path_str in paths_to_remove:
+        path = PROJECT_ROOT / path_str
+        if path.exists():
+            if path.is_dir():
+                print(f"Removing directory: {path}")
+                shutil.rmtree(path)
+            else:
+                print(f"Removing file: {path}")
+                path.unlink()
+        else:
+            print(f"Skipping (not found): {path}")
+
+    print("✅ Clean complete!")
+    return 0
+
+
+def pristine() -> int:
+    """Remove all generated files, caches, and virtual environment."""
+    print("🗑️  Performing pristine cleanup...")
+
+    # First run clean
+    if clean() != 0:
+        return 1
+
+    # Additional paths for pristine cleanup
+    pristine_paths = [
+        ".mypy_cache",
+        ".ruff_cache",
+        ".venv",
+    ]
+
+    for path_str in pristine_paths:
+        path = PROJECT_ROOT / path_str
+        if path.exists():
+            if path.is_dir():
+                print(f"Removing directory: {path}")
+                shutil.rmtree(path)
+            else:
+                print(f"Removing file: {path}")
+                path.unlink()
+        else:
+            print(f"Skipping (not found): {path}")
+
+    # Remove all __pycache__ directories recursively
+    print("Removing __pycache__ directories...")
+    for pycache_dir in PROJECT_ROOT.rglob("__pycache__"):
+        if pycache_dir.is_dir():
+            print(f"Removing directory: {pycache_dir}")
+            shutil.rmtree(pycache_dir)
+
+    print("✅ Pristine cleanup complete!")
+    print("💡 Run 'uv sync' to recreate the environment")
+    return 0
+
+
 def main() -> None:
     """Main entry point."""
     if len(sys.argv) < 2:
         print("Usage: python scripts/dev.py <command>")
-        print("Commands: lint, format, test, serve")
+        print("Commands: lint, format, test, serve, clean, pristine")
         sys.exit(1)
 
     command = sys.argv[1]
@@ -98,6 +165,10 @@ def main() -> None:
         sys.exit(test())
     elif command == "serve":
         sys.exit(dev_server())
+    elif command == "clean":
+        sys.exit(clean())
+    elif command == "pristine":
+        sys.exit(pristine())
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)

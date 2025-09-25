@@ -33,7 +33,7 @@ cp .env.example .env
 
 You can either use the provided development scripts or run commands directly with uv:
 
-#### Using development scripts:
+#### Using development scripts
 
 ```bash
 # Start development server
@@ -47,9 +47,15 @@ uv run python scripts/dev.py format
 
 # Run linting
 uv run python scripts/dev.py lint
+
+# Clean up test results and build artifacts
+uv run python scripts/dev.py clean
+
+# Remove all generated files and caches (reset to git state)
+uv run python scripts/dev.py pristine
 ```
 
-#### Using uv directly:
+#### Using uv directly
 
 ```bash
 # Start development server
@@ -68,6 +74,13 @@ uv run ruff check .
 uv run black --check .
 uv run isort --check-only .
 uv run mypy app
+
+# Clean up test results and build artifacts
+rm -rf .pytest_cache .coverage dist build
+
+# Remove all generated files and caches (reset to git state)
+rm -rf .pytest_cache .coverage dist build .mypy_cache .ruff_cache .venv
+find . -type d -name "__pycache__" -exec rm -rf {} +
 ```
 
 ### API Endpoints
