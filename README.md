@@ -37,22 +37,22 @@ You can either use the provided development scripts or run commands directly wit
 
 ```bash
 # Start development server
-uv run python scripts/dev.py serve
+uv run scripts/dev.py serve
 
 # Run tests
-uv run python scripts/dev.py test
+uv run scripts/dev.py test
 
 # Format code
-uv run python scripts/dev.py format
+uv run scripts/dev.py format
 
 # Run linting
-uv run python scripts/dev.py lint
+uv run scripts/dev.py lint
 
 # Clean up test results and build artifacts
-uv run python scripts/dev.py clean
+uv run scripts/dev.py clean
 
 # Remove all generated files and caches (reset to git state)
-uv run python scripts/dev.py pristine
+uv run scripts/dev.py pristine
 ```
 
 #### Using uv directly
