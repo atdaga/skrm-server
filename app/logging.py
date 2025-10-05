@@ -25,6 +25,7 @@ def add_log_level(logger: Any, method_name: str, event_dict: EventDict) -> Event
 
 def setup_logging() -> None:
     """Configure structlog for the application."""
+    # TODO: fmt is local for development, but UTC for production
     timestamper = structlog.processors.TimeStamper(fmt="ISO")
 
     processors: list[Processor] = [

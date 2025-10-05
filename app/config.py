@@ -9,7 +9,19 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, description="Debug mode")
     host: str = Field(default="0.0.0.0", description="Host to bind to")
     port: int = Field(default=8000, description="Port to bind to")
-    log_level: str = Field(default="INFO", description="Logging level")
+    log_level: str = Field(default="DEBUG", description="Logging level")
+    
+    # Database configuration
+    db_host: str = Field(default="127.0.0.1", description="Database host")
+    db_port: int = Field(default=5432, description="Database port")
+    db_name: str = Field(default="skrm_local", description="Database name")
+    db_user: str = Field(default="skrm_user", description="Database user")
+    db_password: str = Field(default="P@ssword12", description="Database password")
+    
+    @property
+    def database_url(self) -> str:
+        """Construct the PostgreSQL database URL."""
+        return f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
 
 settings = Settings()
