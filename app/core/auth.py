@@ -6,8 +6,11 @@ from typing import Any
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy import select
 
 from ..config import settings
+from ..models import KPrincipalIdentity, KUser
+from .db.database import get_db_session
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
@@ -90,13 +93,10 @@ async def verify_token(token: str) -> dict[str, Any] | None:
 async def authenticate_user(username: str, password: str) -> dict[str, Any] | None:
     """Authenticate a user with username/email and password.
 
-    This is a placeholder implementation. In a real application,
-    you would query the database to find the user and verify the password.
-
     Parameters
     ----------
     username: str
-        Username or email address
+        Username (alias field in KUser model)
     password: str
         Plain text password
 
@@ -105,20 +105,33 @@ async def authenticate_user(username: str, password: str) -> dict[str, Any] | No
     dict[str, Any] | None
         User data if authentication successful, None otherwise.
     """
-    # TODO: Replace with actual database lookup
-    # For now, using a mock user for testing
-    fake_user = {
-        "username": "testuser",
-        "email": "test@example.com",
-        "hashed_password": get_password_hash("secret123"),
-        "full_name": "Test User",
-        "is_active": True,
-    }
+    async with get_db_session() as session:
+        # Query for user by alias (username)
+        stmt = select(KUser).where(KUser.alias == username)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
 
-    # Check if username matches (could be username or email)
-    if username in ["testuser", "test@example.com"]:
-        if await verify_password(password, fake_user["hashed_password"]):
-            return fake_user
+        if not user:
+            return None
+
+        # Query for the user's password hash
+        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.user_id == user.id)
+        identity_result = await session.execute(identity_stmt)
+        principal_identity = identity_result.scalar_one_or_none()
+
+        if not principal_identity or not principal_identity.password:
+            return None
+
+        # Verify the password
+        if await verify_password(password, principal_identity.password):
+            return {
+                "id": str(user.id),
+                "username": user.alias,
+                "meta": user.meta,
+                "created": user.created,
+                "last_modified": user.last_modified,
+                "is_active": True,  # You can add logic here based on your requirements
+            }
 
     return None
 
@@ -126,7 +139,6 @@ async def authenticate_user(username: str, password: str) -> dict[str, Any] | No
 __all__ = [
     "oauth2_scheme",
     "verify_password",
-    "get_password_hash",
     "create_access_token",
     "create_refresh_token",
     "verify_token",
