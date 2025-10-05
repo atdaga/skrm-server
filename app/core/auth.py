@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
+from fastapi.security import OAuth2PasswordBearer
 
+import bcrypt
 import jwt
-from passlib.context import CryptContext
 
 from ..schemas.user import UserInDB
 
@@ -11,6 +12,7 @@ SECRET_KEY = "fccd6f72cca5af6c24e6fbff3c106f0f27a6e0d77f56ac505416f894da6a5cbf"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
 fake_users_db = {
     "johndoe": {
@@ -23,18 +25,23 @@ fake_users_db = {
 }
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def get_user(username: str):
     if username in fake_users_db:
         user_dict = fake_users_db[username]
-        print(f"AD: User dict: {user_dict}")
         return UserInDB(**user_dict)
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash."""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 def authenticate_user(username: str, password: str) -> UserInDB | None:
@@ -48,5 +55,4 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    print(f"AD: Encoded JWT: {encoded_jwt}")
     return encoded_jwt
