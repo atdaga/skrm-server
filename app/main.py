@@ -1,5 +1,4 @@
 import asyncio
-import signal
 import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -9,23 +8,12 @@ from fastapi import FastAPI
 from app.routes import auth, health, users
 from app.config import settings
 from app.logging import get_logger, setup_logging
-from app.core.db.database import create_all_tables, initialize_database, cleanup_database, cleanup_database_sync
+from app.core.db.database import create_all_tables, initialize_database, cleanup_database
 
 # Setup logging first
 setup_logging()
 logger = get_logger(__name__)
 
-
-def signal_handler(signum: int, _frame) -> None:
-    """Handle shutdown signals for graceful cleanup."""
-    logger.info(f"Received signal {signum}, cleaning up database connections")
-    cleanup_database_sync()
-    sys.exit(0)
-
-
-# Register signal handlers for graceful shutdown
-# signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-# signal.signal(signal.SIGTERM, signal_handler)   # Termination signal
 
 # Use uvloop if available
 if sys.platform != "win32":

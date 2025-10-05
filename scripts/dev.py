@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Development scripts for the Python server project."""
 
+import os
 import shutil
 import subprocess
 import sys
@@ -66,7 +67,14 @@ def test() -> int:
 def dev_server() -> int:
     """Start the development server."""
     print("🚀 Starting development server...")
-    return run_command(
+    print("Command: python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000")
+
+    # Change to project root directory
+    os.chdir(PROJECT_ROOT)
+
+    # Replace current process with uvicorn to handle signals properly
+    os.execvp(
+        "python",
         [
             "python",
             "-m",
@@ -78,7 +86,6 @@ def dev_server() -> int:
             "--port",
             "8000",
         ],
-        "Starting uvicorn development server",
     )
 
 

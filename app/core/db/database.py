@@ -121,14 +121,14 @@ async def cleanup_database() -> None:
 
 
 def cleanup_database_sync() -> None:
-    """Synchronous cleanup for signal handlers."""
+    """Synchronous cleanup for signal handlers and atexit."""
     if db_config._initialized and db_config.engine:
-        logger.info("Closing database engine")
+        logger.info("Closing database engine (sync backup)")
         try:
             # Use synchronous dispose for signal handlers
             db_config.engine.dispose()
             db_config._initialized = False
-            logger.info("Database engine closed")
+            logger.info("Database engine closed (sync backup)")
         except Exception:
             # Ignore cleanup errors during process exit
             pass
