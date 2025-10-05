@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from sqlalchemy import JSON
 from sqlmodel import SQLModel, Field
 
 
@@ -9,7 +10,7 @@ class KUser(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     alias: str = Field(..., max_length=255)
-    meta: dict = Field(default_factory=dict, sa_type=None)
+    meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
@@ -24,7 +25,7 @@ class KPrincipalIdentity(SQLModel, table=True):
     public_key: bytes | None = None
     device_id: str | None = Field(default=None, max_length=255)
     expires: datetime | None = None
-    details: dict = Field(default_factory=dict)
+    details: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
@@ -36,7 +37,7 @@ class KTeam(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str = Field(..., max_length=255)
-    meta: dict = Field(default_factory=dict, sa_type=None)
+    meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
@@ -49,7 +50,7 @@ class KTeamMember(SQLModel, table=True):
     team_id: UUID = Field(foreign_key="k_team.id", primary_key=True)
     user_id: UUID = Field(foreign_key="k_user.id", primary_key=True)
     role: str | None = Field(default=None, max_length=255)
-    meta: dict = Field(default_factory=dict, sa_type=None)
+    meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
