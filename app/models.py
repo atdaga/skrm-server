@@ -20,8 +20,8 @@ class KUser(SQLModel, table=True):
 class KPrincipalIdentity(SQLModel, table=True):
     __tablename__ = "k_principal_identity"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    password: str | None = Field(default=None, max_length=255)
+    id: UUID = Field(foreign_key="k_user.id", primary_key=True)
+    password: str | None = Field(default=None, max_length=255)  # bcrypt hash of user's password
     public_key: bytes | None = None
     device_id: str | None = Field(default=None, max_length=255)
     expires: datetime | None = None

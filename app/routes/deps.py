@@ -73,9 +73,3 @@ async def get_current_superuser(current_user: Annotated[dict, Depends(get_curren
 
     return current_user
 
-
-__all__ = [
-    "get_current_user",
-    "get_optional_user",
-    "get_current_superuser",
-]
