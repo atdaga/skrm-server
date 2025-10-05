@@ -10,7 +10,7 @@ from sqlmodel import SQLModel
 
 from ...config import settings
 
-from app.logging import get_logger
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -58,7 +58,7 @@ class DatabaseConfig:
             raise RuntimeError("Database not initialized")
         
         # Import models to register them with SQLModel metadata
-        from app.models import KUser, KPrincipalIdentity, KTeam, KTeamMember
+        from ...models import KUser, KPrincipalIdentity, KTeam, KTeamMember
         
         async with self.engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)

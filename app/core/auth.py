@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from passlib.context import CryptContext
 
-from app.schemas.user import UserInDB
+from ..schemas.user import UserInDB
 
 # to get a string like this run:
 # openssl rand -hex 32

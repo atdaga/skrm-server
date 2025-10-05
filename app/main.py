@@ -5,10 +5,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.routes import auth, health, users
-from app.config import settings
-from app.logging import get_logger, setup_logging
-from app.core.db.database import create_all_tables, initialize_database, cleanup_database
+from .routes import auth, health
+from .routes.v1 import users as v1_users
+from .config import settings
+from .core.logging import get_logger, setup_logging
+from .core.db.database import create_all_tables, initialize_database, cleanup_database
 
 # Setup logging first
 setup_logging()
@@ -67,8 +68,8 @@ app = FastAPI(
 
 # Include routers
 app.include_router(health.router)
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(users.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api")
+app.include_router(v1_users.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

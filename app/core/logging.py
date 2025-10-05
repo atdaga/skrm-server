@@ -5,7 +5,7 @@ from typing import Any
 import structlog
 from structlog.types import EventDict, Processor
 
-from app.config import settings
+from ..config import settings
 
 
 def add_log_level(logger: Any, method_name: str, event_dict: EventDict) -> EventDict:
