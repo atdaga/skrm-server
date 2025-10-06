@@ -36,9 +36,11 @@ class UserInDB(UserBase):
 class User(UserBase):
     """Schema for user response (without sensitive data)."""
 
-    id: int
-    created_at: datetime
-    updated_at: datetime
+    id: str
+    alias: str
+    meta: dict
+    last_modified: datetime
+    last_modified_by: str
 
     class Config:
         from_attributes = True

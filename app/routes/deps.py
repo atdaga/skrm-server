@@ -1,6 +1,7 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.auth import (
@@ -9,11 +10,13 @@ from ..core.auth import (
 )
 from ..core.db.database import get_db
 from ..core.exceptions.http_exceptions import UnauthorizedException
+from ..models import KUser
+from ..schemas.user import User
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(get_db)]
-) -> dict[str, Any] | None:
+) -> User:
     """Get current authenticated user from token."""
     payload = await verify_token(token)
     if payload is None:
@@ -23,19 +26,30 @@ async def get_current_user(
     if not username_or_email:
         raise UnauthorizedException("User not authenticated.")
 
-    # TODO: Implement actual user retrieval from database
-    # For now, return mock data based on token
-    return {
-        "id": 1,
-        "email": username_or_email if "@" in username_or_email else "user@example.com",
-        "username": username_or_email if "@" not in username_or_email else "testuser",
-        "full_name": "Test User",
-        "is_active": True,
-        "is_superuser": False,
-    }
+    # Query the database for the user by alias (username)
+    stmt = select(KUser).where(KUser.alias == username_or_email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise UnauthorizedException("User not found.")
+    
+    # Extract email and full_name from meta if available
+    meta = user.meta or {}
+    full_name = meta.get("full_name")
+    
+    return User(
+        id=str(user.id),
+        username=user.alias,  # Using alias as username
+        full_name=full_name,
+        is_active=True,  # Assuming active if user exists
+        meta=meta,
+        last_modified=user.last_modified,
+        last_modified_by=str(user.last_modified_by),
+    )
 
 
-async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> dict | None:
+async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
     """Get optional user from Authorization header."""
     token = request.headers.get("Authorization")
     if not token:
@@ -63,9 +77,11 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
         return None
 
 
-async def get_current_superuser(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
+async def get_current_superuser(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     """Get current superuser."""
-    if not current_user.get("is_superuser", False):
+    # Check if user has superuser privileges in meta
+    is_superuser = current_user.meta.get("is_superuser", False)
+    if not is_superuser:
         raise HTTPException(
             status_code=403,
             detail="You do not have enough privileges."
