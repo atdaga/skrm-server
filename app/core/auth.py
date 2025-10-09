@@ -9,7 +9,7 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 
 from ..config import settings
-from ..models import KPrincipalIdentity, KUser
+from ..models import KPrincipalIdentity, KPrincipal
 from .db.database import get_db_session
 
 SECRET_KEY = settings.secret_key
@@ -81,8 +81,8 @@ async def verify_token(token: str) -> dict[str, Any] | None:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username_or_email: str = payload.get("sub")
-        if username_or_email is None:
+        username: str = payload.get("sub")
+        if username is None:
             return None
         return payload
 
@@ -91,23 +91,9 @@ async def verify_token(token: str) -> dict[str, Any] | None:
 
 
 async def authenticate_user(username: str, password: str) -> dict[str, Any] | None:
-    """Authenticate a user with username/email and password.
-
-    Parameters
-    ----------
-    username: str
-        Username (alias field in KUser model)
-    password: str
-        Plain text password
-
-    Returns
-    -------
-    dict[str, Any] | None
-        User data if authentication successful, None otherwise.
-    """
+    """Authenticate a user with username and password."""
     async with get_db_session() as session:
-        # Query for user by alias (username)
-        stmt = select(KUser).where(KUser.alias == username)
+        stmt = select(KPrincipal).where(KPrincipal.scope == "global", KPrincipal.human == True, KPrincipal.enabled == True, KPrincipal.username == username)
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -115,7 +101,7 @@ async def authenticate_user(username: str, password: str) -> dict[str, Any] | No
             return None
 
         # Query for the user's password hash
-        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.user_id == user.id)
+        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.principal_id == user.id, KPrincipalIdentity.password != None)
         identity_result = await session.execute(identity_stmt)
         principal_identity = identity_result.scalar_one_or_none()
 
@@ -126,7 +112,7 @@ async def authenticate_user(username: str, password: str) -> dict[str, Any] | No
         if await verify_password(password, principal_identity.password):
             return {
                 "id": str(user.id),
-                "username": user.alias,
+                "username": user.username,
                 "meta": user.meta,
                 "created": user.created,
                 "last_modified": user.last_modified,

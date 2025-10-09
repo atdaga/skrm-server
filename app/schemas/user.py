@@ -37,7 +37,7 @@ class User(UserBase):
     """Schema for user response (without sensitive data)."""
 
     id: str
-    alias: str
+    username: str
     meta: dict
     last_modified: datetime
     last_modified_by: str

@@ -10,7 +10,7 @@ from ..core.auth import (
 )
 from ..core.db.database import get_db
 from ..core.exceptions.http_exceptions import UnauthorizedException
-from ..models import KUser
+from ..models import KPrincipal
 from ..schemas.user import User
 
 
@@ -22,12 +22,12 @@ async def get_current_user(
     if payload is None:
         raise UnauthorizedException("User not authenticated.")
 
-    username_or_email = payload.get("sub")
-    if not username_or_email:
+    username = payload.get("sub")
+    if not username:
         raise UnauthorizedException("User not authenticated.")
 
-    # Query the database for the user by alias (username)
-    stmt = select(KUser).where(KUser.alias == username_or_email)
+    # Query the database for the user by username
+    stmt = select(KPrincipal).where(KPrincipal.username == username)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     
@@ -40,7 +40,7 @@ async def get_current_user(
     
     return User(
         id=str(user.id),
-        username=user.alias,  # Using alias as username
+        username=user.username,
         full_name=full_name,
         is_active=True,  # Assuming active if user exists
         meta=meta,

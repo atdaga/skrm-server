@@ -58,7 +58,7 @@ class DatabaseConfig:
             raise RuntimeError("Database not initialized")
         
         # Import models to register them with SQLModel metadata
-        from ...models import KUser, KPrincipalIdentity, KTeam, KTeamMember
+        from ...models import KPrincipal, KPrincipalIdentity, KTeam, KTeamMember
         
         async with self.engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
