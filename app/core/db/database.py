@@ -56,10 +56,10 @@ class DatabaseConfig:
         """Create all database tables."""
         if not self._initialized:
             raise RuntimeError("Database not initialized")
-        
+
         # Import models to register them with SQLModel metadata
         from ...models import KPrincipal, KPrincipalIdentity, KTeam, KTeamMember
-        
+
         async with self.engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
     

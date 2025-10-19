@@ -9,7 +9,7 @@ from jose import JWTError, jwt
 from sqlalchemy import select
 
 from ..config import settings
-from ..models import KPrincipalIdentity, KPrincipal
+from ..models import KPrincipal, KPrincipalIdentity
 from .db.database import get_db_session
 
 SECRET_KEY = settings.secret_key

@@ -1,49 +1,90 @@
 from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
-
-
-class UserBase(BaseModel):
-    """Base user schema with common fields."""
-
-    email: EmailStr
-    username: str
-    full_name: str | None = None
-    is_active: bool = True
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-class UserCreate(UserBase):
+class UserCreate(BaseModel):
     """Schema for creating a new user."""
 
+    username: str
     password: str
+    primary_email: EmailStr
+    primary_phone: str | None = None
+    time_zone: str | None = None
+    name_prefix: str | None = None
+    first_name: str
+    middle_name: str | None = None
+    last_name: str
+    name_suffix: str | None = None
+    display_name: str
+    default_locale: str | None = None
+    # meta: dict
+
+
+class UserUpdateUsername(BaseModel):
+    """Schema for updating user username."""
+
+    username: str
+
+class UserUpdateEmail(BaseModel):
+    """Schema for updating user email."""
+
+    email: EmailStr
+
+
+class UserUpdatePrimaryPhone(BaseModel):
+    """Schema for updating user phone."""
+
+    primary_phone: str
 
 
 class UserUpdate(BaseModel):
     """Schema for updating user information."""
 
-    email: EmailStr | None = None
-    username: str | None = None
-    full_name: str | None = None
-    is_active: bool | None = None
+    time_zone: str | None = None
+    name_prefix: str | None = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    name_suffix: str | None = None
+    display_name: str | None = None
+    default_locale: str | None = None
+    meta: dict | None = None
 
 
-class UserInDB(UserBase):
-    """Schema for user as stored in database."""
-
-    hashed_password: str
-
-
-class User(UserBase):
+class User(BaseModel):
     """Schema for user response (without sensitive data)."""
 
-    id: str
-    username: str
-    meta: dict
-    last_modified: datetime
-    last_modified_by: str
+    enabled: bool
+    time_zone: str
+    name_prefix: str | None = None
+    first_name: str
+    middle_name: str | None = None
+    last_name: str
+    name_suffix: str | None = None
+    display_name: str
+    default_locale: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserDetail(User):
+    """Schema for user detailed response."""
+
+    id: UUID
+    scope: str
+    username: str
+    primary_email: EmailStr
+    primary_email_verified: bool
+    primary_phone: str | None = None
+    primary_phone_verified: bool
+    system_role: str
+    meta: dict
+    created: datetime
+    created_by: UUID
+    last_modified: datetime
+    last_modified_by: UUID
 
 
 class Token(BaseModel):

@@ -11,12 +11,12 @@ from ..core.auth import (
 from ..core.db.database import get_db
 from ..core.exceptions.http_exceptions import UnauthorizedException
 from ..models import KPrincipal
-from ..schemas.user import User
+from ..schemas.user import UserDetail
 
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(get_db)]
-) -> User:
+) -> UserDetail:
     """Get current authenticated user from token."""
     payload = await verify_token(token)
     if payload is None:
@@ -34,22 +34,10 @@ async def get_current_user(
     if not user:
         raise UnauthorizedException("User not found.")
     
-    # Extract email and full_name from meta if available
-    meta = user.meta or {}
-    full_name = meta.get("full_name")
-    
-    return User(
-        id=str(user.id),
-        username=user.username,
-        full_name=full_name,
-        is_active=True,  # Assuming active if user exists
-        meta=meta,
-        last_modified=user.last_modified,
-        last_modified_by=str(user.last_modified_by),
-    )
+    return UserDetail.model_validate(user)
 
 
-async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
+async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> UserDetail | None:
     """Get optional user from Authorization header."""
     token = request.headers.get("Authorization")
     if not token:
@@ -77,7 +65,7 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
         return None
 
 
-async def get_current_superuser(current_user: Annotated[User, Depends(get_current_user)]) -> User:
+async def get_current_superuser(current_user: Annotated[UserDetail, Depends(get_current_user)]) -> UserDetail:
     """Get current superuser."""
     # Check if user has superuser privileges in meta
     is_superuser = current_user.meta.get("is_superuser", False)
