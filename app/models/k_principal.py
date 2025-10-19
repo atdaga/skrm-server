@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, UniqueConstraint
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 
 class KPrincipal(SQLModel, table=True):
@@ -34,6 +34,9 @@ class KPrincipal(SQLModel, table=True):
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
     last_modified_by: UUID
+
+    # Relationships
+    team_memberships: list["KTeamMember"] = Relationship(back_populates="principal")
 
 
 __all__ = ["KPrincipal"]
