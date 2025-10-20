@@ -9,11 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..deps import get_current_user
+from ..deps import get_current_token
 from ...core.db.database import get_db
 from ...models import KTeam
 from ...schemas.team import TeamCreate, TeamUpdate, TeamDetail
-from ...schemas.user import UserDetail
+from ...schemas.user import TokenData
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -21,17 +21,17 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 @router.post("", response_model=TeamDetail, status_code=status.HTTP_201_CREATED)
 async def create_team(
     team_data: TeamCreate,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Create a new team."""
     # Create new team with audit fields
     new_team = KTeam(
         name=team_data.name,
-        scope=team_data.scope,
+        scope=token_data.scope,
         meta=team_data.meta,
-        created_by=current_user.id,
-        last_modified_by=current_user.id,
+        created_by=token_data.sub,
+        last_modified_by=token_data.sub,
     )
 
     db.add(new_team)
@@ -51,11 +51,11 @@ async def create_team(
 
 @router.get("", response_model=list[TeamDetail])
 async def list_teams(
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[TeamDetail]:
     """List all teams in the current user's scope."""
-    stmt = select(KTeam).where(KTeam.scope == current_user.scope)
+    stmt = select(KTeam).where(KTeam.scope == token_data.scope)
     result = await db.execute(stmt)
     teams = result.scalars().all()
 
@@ -65,11 +65,11 @@ async def list_teams(
 @router.get("/{team_id}", response_model=TeamDetail)
 async def get_team(
     team_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Get a single team by ID."""
-    stmt = select(KTeam).where(KTeam.id == team_id)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -86,11 +86,11 @@ async def get_team(
 async def update_team(
     team_id: UUID,
     team_data: TeamUpdate,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Update a team."""
-    stmt = select(KTeam).where(KTeam.id == team_id)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -108,7 +108,7 @@ async def update_team(
 
     # Update audit fields
     team.last_modified = datetime.now()
-    team.last_modified_by = current_user.id
+    team.last_modified_by = token_data.sub
 
     try:
         await db.commit()
@@ -126,11 +126,11 @@ async def update_team(
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_team(
     team_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete a team (cascades to team members)."""
-    stmt = select(KTeam).where(KTeam.id == team_id)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 

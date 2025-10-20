@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
@@ -11,7 +12,25 @@ from ..core.auth import (
 from ..core.db.database import get_db
 from ..core.exceptions.http_exceptions import UnauthorizedException
 from ..models import KPrincipal
-from ..schemas.user import UserDetail
+from ..schemas.user import TokenData, UserDetail
+
+
+async def get_current_token(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    # db: Annotated[AsyncSession, Depends(get_db)],
+) -> TokenData:
+    """Get current token from Authorization header."""
+    payload = await verify_token(token)
+    if payload is None:
+        raise UnauthorizedException("User not authenticated.")
+
+    # TODO: Check blacklist of tokens or principal IDs.
+    
+    return TokenData(
+        sub=payload["sub"],
+        scope=payload["scope"],
+        iss=payload["iss"]
+    )
 
 
 async def get_current_user(
@@ -22,12 +41,17 @@ async def get_current_user(
     if payload is None:
         raise UnauthorizedException("User not authenticated.")
 
-    username = payload.get("sub")
-    if not username:
+    id = payload.get("sub")
+    try:
+        uuid = UUID(id)
+    except ValueError:
+        raise UnauthorizedException("Invalid user ID.")
+
+    if not id:
         raise UnauthorizedException("User not authenticated.")
 
     # Query the database for the user by username
-    stmt = select(KPrincipal).where(KPrincipal.username == username)
+    stmt = select(KPrincipal).where(KPrincipal.id == uuid)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     

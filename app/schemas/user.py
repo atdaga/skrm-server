@@ -97,4 +97,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Schema for token payload data."""
 
-    username: str | None = None
+    sub: str
+    scope: str
+    iss: str

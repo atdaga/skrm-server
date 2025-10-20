@@ -8,6 +8,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy import select
 
+from app.schemas.user import UserDetail
+
 from ..config import settings
 from ..models import KPrincipal, KPrincipalIdentity
 from .db.database import get_db_session
@@ -90,18 +92,18 @@ async def verify_token(token: str) -> dict[str, Any] | None:
         return None
 
 
-async def authenticate_user(username: str, password: str) -> dict[str, Any] | None:
+async def authenticate_user(username: str, password: str) -> UserDetail | None:
     """Authenticate a user with username and password."""
     async with get_db_session() as session:
         stmt = select(KPrincipal).where(KPrincipal.scope == "global", KPrincipal.human == True, KPrincipal.enabled == True, KPrincipal.username == username)
         result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
+        principal = result.scalar_one_or_none()
 
-        if not user:
+        if not principal:
             return None
 
         # Query for the user's password hash
-        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.principal_id == user.id, KPrincipalIdentity.password != None)
+        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.principal_id == principal.id, KPrincipalIdentity.password != None)
         identity_result = await session.execute(identity_stmt)
         principal_identity = identity_result.scalar_one_or_none()
 
@@ -110,14 +112,7 @@ async def authenticate_user(username: str, password: str) -> dict[str, Any] | No
 
         # Verify the password
         if await verify_password(password, principal_identity.password):
-            return {
-                "id": str(user.id),
-                "username": user.username,
-                "meta": user.meta,
-                "created": user.created,
-                "last_modified": user.last_modified,
-                "is_active": True,  # You can add logic here based on your requirements
-            }
+            return UserDetail.model_validate(principal)
 
     return None
 

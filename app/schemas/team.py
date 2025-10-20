@@ -8,7 +8,6 @@ class TeamCreate(BaseModel):
     """Schema for creating a new team."""
 
     name: str
-    scope: str = "global"
     meta: dict = {}
 
 

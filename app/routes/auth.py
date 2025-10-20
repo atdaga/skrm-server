@@ -13,7 +13,10 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 
 @router.post("/login", response_model=Token)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
-    """Authenticate user and return access token."""
+    """Authenticate user and return access token.
+
+    The scope field accepts a space-separated list of scopes (e.g., "read write").
+    """
     user = await authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -21,5 +24,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = await create_access_token(data={"sub": user["username"]})
+    # Use the requested scopes from the form, or default to "global"
+    scope = " ".join(form_data.scopes) if form_data.scopes else "global"
+    access_token = await create_access_token(data={"sub": str(user.id), "scope": scope, "iss": "https://auth.baseklass.io"})
     return Token(access_token=access_token, token_type="bearer")
