@@ -27,6 +27,7 @@ class UserUpdateUsername(BaseModel):
 
     username: str
 
+
 class UserUpdateEmail(BaseModel):
     """Schema for updating user email."""
 

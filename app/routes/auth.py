@@ -26,5 +26,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> T
         )
     # Use the requested scopes from the form, or default to "global"
     scope = " ".join(form_data.scopes) if form_data.scopes else "global"
-    access_token = await create_access_token(data={"sub": str(user.id), "scope": scope, "iss": "https://auth.baseklass.io"})
+    access_token = await create_access_token(
+        data={"sub": str(user.id), "scope": scope, "iss": "https://auth.baseklass.io"}
+    )
     return Token(access_token=access_token, token_type="bearer")

@@ -23,9 +23,9 @@ def lint() -> int:
     print("🔍 Running linting tools...")
 
     commands = [
-        (["ruff", "check", "."], "Ruff linting"),
-        (["black", "--check", "."], "Black formatting check"),
-        (["isort", "--check-only", "."], "Import sorting check"),
+        (["ruff", "check", "app", "tests"], "Ruff linting"),
+        (["black", "--check", "app", "tests"], "Black formatting check"),
+        (["isort", "--check-only", "app", "tests"], "Import sorting check"),
         (["mypy", "app"], "Type checking"),
     ]
 
@@ -42,9 +42,9 @@ def format_code() -> int:
     print("🎨 Formatting code...")
 
     commands = [
-        (["black", "."], "Black formatting"),
-        (["isort", "."], "Import sorting"),
-        (["ruff", "check", "--fix", "."], "Ruff auto-fixes"),
+        (["black", "app", "tests"], "Black formatting"),
+        (["isort", "app", "tests"], "Import sorting"),
+        (["ruff", "check", "--fix", "app", "tests"], "Ruff auto-fixes"),
     ]
 
     for cmd, desc in commands:

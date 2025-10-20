@@ -95,7 +95,12 @@ async def verify_token(token: str) -> dict[str, Any] | None:
 async def authenticate_user(username: str, password: str) -> UserDetail | None:
     """Authenticate a user with username and password."""
     async with get_db_session() as session:
-        stmt = select(KPrincipal).where(KPrincipal.scope == "global", KPrincipal.human == True, KPrincipal.enabled == True, KPrincipal.username == username)
+        stmt = select(KPrincipal).where(
+            KPrincipal.scope == "global",
+            KPrincipal.human == True,  # noqa: E712
+            KPrincipal.enabled == True,  # noqa: E712
+            KPrincipal.username == username,
+        )
         result = await session.execute(stmt)
         principal = result.scalar_one_or_none()
 
@@ -103,7 +108,10 @@ async def authenticate_user(username: str, password: str) -> UserDetail | None:
             return None
 
         # Query for the user's password hash
-        identity_stmt = select(KPrincipalIdentity).where(KPrincipalIdentity.principal_id == principal.id, KPrincipalIdentity.password != None)
+        identity_stmt = select(KPrincipalIdentity).where(
+            KPrincipalIdentity.principal_id == principal.id,
+            KPrincipalIdentity.password != None,  # noqa: E711
+        )
         identity_result = await session.execute(identity_stmt)
         principal_identity = identity_result.scalar_one_or_none()
 

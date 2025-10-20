@@ -9,11 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..deps import get_current_token
 from ...core.db.database import get_db
 from ...models import KTeam
-from ...schemas.team import TeamCreate, TeamUpdate, TeamDetail
+from ...schemas.team import TeamCreate, TeamDetail, TeamUpdate
 from ...schemas.user import TokenData
+from ..deps import get_current_token
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -39,12 +39,12 @@ async def create_team(
     try:
         await db.commit()
         await db.refresh(new_team)
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Team with name '{team_data.name}' already exists in scope '{team_data.scope}'",
-        )
+        ) from e
 
     return TeamDetail.model_validate(new_team)
 
@@ -113,12 +113,12 @@ async def update_team(
     try:
         await db.commit()
         await db.refresh(team)
-    except IntegrityError:
+    except IntegrityError as e:
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Team with name '{team_data.name}' already exists in scope '{team.scope}'",
-        )
+        ) from e
 
     return TeamDetail.model_validate(team)
 

@@ -1,15 +1,17 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, UniqueConstraint
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from .k_team_member import KTeamMember
 
 
 class KPrincipal(SQLModel, table=True):
     __tablename__ = "k_principal"
-    __table_args__ = (
-        UniqueConstraint('scope', 'username'),
-    )
+    __table_args__ = (UniqueConstraint("scope", "username"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     scope: str = Field(default="global", max_length=255)
@@ -27,7 +29,7 @@ class KPrincipal(SQLModel, table=True):
     last_name: str = Field(..., max_length=255)
     name_suffix: str | None = Field(default=None, max_length=255)
     display_name: str = Field(..., max_length=255)
-    default_locale: str = Field(default='en', max_length=255)
+    default_locale: str = Field(default="en", max_length=255)
     system_role: str = Field(default="system_user")
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)

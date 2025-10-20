@@ -5,10 +5,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.auth import (
-    oauth2_scheme,
-    verify_token,
-)
+from ..core.auth import oauth2_scheme, verify_token
 from ..core.db.database import get_db
 from ..core.exceptions.http_exceptions import UnauthorizedException
 from ..models import KPrincipal
@@ -25,16 +22,13 @@ async def get_current_token(
         raise UnauthorizedException("User not authenticated.")
 
     # TODO: Check blacklist of tokens or principal IDs.
-    
-    return TokenData(
-        sub=payload["sub"],
-        scope=payload["scope"],
-        iss=payload["iss"]
-    )
+
+    return TokenData(sub=payload["sub"], scope=payload["scope"], iss=payload["iss"])
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(get_db)]
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Get current authenticated user from token."""
     payload = await verify_token(token)
@@ -44,8 +38,8 @@ async def get_current_user(
     id = payload.get("sub")
     try:
         uuid = UUID(id)
-    except ValueError:
-        raise UnauthorizedException("Invalid user ID.")
+    except ValueError as e:
+        raise UnauthorizedException("Invalid user ID.") from e
 
     if not id:
         raise UnauthorizedException("User not authenticated.")
@@ -54,14 +48,16 @@ async def get_current_user(
     stmt = select(KPrincipal).where(KPrincipal.id == uuid)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise UnauthorizedException("User not found.")
-    
+
     return UserDetail.model_validate(user)
 
 
-async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> UserDetail | None:
+async def get_optional_user(
+    request: Request, db: AsyncSession = Depends(get_db)
+) -> UserDetail | None:
     """Get optional user from Authorization header."""
     token = request.headers.get("Authorization")
     if not token:
@@ -89,15 +85,15 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
         return None
 
 
-async def get_current_superuser(current_user: Annotated[UserDetail, Depends(get_current_user)]) -> UserDetail:
+async def get_current_superuser(
+    current_user: Annotated[UserDetail, Depends(get_current_user)]
+) -> UserDetail:
     """Get current superuser."""
     # Check if user has superuser privileges in meta
     is_superuser = current_user.meta.get("is_superuser", False)
     if not is_superuser:
         raise HTTPException(
-            status_code=403,
-            detail="You do not have enough privileges."
+            status_code=403, detail="You do not have enough privileges."
         )
 
     return current_user
-

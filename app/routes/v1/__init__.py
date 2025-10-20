@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from . import users, teams
+from . import teams, users
 
 # Create main v1 router
 router = APIRouter()

@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from ..deps import get_current_user
 from ...schemas.user import UserDetail
+from ..deps import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 

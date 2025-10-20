@@ -1,15 +1,17 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, UniqueConstraint
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from .k_team_member import KTeamMember
 
 
 class KTeam(SQLModel, table=True):
     __tablename__ = "k_team"
-    __table_args__ = (
-        UniqueConstraint('scope', 'name'),
-    )
+    __table_args__ = (UniqueConstraint("scope", "name"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     scope: str = Field(default="global", max_length=255)
@@ -21,7 +23,9 @@ class KTeam(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
-    team_members: list["KTeamMember"] = Relationship(back_populates="team", cascade_delete=True)
+    team_members: list["KTeamMember"] = Relationship(
+        back_populates="team", cascade_delete=True
+    )
 
 
 __all__ = ["KTeam"]

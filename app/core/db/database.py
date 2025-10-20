@@ -9,7 +9,6 @@ from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
 from ...config import settings
-
 from ..logging import get_logger
 
 logger = get_logger(__name__)
@@ -17,52 +16,51 @@ logger = get_logger(__name__)
 
 class DatabaseConfig:
     """Database configuration manager."""
-    
+
     def __init__(self):
         self.engine = None
         self.session_factory = None
         self._initialized = False
-    
+
     def initialize(self) -> None:
         """Initialize the database engine and session factory."""
         if self._initialized:
             return
-            
+
         # Use direct connection parameters instead of URL to avoid asyncpg macOS issues
         self.engine = create_async_engine(
             settings.database_url,
             echo=settings.debug,
             future=True,
             pool_pre_ping=True,  # Verify connections before use
-            pool_recycle=3600,   # Recycle connections after 1 hour
+            pool_recycle=3600,  # Recycle connections after 1 hour
             connect_args={
                 "host": settings.db_host,
                 "port": settings.db_port,
                 "user": settings.db_user,
                 "password": settings.db_password,
                 "database": settings.db_name,
-            }
+            },
         )
-        
+
         self.session_factory = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
         )
-        
+
         self._initialized = True
-    
+
     async def create_tables(self) -> None:
         """Create all database tables."""
         if not self._initialized:
             raise RuntimeError("Database not initialized")
 
         # Import models to register them with SQLModel metadata
-        from ...models import KPrincipal, KPrincipalIdentity, KTeam, KTeamMember
 
         async with self.engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
-    
+
     async def close(self) -> None:
         """Close the database engine."""
         if self.engine:
@@ -79,7 +77,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Get a database session with proper cleanup."""
     if not db_config._initialized:
         db_config.initialize()
-    
+
     async with db_config.session_factory() as session:
         try:
             yield session
@@ -100,7 +98,7 @@ async def create_all_tables() -> None:
     """Create all database tables. Call this during application startup."""
     if not db_config._initialized:
         db_config.initialize()
-    
+
     await db_config.create_tables()
 
 
@@ -120,6 +118,7 @@ async def cleanup_database() -> None:
         except Exception as e:
             # Log cleanup errors but don't raise them
             import logging
+
             logging.getLogger(__name__).warning("Error during database cleanup: %s", e)
 
 

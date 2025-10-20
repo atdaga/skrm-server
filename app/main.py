@@ -5,11 +5,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from .routes import auth, health
-from .routes import v1
 from .config import settings
+from .core.db.database import cleanup_database, create_all_tables, initialize_database
 from .core.logging import get_logger, setup_logging
-from .core.db.database import create_all_tables, initialize_database, cleanup_database
+from .routes import auth, health, v1
 
 # Setup logging first
 setup_logging()
@@ -31,7 +30,7 @@ if sys.platform != "win32":
 async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
     logger.info("Starting up application", app_name=settings.app_name)
-    
+
     # Initialize database and create tables
     try:
         logger.debug("Initializing database")
@@ -44,11 +43,11 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error("Failed to initialize database", error=str(e))
         raise
-    
+
     yield
-    
+
     logger.info("Shutting down application")
-    
+
     # Cleanup database connections
     try:
         logger.debug("Cleaning up database connections")
