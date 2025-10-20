@@ -43,7 +43,7 @@ async def create_team(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Team with name '{team_data.name}' already exists in scope '{team_data.scope}'",
+            detail=f"Team with name '{team_data.name}' already exists in scope '{token_data.scope}'",
         ) from e
 
     return TeamDetail.model_validate(new_team)
@@ -55,7 +55,7 @@ async def list_teams(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[TeamDetail]:
     """List all teams in the current user's scope."""
-    stmt = select(KTeam).where(KTeam.scope == token_data.scope)
+    stmt = select(KTeam).where(KTeam.scope == token_data.scope)  # type: ignore
     result = await db.execute(stmt)
     teams = result.scalars().all()
 
@@ -69,7 +69,7 @@ async def get_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Get a single team by ID."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -90,7 +90,7 @@ async def update_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Update a team."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -108,7 +108,7 @@ async def update_team(
 
     # Update audit fields
     team.last_modified = datetime.now()
-    team.last_modified_by = token_data.sub
+    team.last_modified_by = token_data.sub  # type: ignore
 
     try:
         await db.commit()
@@ -130,7 +130,7 @@ async def delete_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete a team (cascades to team members)."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 

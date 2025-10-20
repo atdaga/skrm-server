@@ -4,8 +4,12 @@ import atexit
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlmodel import SQLModel
 
 from ...config import settings
@@ -17,9 +21,9 @@ logger = get_logger(__name__)
 class DatabaseConfig:
     """Database configuration manager."""
 
-    def __init__(self):
-        self.engine = None
-        self.session_factory = None
+    def __init__(self) -> None:
+        self.engine: AsyncEngine | None = None
+        self.session_factory: async_sessionmaker[AsyncSession] | None = None
         self._initialized = False
 
     def initialize(self) -> None:
@@ -43,7 +47,7 @@ class DatabaseConfig:
             },
         )
 
-        self.session_factory = sessionmaker(
+        self.session_factory = async_sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
@@ -53,7 +57,7 @@ class DatabaseConfig:
 
     async def create_tables(self) -> None:
         """Create all database tables."""
-        if not self._initialized:
+        if not self._initialized or self.engine is None:
             raise RuntimeError("Database not initialized")
 
         # Import models to register them with SQLModel metadata
@@ -63,7 +67,7 @@ class DatabaseConfig:
 
     async def close(self) -> None:
         """Close the database engine."""
-        if self.engine:
+        if self.engine is not None:
             await self.engine.dispose()
             self._initialized = False
 
@@ -77,6 +81,9 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Get a database session with proper cleanup."""
     if not db_config._initialized:
         db_config.initialize()
+
+    if db_config.session_factory is None:
+        raise RuntimeError("Database session factory not initialized")
 
     async with db_config.session_factory() as session:
         try:
@@ -109,7 +116,7 @@ def initialize_database() -> None:
 
 async def cleanup_database() -> None:
     """Cleanup database connections."""
-    if db_config._initialized and db_config.engine:
+    if db_config._initialized and db_config.engine is not None:
         logger.info("Closing database engine (async)")
         try:
             await db_config.engine.dispose()
@@ -124,11 +131,11 @@ async def cleanup_database() -> None:
 
 def cleanup_database_sync() -> None:
     """Synchronous cleanup for signal handlers and atexit."""
-    if db_config._initialized and db_config.engine:
+    if db_config._initialized and db_config.engine is not None:
         logger.info("Closing database engine (sync backup)")
         try:
             # Use synchronous dispose for signal handlers
-            db_config.engine.dispose()
+            db_config.engine.sync_engine.dispose()
             db_config._initialized = False
             logger.info("Database engine closed (sync backup)")
         except Exception:

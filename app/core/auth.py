@@ -83,8 +83,7 @@ async def verify_token(token: str) -> dict[str, Any] | None:
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        if "sub" not in payload:
             return None
         return payload
 
@@ -96,10 +95,10 @@ async def authenticate_user(username: str, password: str) -> UserDetail | None:
     """Authenticate a user with username and password."""
     async with get_db_session() as session:
         stmt = select(KPrincipal).where(
-            KPrincipal.scope == "global",
-            KPrincipal.human == True,  # noqa: E712
-            KPrincipal.enabled == True,  # noqa: E712
-            KPrincipal.username == username,
+            KPrincipal.scope == "global",  # type: ignore
+            KPrincipal.human == True,  # type: ignore  # noqa: E712
+            KPrincipal.enabled == True,  # type: ignore  # noqa: E712
+            KPrincipal.username == username,  # type: ignore
         )
         result = await session.execute(stmt)
         principal = result.scalar_one_or_none()
@@ -109,8 +108,8 @@ async def authenticate_user(username: str, password: str) -> UserDetail | None:
 
         # Query for the user's password hash
         identity_stmt = select(KPrincipalIdentity).where(
-            KPrincipalIdentity.principal_id == principal.id,
-            KPrincipalIdentity.password != None,  # noqa: E711
+            KPrincipalIdentity.principal_id == principal.id,  # type: ignore
+            KPrincipalIdentity.password != None,  # type: ignore  # noqa: E711
         )
         identity_result = await session.execute(identity_stmt)
         principal_identity = identity_result.scalar_one_or_none()

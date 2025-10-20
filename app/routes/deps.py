@@ -45,7 +45,7 @@ async def get_current_user(
         raise UnauthorizedException("User not authenticated.")
 
     # Query the database for the user by username
-    stmt = select(KPrincipal).where(KPrincipal.id == uuid)
+    stmt = select(KPrincipal).where(KPrincipal.id == uuid)  # type: ignore
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
