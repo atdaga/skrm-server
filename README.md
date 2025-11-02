@@ -31,8 +31,17 @@ cp .env.example .env
 ```
 
 
-### Populate Database
+### Database
+```
+postgres=# CREATE DATABASE skrm_local;
+postgres=# CREATE USER skrm_user WITH ENCRYPTED PASSWORD 'P@ssword12';
+postgres=# GRANT ALL PRIVILEGES ON DATABASE skrm_local TO skrm_user;
+postgres=# \c skrm_local;
+postgres=# GRANT ALL PRIVILEGES ON SCHEMA public TO skrm_user;
+postgres=# \q
 
+#### Initial User
+```
 Username: ***super***
 
 Password: ***P@ssword12***
