@@ -72,7 +72,9 @@ class TestLoginEndpoint:
             "app.logic.auth.perform_login", new_callable=AsyncMock
         ) as mock_login:
             mock_login.return_value = Token(
-                access_token="test_access_token_12345", token_type="bearer"
+                access_token="test_access_token_12345",
+                token_type="bearer",
+                refresh_token="test_refresh_token_12345",
             )
 
             response = await client.post(
@@ -83,6 +85,7 @@ class TestLoginEndpoint:
             data = response.json()
             assert data["access_token"] == "test_access_token_12345"
             assert data["token_type"] == "bearer"
+            assert data["refresh_token"] == "test_refresh_token_12345"
 
             # Verify perform_login was called with correct params
             mock_login.assert_called_once_with(
@@ -103,7 +106,9 @@ class TestLoginEndpoint:
             "app.logic.auth.perform_login", new_callable=AsyncMock
         ) as mock_login:
             mock_login.return_value = Token(
-                access_token="test_token", token_type="bearer"
+                access_token="test_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
             )
 
             response = await client.post(
@@ -180,7 +185,9 @@ class TestLoginEndpoint:
             "app.logic.auth.perform_login", new_callable=AsyncMock
         ) as mock_login:
             mock_login.return_value = Token(
-                access_token="test_token", token_type="bearer"
+                access_token="test_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
             )
 
             response = await client.post(
@@ -202,7 +209,9 @@ class TestLoginEndpoint:
             "app.logic.auth.perform_login", new_callable=AsyncMock
         ) as mock_login:
             mock_login.return_value = Token(
-                access_token="test_token", token_type="bearer"
+                access_token="test_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
             )
 
             response = await client.post(
@@ -212,3 +221,109 @@ class TestLoginEndpoint:
             assert response.status_code == 200
             data = response.json()
             assert data["token_type"] == "bearer"
+
+
+class TestRefreshEndpoint:
+    """Test suite for POST /auth/refresh endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_success(self, client: AsyncClient):
+        """Test successful token refresh with valid refresh token."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.return_value = Token(
+                access_token="new_access_token",
+                token_type="bearer",
+                refresh_token="new_refresh_token",
+            )
+
+            response = await client.post(
+                "/auth/refresh",
+                json={"refresh_token": "valid_refresh_token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["access_token"] == "new_access_token"
+            assert data["token_type"] == "bearer"
+            assert data["refresh_token"] == "new_refresh_token"
+
+            # Verify refresh_access_token was called with correct params
+            mock_refresh.assert_called_once_with("valid_refresh_token")
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_invalid(self, client: AsyncClient):
+        """Test token refresh with invalid refresh token returns 401."""
+        from app.core.exceptions.domain_exceptions import InvalidTokenException
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.side_effect = InvalidTokenException(
+                reason="Invalid or expired refresh token"
+            )
+
+            response = await client.post(
+                "/auth/refresh",
+                json={"refresh_token": "invalid_token"},
+            )
+
+            assert response.status_code == 401
+            data = response.json()
+            assert "Invalid or expired" in data["detail"]
+            assert response.headers.get("WWW-Authenticate") == "Bearer"
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_expired(self, client: AsyncClient):
+        """Test token refresh with expired refresh token returns 401."""
+        from app.core.exceptions.domain_exceptions import InvalidTokenException
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.side_effect = InvalidTokenException(
+                reason="Invalid or expired refresh token"
+            )
+
+            response = await client.post(
+                "/auth/refresh",
+                json={"refresh_token": "expired_token"},
+            )
+
+            assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_missing(self, client: AsyncClient):
+        """Test token refresh without refresh token returns validation error."""
+        response = await client.post("/auth/refresh", json={})
+
+        assert response.status_code == 422  # Validation error
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_returns_new_tokens(self, client: AsyncClient):
+        """Test that refresh returns both new access and refresh tokens."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.return_value = Token(
+                access_token="new_access_token_xyz",
+                token_type="bearer",
+                refresh_token="new_refresh_token_xyz",
+            )
+
+            response = await client.post(
+                "/auth/refresh",
+                json={"refresh_token": "old_refresh_token"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "access_token" in data
+            assert "refresh_token" in data
+            assert data["access_token"] == "new_access_token_xyz"
+            assert data["refresh_token"] == "new_refresh_token_xyz"
