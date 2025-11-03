@@ -47,16 +47,16 @@ async def session(async_session):
 
 # Helper fixtures
 
-@pytest.fixture
-def sample_uuid():
-    """Generate a sample UUID for testing."""
-    return uuid4()
+# @pytest.fixture
+# def sample_uuid():
+#     """Generate a sample UUID for testing."""
+#     return uuid4()
 
 
-@pytest.fixture
-def sample_datetime():
-    """Generate a sample datetime for testing."""
-    return datetime.now()
+# @pytest.fixture
+# def sample_datetime():
+#     """Generate a sample datetime for testing."""
+#     return datetime.now()
 
 
 @pytest.fixture
