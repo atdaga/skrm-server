@@ -60,7 +60,7 @@ async def session(async_session):
 
 
 @pytest.fixture
-def creator_id():
+def creator_id() -> UUID:
     """Generate a UUID for the creator field."""
     return uuid4()
 
