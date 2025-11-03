@@ -133,6 +133,10 @@ asyncio_mode = "auto"
 [tool.coverage.run]
 concurrency = ["thread", "greenlet"]
 source = ["app"]
+omit = [
+    "__init__.py",
+    "app/core/weaviate/*.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [

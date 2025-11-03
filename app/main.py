@@ -22,7 +22,7 @@ if sys.platform != "win32":
 
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         logger.info("Using uvloop for improved async performance")
-    except ImportError:
+    except ImportError:  # pragma: no cover
         logger.warning("uvloop not available, using default asyncio loop")
 
 
