@@ -25,13 +25,16 @@ async def create_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Create a new team."""
+    # Convert user ID from string to UUID
+    user_id = UUID(token_data.sub)
+    
     # Create new team with audit fields
     new_team = KTeam(
         name=team_data.name,
         scope=token_data.scope,
         meta=team_data.meta,
-        created_by=token_data.sub,
-        last_modified_by=token_data.sub,
+        created_by=user_id,
+        last_modified_by=user_id,
     )
 
     db.add(new_team)
@@ -108,7 +111,7 @@ async def update_team(
 
     # Update audit fields
     team.last_modified = datetime.now()
-    team.last_modified_by = token_data.sub  # type: ignore
+    team.last_modified_by = UUID(token_data.sub)  # type: ignore
 
     try:
         await db.commit()
@@ -117,7 +120,7 @@ async def update_team(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Team with name '{team_data.name}' already exists in scope '{team.scope}'",
+            detail=f"Team with name '{team_data.name}' already exists in scope '{token_data.scope}'",
         ) from e
 
     return TeamDetail.model_validate(team)

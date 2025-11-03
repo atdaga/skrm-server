@@ -4,7 +4,8 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.models.k_principal import KPrincipal
 
@@ -12,7 +13,8 @@ from app.models.k_principal import KPrincipal
 class TestKPrincipalModel:
     """Test suite for KPrincipal model."""
 
-    def test_create_principal_with_required_fields(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_create_principal_with_required_fields(self, session: AsyncSession, creator_id: UUID):
         """Test creating a principal with only required fields."""
         principal = KPrincipal(
             username="testuser",
@@ -25,8 +27,8 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.id is not None
         assert isinstance(principal.id, UUID)
@@ -36,7 +38,8 @@ class TestKPrincipalModel:
         assert principal.last_name == "User"
         assert principal.display_name == "Test User"
 
-    def test_principal_default_values(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_default_values(self, session: AsyncSession, creator_id: UUID):
         """Test that default values are set correctly."""
         principal = KPrincipal(
             username="testuser",
@@ -49,8 +52,8 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.scope == "global"
         assert principal.primary_email_verified is False
@@ -68,7 +71,8 @@ class TestKPrincipalModel:
         assert isinstance(principal.created, datetime)
         assert isinstance(principal.last_modified, datetime)
 
-    def test_principal_with_all_fields(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_with_all_fields(self, session: AsyncSession, creator_id: UUID):
         """Test creating a principal with all fields populated."""
         principal = KPrincipal(
             scope="tenant1",
@@ -94,8 +98,8 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.scope == "tenant1"
         assert principal.username == "jdoe"
@@ -114,7 +118,8 @@ class TestKPrincipalModel:
         assert principal.system_role == "admin"
         assert principal.meta == {"department": "Engineering", "employee_id": "12345"}
 
-    def test_principal_unique_constraint(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_unique_constraint(self, session: AsyncSession, creator_id: UUID):
         """Test that scope+username combination must be unique."""
         principal1 = KPrincipal(
             scope="global",
@@ -128,7 +133,7 @@ class TestKPrincipalModel:
         )
 
         session.add(principal1)
-        session.commit()
+        await session.commit()
 
         # Try to create another principal with same scope+username
         principal2 = KPrincipal(
@@ -144,9 +149,10 @@ class TestKPrincipalModel:
 
         session.add(principal2)
         with pytest.raises(Exception):  # Should raise IntegrityError
-            session.commit()
+            await session.commit()
 
-    def test_principal_same_username_different_scope(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_same_username_different_scope(self, session: AsyncSession, creator_id: UUID):
         """Test that same username can exist in different scopes."""
         principal1 = KPrincipal(
             scope="tenant1",
@@ -172,13 +178,15 @@ class TestKPrincipalModel:
 
         session.add(principal1)
         session.add(principal2)
-        session.commit()
+        await session.commit()
 
         # Both should exist
-        principals = session.exec(select(KPrincipal)).all()
+        result = await session.execute(select(KPrincipal))
+        principals = result.scalars().all()
         assert len(principals) == 2
 
-    def test_principal_query(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_query(self, session: AsyncSession, creator_id: UUID):
         """Test querying principals from database."""
         principal = KPrincipal(
             username="querytest",
@@ -191,18 +199,19 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
+        await session.commit()
 
         # Query by username
-        result = session.exec(
-            select(KPrincipal).where(KPrincipal.username == "querytest")
-        ).first()
+        stmt = select(KPrincipal).where(KPrincipal.username == "querytest")
+        result_exec = await session.execute(stmt)
+        result = result_exec.scalar_one_or_none()
 
         assert result is not None
         assert result.username == "querytest"
         assert result.primary_email == "query@example.com"
 
-    def test_principal_update(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_update(self, session: AsyncSession, creator_id: UUID):
         """Test updating principal fields."""
         principal = KPrincipal(
             username="updatetest",
@@ -215,22 +224,23 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         # Update fields
         principal.primary_email_verified = True
         principal.primary_phone = "+9876543210"
         principal.time_zone = "Europe/London"
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.primary_email_verified is True
         assert principal.primary_phone == "+9876543210"
         assert principal.time_zone == "Europe/London"
 
-    def test_principal_delete(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_delete(self, session: AsyncSession, creator_id: UUID):
         """Test deleting a principal."""
         principal = KPrincipal(
             username="deletetest",
@@ -243,18 +253,19 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
+        await session.commit()
         principal_id = principal.id
 
         # Delete the principal
-        session.delete(principal)
-        session.commit()
+        await session.delete(principal)
+        await session.commit()
 
         # Verify it's deleted
-        result = session.get(KPrincipal, principal_id)
+        result = await session.get(KPrincipal, principal_id)
         assert result is None
 
-    def test_principal_meta_json_field(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_meta_json_field(self, session: AsyncSession, creator_id: UUID):
         """Test that meta field correctly stores and retrieves JSON data."""
         meta_data = {
             "custom_field": "value",
@@ -274,15 +285,16 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.meta == meta_data
         assert principal.meta["custom_field"] == "value"
         assert principal.meta["nested"]["key"] == "value"
         assert principal.meta["array"] == [1, 2, 3]
 
-    def test_principal_disabled_flag(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_disabled_flag(self, session: AsyncSession, creator_id: UUID):
         """Test that principals can be disabled."""
         principal = KPrincipal(
             username="disabletest",
@@ -296,12 +308,13 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.enabled is False
 
-    def test_principal_non_human_flag(self, session: Session, creator_id: UUID):
+    @pytest.mark.asyncio
+    async def test_principal_non_human_flag(self, session: AsyncSession, creator_id: UUID):
         """Test creating a non-human principal (service account)."""
         principal = KPrincipal(
             username="service.bot",
@@ -315,7 +328,7 @@ class TestKPrincipalModel:
         )
 
         session.add(principal)
-        session.commit()
-        session.refresh(principal)
+        await session.commit()
+        await session.refresh(principal)
 
         assert principal.human is False
