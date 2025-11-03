@@ -1,7 +1,7 @@
 """Unit tests for KPrincipalIdentity model."""
 
 from datetime import datetime, timedelta
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +32,9 @@ class TestKPrincipalIdentityModel:
         return principal
 
     @pytest.mark.asyncio
-    async def test_create_identity_with_required_fields(self, session: AsyncSession, creator_id: UUID):
+    async def test_create_identity_with_required_fields(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating an identity with only required fields."""
         identity = KPrincipalIdentity(
             created_by=creator_id,
@@ -52,7 +54,9 @@ class TestKPrincipalIdentityModel:
         assert identity.expires is None
 
     @pytest.mark.asyncio
-    async def test_identity_default_values(self, session: AsyncSession, creator_id: UUID):
+    async def test_identity_default_values(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that default values are set correctly."""
         identity = KPrincipalIdentity(
             created_by=creator_id,
@@ -68,7 +72,9 @@ class TestKPrincipalIdentityModel:
         assert isinstance(identity.last_modified, datetime)
 
     @pytest.mark.asyncio
-    async def test_identity_with_password(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_with_password(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test creating an identity with a password hash."""
         password_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5NU7N0n8VqN.K"
 
@@ -87,7 +93,9 @@ class TestKPrincipalIdentityModel:
         assert identity.password == password_hash
 
     @pytest.mark.asyncio
-    async def test_identity_with_public_key(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_with_public_key(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test creating an identity with a public key."""
         public_key = b"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
 
@@ -105,7 +113,9 @@ class TestKPrincipalIdentityModel:
         assert identity.public_key == public_key
 
     @pytest.mark.asyncio
-    async def test_identity_with_device_id(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_with_device_id(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test creating an identity with a device ID."""
         device_id = "mobile-device-12345"
 
@@ -123,7 +133,9 @@ class TestKPrincipalIdentityModel:
         assert identity.device_id == device_id
 
     @pytest.mark.asyncio
-    async def test_identity_with_expiration(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_with_expiration(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test creating an identity with an expiration date."""
         expiration = datetime.now() + timedelta(days=30)
 
@@ -142,7 +154,9 @@ class TestKPrincipalIdentityModel:
         assert isinstance(identity.expires, datetime)
 
     @pytest.mark.asyncio
-    async def test_identity_with_all_fields(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_with_all_fields(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test creating an identity with all fields populated."""
         password_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5NU7N0n8VqN.K"
         public_key = b"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."
@@ -173,7 +187,9 @@ class TestKPrincipalIdentityModel:
         assert identity.details == details
 
     @pytest.mark.asyncio
-    async def test_identity_query_by_principal(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_query_by_principal(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test querying identities by principal ID."""
         identity1 = KPrincipalIdentity(
             principal_id=principal.id,
@@ -206,7 +222,9 @@ class TestKPrincipalIdentityModel:
         assert device_ids == {"device1", "device2"}
 
     @pytest.mark.asyncio
-    async def test_identity_update(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_update(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test updating identity fields."""
         identity = KPrincipalIdentity(
             principal_id=principal.id,
@@ -231,7 +249,9 @@ class TestKPrincipalIdentityModel:
         assert identity.device_id == "new-device"
 
     @pytest.mark.asyncio
-    async def test_identity_delete(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_delete(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test deleting an identity."""
         identity = KPrincipalIdentity(
             principal_id=principal.id,
@@ -253,7 +273,9 @@ class TestKPrincipalIdentityModel:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_identity_details_json_field(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_details_json_field(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test that details field correctly stores and retrieves JSON data."""
         details_data = {
             "auth_method": "oauth",
@@ -283,7 +305,9 @@ class TestKPrincipalIdentityModel:
         assert len(identity.details["login_history"]) == 2
 
     @pytest.mark.asyncio
-    async def test_identity_null_principal_id(self, session: AsyncSession, creator_id: UUID):
+    async def test_identity_null_principal_id(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that identity can be created without a principal_id."""
         identity = KPrincipalIdentity(
             principal_id=None,
@@ -300,7 +324,9 @@ class TestKPrincipalIdentityModel:
         assert identity.device_id == "standalone-device"
 
     @pytest.mark.asyncio
-    async def test_multiple_identities_per_principal(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_multiple_identities_per_principal(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test that a principal can have multiple identities."""
         password_identity = KPrincipalIdentity(
             principal_id=principal.id,
@@ -344,7 +370,9 @@ class TestKPrincipalIdentityModel:
         assert types == {"password", "public_key", "device"}
 
     @pytest.mark.asyncio
-    async def test_identity_expiration_check(self, session: AsyncSession, principal: KPrincipal, creator_id: UUID):
+    async def test_identity_expiration_check(
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+    ):
         """Test checking if an identity has expired."""
         past_date = datetime.now() - timedelta(days=1)
         future_date = datetime.now() + timedelta(days=1)

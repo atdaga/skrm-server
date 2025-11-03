@@ -1,9 +1,10 @@
 """Unit tests for KTeamMember model."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -48,7 +49,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_create_team_member_with_required_fields(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test creating a team member with only required fields."""
         team_member = KTeamMember(
@@ -69,7 +74,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_default_values(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test that default values are set correctly."""
         team_member = KTeamMember(
@@ -91,7 +100,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_with_role(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test creating a team member with a role."""
         team_member = KTeamMember(
@@ -111,7 +124,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_with_meta_data(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test creating a team member with metadata."""
         meta_data = {
@@ -140,7 +157,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_composite_primary_key(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test that team_id + principal_id form a composite primary key."""
         team_member1 = KTeamMember(
@@ -153,7 +174,7 @@ class TestKTeamMemberModel:
 
         session.add(team_member1)
         await session.commit()
-        
+
         # Clear session to test database constraint (not session constraint)
         session.expunge(team_member1)
 
@@ -168,7 +189,7 @@ class TestKTeamMemberModel:
         )
 
         session.add(team_member2)
-        with pytest.raises(Exception):  # Should raise IntegrityError
+        with pytest.raises(IntegrityError):
             await session.commit()
 
     @pytest.mark.asyncio
@@ -293,7 +314,7 @@ class TestKTeamMemberModel:
             principal = KPrincipal(
                 username=f"user{i}",
                 primary_email=f"user{i}@example.com",
-                first_name=f"User",
+                first_name="User",
                 last_name=f"{i}",
                 display_name=f"User {i}",
                 created_by=creator_id,
@@ -350,7 +371,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_update(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test updating team member fields."""
         team_member = KTeamMember(
@@ -377,7 +402,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_delete(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test deleting a team member."""
         team_member = KTeamMember(
@@ -407,7 +436,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_cascade_delete_team(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test that deleting a team cascades to team members."""
         team_member = KTeamMember(
@@ -434,7 +467,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_meta_json_field(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test that meta field correctly stores and retrieves JSON data."""
         meta_data = {
@@ -470,7 +507,11 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_scope_field(
-        self, session: AsyncSession, team: KTeam, principal: KPrincipal, creator_id: UUID
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
     ):
         """Test that team members can have different scopes."""
         member1 = KTeamMember(
@@ -517,14 +558,16 @@ class TestKTeamMemberModel:
         assert scopes == {"global", "tenant1"}
 
     @pytest.mark.asyncio
-    async def test_team_member_count(self, session: AsyncSession, team: KTeam, creator_id: UUID):
+    async def test_team_member_count(
+        self, session: AsyncSession, team: KTeam, creator_id: UUID
+    ):
         """Test counting team members."""
         principals = []
         for i in range(5):
             principal = KPrincipal(
                 username=f"user{i}",
                 primary_email=f"user{i}@example.com",
-                first_name=f"User",
+                first_name="User",
                 last_name=f"{i}",
                 display_name=f"User {i}",
                 created_by=creator_id,

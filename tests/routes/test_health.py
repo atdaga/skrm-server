@@ -19,8 +19,7 @@ def app() -> FastAPI:
 async def client(app: FastAPI) -> AsyncClient:
     """Create an async HTTP client for testing."""
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
 
@@ -32,7 +31,7 @@ class TestHealthCheck:
     async def test_health_check_success(self, client: AsyncClient):
         """Test that health check returns healthy status."""
         response = await client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
@@ -41,7 +40,7 @@ class TestHealthCheck:
     async def test_health_check_returns_json(self, client: AsyncClient):
         """Test that health check returns JSON response."""
         response = await client.get("/health")
-        
+
         assert response.headers["content-type"] == "application/json"
 
     @pytest.mark.asyncio
@@ -49,6 +48,5 @@ class TestHealthCheck:
         """Test that health check endpoint doesn't require authentication."""
         # Should succeed without any authorization header
         response = await client.get("/health")
-        
-        assert response.status_code == 200
 
+        assert response.status_code == 200

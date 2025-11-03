@@ -1,10 +1,8 @@
 """Unit tests for authentication and security utilities."""
 
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-import bcrypt
 import pytest
 from jose import jwt
 
@@ -27,7 +25,7 @@ class TestPasswordHashing:
         """Test that get_password_hash returns a string."""
         password = "test_password_123"
         hashed = get_password_hash(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
@@ -35,19 +33,19 @@ class TestPasswordHashing:
         """Test that different passwords produce different hashes."""
         password1 = "password1"
         password2 = "password2"
-        
+
         hash1 = get_password_hash(password1)
         hash2 = get_password_hash(password2)
-        
+
         assert hash1 != hash2
 
     def test_get_password_hash_same_password_different_hashes(self):
         """Test that same password produces different hashes (due to salt)."""
         password = "same_password"
-        
+
         hash1 = get_password_hash(password)
         hash2 = get_password_hash(password)
-        
+
         # Due to bcrypt salting, hashes should be different
         assert hash1 != hash2
 
@@ -55,7 +53,7 @@ class TestPasswordHashing:
         """Test hashing an empty password."""
         password = ""
         hashed = get_password_hash(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
@@ -63,7 +61,7 @@ class TestPasswordHashing:
         """Test hashing a very long password."""
         password = "a" * 1000
         hashed = get_password_hash(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
@@ -71,7 +69,7 @@ class TestPasswordHashing:
         """Test hashing password with special characters."""
         password = "p@ssw0rd!#$%^&*()_+-=[]{}|;:',.<>?/~`"
         hashed = get_password_hash(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
@@ -79,7 +77,7 @@ class TestPasswordHashing:
         """Test hashing password with unicode characters."""
         password = "пароль密码🔒"
         hashed = get_password_hash(password)
-        
+
         assert isinstance(hashed, str)
         assert len(hashed) > 0
 
@@ -92,9 +90,9 @@ class TestPasswordVerification:
         """Test verifying a correct password."""
         password = "correct_password"
         hashed = get_password_hash(password)
-        
+
         is_valid = await verify_password(password, hashed)
-        
+
         assert is_valid is True
 
     @pytest.mark.asyncio
@@ -103,9 +101,9 @@ class TestPasswordVerification:
         correct_password = "correct_password"
         wrong_password = "wrong_password"
         hashed = get_password_hash(correct_password)
-        
+
         is_valid = await verify_password(wrong_password, hashed)
-        
+
         assert is_valid is False
 
     @pytest.mark.asyncio
@@ -113,9 +111,9 @@ class TestPasswordVerification:
         """Test verifying an empty password."""
         password = ""
         hashed = get_password_hash(password)
-        
+
         is_valid = await verify_password(password, hashed)
-        
+
         assert is_valid is True
 
     @pytest.mark.asyncio
@@ -123,10 +121,10 @@ class TestPasswordVerification:
         """Test that password verification is case-sensitive."""
         password = "Password123"
         hashed = get_password_hash(password)
-        
+
         # Test with different case
         is_valid = await verify_password("password123", hashed)
-        
+
         assert is_valid is False
 
     @pytest.mark.asyncio
@@ -134,9 +132,9 @@ class TestPasswordVerification:
         """Test verifying password with special characters."""
         password = "p@ssw0rd!#$%"
         hashed = get_password_hash(password)
-        
+
         is_valid = await verify_password(password, hashed)
-        
+
         assert is_valid is True
 
     @pytest.mark.asyncio
@@ -144,9 +142,9 @@ class TestPasswordVerification:
         """Test verifying password with unicode characters."""
         password = "пароль密码🔒"
         hashed = get_password_hash(password)
-        
+
         is_valid = await verify_password(password, hashed)
-        
+
         assert is_valid is True
 
     @pytest.mark.asyncio
@@ -154,9 +152,9 @@ class TestPasswordVerification:
         """Test verifying a long password."""
         password = "a" * 500
         hashed = get_password_hash(password)
-        
+
         is_valid = await verify_password(password, hashed)
-        
+
         assert is_valid is True
 
 
@@ -168,7 +166,7 @@ class TestAccessTokenCreation:
         """Test that create_access_token returns a string."""
         data = {"sub": "user123", "scope": "test"}
         token = await create_access_token(data)
-        
+
         assert isinstance(token, str)
         assert len(token) > 0
 
@@ -177,13 +175,14 @@ class TestAccessTokenCreation:
         """Test that created token contains the provided data."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "test-scope"}
-        
+
         token = await create_access_token(data)
-        
+
         # Decode token without verification to check contents
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         assert decoded["sub"] == user_id
         assert decoded["scope"] == "test-scope"
         assert "exp" in decoded
@@ -193,18 +192,19 @@ class TestAccessTokenCreation:
         """Test creating access token with custom expiration time."""
         data = {"sub": "user123"}
         expires_delta = timedelta(minutes=30)
-        
+
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
         token = await create_access_token(data, expires_delta)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         # Check that expiration is set
         assert "exp" in decoded
         # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
         exp_time = datetime.utcfromtimestamp(decoded["exp"])
-        
+
         # Expiration should be roughly 30 minutes from when token was created
         time_diff = exp_time - current_time_before
         assert 29 <= time_diff.total_seconds() / 60 <= 31  # Allow 1 minute margin
@@ -213,17 +213,18 @@ class TestAccessTokenCreation:
     async def test_create_access_token_default_expiry(self):
         """Test that default expiration is applied when not specified."""
         data = {"sub": "user123"}
-        
+
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
         token = await create_access_token(data)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         assert "exp" in decoded
         # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
         exp_time = datetime.utcfromtimestamp(decoded["exp"])
-        
+
         # Should be in the future (at least a few minutes)
         time_diff = exp_time - current_time_before
         assert time_diff.total_seconds() > 0
@@ -233,9 +234,9 @@ class TestAccessTokenCreation:
         """Test that creating token doesn't modify input data dict."""
         data = {"sub": "user123", "scope": "test"}
         original_data = data.copy()
-        
+
         await create_access_token(data)
-        
+
         # Original data should not be modified
         assert data == original_data
 
@@ -244,10 +245,10 @@ class TestAccessTokenCreation:
         """Test that different data produces different tokens."""
         data1 = {"sub": "user1"}
         data2 = {"sub": "user2"}
-        
+
         token1 = await create_access_token(data1)
         token2 = await create_access_token(data2)
-        
+
         assert token1 != token2
 
 
@@ -259,7 +260,7 @@ class TestRefreshTokenCreation:
         """Test that create_refresh_token returns a string."""
         data = {"sub": "user123"}
         token = await create_refresh_token(data)
-        
+
         assert isinstance(token, str)
         assert len(token) > 0
 
@@ -268,12 +269,13 @@ class TestRefreshTokenCreation:
         """Test that created refresh token contains the provided data."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "test-scope"}
-        
+
         token = await create_refresh_token(data)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         assert decoded["sub"] == user_id
         assert decoded["scope"] == "test-scope"
         assert "exp" in decoded
@@ -283,17 +285,18 @@ class TestRefreshTokenCreation:
         """Test creating refresh token with custom expiration time."""
         data = {"sub": "user123"}
         expires_delta = timedelta(days=7)
-        
+
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
         token = await create_refresh_token(data, expires_delta)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         assert "exp" in decoded
         # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
         exp_time = datetime.utcfromtimestamp(decoded["exp"])
-        
+
         # Expiration should be roughly 7 days from when token was created
         time_diff = exp_time - current_time_before
         assert 6.9 <= time_diff.total_seconds() / 86400 <= 7.1  # Allow margin
@@ -302,16 +305,17 @@ class TestRefreshTokenCreation:
     async def test_create_refresh_token_default_expiry(self):
         """Test that default expiration is applied for refresh token."""
         data = {"sub": "user123"}
-        
+
         token = await create_refresh_token(data)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         assert "exp" in decoded
         exp_time = datetime.fromtimestamp(decoded["exp"])
         current_time = datetime.now(UTC).replace(tzinfo=None)
-        
+
         # Should be in the future
         assert exp_time > current_time
 
@@ -319,14 +323,15 @@ class TestRefreshTokenCreation:
     async def test_create_refresh_token_longer_than_access_token(self):
         """Test that refresh token expiry is longer than access token."""
         data = {"sub": "user123"}
-        
+
         access_token = await create_access_token(data)
         refresh_token = await create_refresh_token(data)
-        
+
         from app.core.auth import ALGORITHM, SECRET_KEY
+
         access_decoded = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
         refresh_decoded = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         # Refresh token should expire later than access token
         assert refresh_decoded["exp"] > access_decoded["exp"]
 
@@ -339,9 +344,9 @@ class TestTokenVerification:
         """Test verifying a valid token."""
         data = {"sub": "user123", "scope": "test"}
         token = await create_access_token(data)
-        
+
         payload = await verify_token(token)
-        
+
         assert payload is not None
         assert payload["sub"] == "user123"
         assert payload["scope"] == "test"
@@ -350,9 +355,9 @@ class TestTokenVerification:
     async def test_verify_token_invalid_token(self):
         """Test verifying an invalid token."""
         invalid_token = "invalid.token.here"
-        
+
         payload = await verify_token(invalid_token)
-        
+
         assert payload is None
 
     @pytest.mark.asyncio
@@ -362,9 +367,9 @@ class TestTokenVerification:
         # Create token with negative expiry (already expired)
         expires_delta = timedelta(seconds=-1)
         token = await create_access_token(data, expires_delta)
-        
+
         payload = await verify_token(token)
-        
+
         assert payload is None
 
     @pytest.mark.asyncio
@@ -372,18 +377,22 @@ class TestTokenVerification:
         """Test verifying token without 'sub' claim."""
         # Create token manually without 'sub'
         from app.core.auth import ALGORITHM, SECRET_KEY
-        data = {"scope": "test", "exp": datetime.now(UTC).replace(tzinfo=None) + timedelta(minutes=15)}
+
+        data = {
+            "scope": "test",
+            "exp": datetime.now(UTC).replace(tzinfo=None) + timedelta(minutes=15),
+        }
         token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
-        
+
         payload = await verify_token(token)
-        
+
         assert payload is None
 
     @pytest.mark.asyncio
     async def test_verify_token_empty_string(self):
         """Test verifying empty token string."""
         payload = await verify_token("")
-        
+
         assert payload is None
 
     @pytest.mark.asyncio
@@ -396,7 +405,7 @@ class TestTokenVerification:
             ".....",
             "Bearer token",
         ]
-        
+
         for token in malformed_tokens:
             payload = await verify_token(token)
             assert payload is None
@@ -408,12 +417,12 @@ class TestTokenVerification:
             "sub": "user123",
             "scope": "test-scope",
             "role": "admin",
-            "custom_claim": "custom_value"
+            "custom_claim": "custom_value",
         }
         token = await create_access_token(data)
-        
+
         payload = await verify_token(token)
-        
+
         assert payload is not None
         assert payload["sub"] == "user123"
         assert payload["scope"] == "test-scope"
@@ -429,11 +438,11 @@ class TestTokenIntegration:
         """Test creating and verifying an access token."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "global"}
-        
+
         # Create token
         token = await create_access_token(data)
         assert isinstance(token, str)
-        
+
         # Verify token
         payload = await verify_token(token)
         assert payload is not None
@@ -445,11 +454,11 @@ class TestTokenIntegration:
         """Test creating and verifying a refresh token."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "global"}
-        
+
         # Create refresh token
         token = await create_refresh_token(data)
         assert isinstance(token, str)
-        
+
         # Verify token
         payload = await verify_token(token)
         assert payload is not None
@@ -460,13 +469,13 @@ class TestTokenIntegration:
         """Test that multiple tokens are independent."""
         data1 = {"sub": "user1", "scope": "scope1"}
         data2 = {"sub": "user2", "scope": "scope2"}
-        
+
         token1 = await create_access_token(data1)
         token2 = await create_access_token(data2)
-        
+
         payload1 = await verify_token(token1)
         payload2 = await verify_token(token2)
-        
+
         assert payload1["sub"] == "user1"
         assert payload2["sub"] == "user2"
         assert payload1["scope"] == "scope1"
@@ -478,16 +487,16 @@ class TestTokenIntegration:
         # Hash password
         password = "secure_password_123"
         hashed = get_password_hash(password)
-        
+
         # Verify password
         is_valid = await verify_password(password, hashed)
         assert is_valid is True
-        
+
         # Create token after successful verification
         user_id = str(uuid4())
         token_data = {"sub": user_id, "scope": "global"}
         token = await create_access_token(token_data)
-        
+
         # Verify token
         payload = await verify_token(token)
         assert payload is not None
@@ -518,7 +527,7 @@ class TestAuthenticateUser:
         async_session.add(principal)
         await async_session.commit()
         await async_session.refresh(principal)
-        
+
         # Create identity with password
         password = "test_password_123"
         hashed_password = get_password_hash(password)
@@ -530,10 +539,10 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
+
         # Authenticate
         result = await authenticate_user("testuser", password, async_session)
-        
+
         # Verify
         assert result is not None
         assert isinstance(result, UserDetail)
@@ -561,7 +570,7 @@ class TestAuthenticateUser:
         async_session.add(principal)
         await async_session.commit()
         await async_session.refresh(principal)
-        
+
         password = "correct_password"
         hashed_password = get_password_hash(password)
         identity = KPrincipalIdentity(
@@ -572,10 +581,10 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
+
         # Try wrong password
         result = await authenticate_user("testuser2", "wrong_password", async_session)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -585,7 +594,9 @@ class TestAuthenticateUser:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_no_password_identity(self, async_session, creator_id):
+    async def test_authenticate_user_no_password_identity(
+        self, async_session, creator_id
+    ):
         """Test authentication fails when user has no password identity."""
         # Create principal without identity
         user_id = uuid4()
@@ -604,10 +615,10 @@ class TestAuthenticateUser:
         )
         async_session.add(principal)
         await async_session.commit()
-        
+
         # No identity added
         result = await authenticate_user("nopassword", "anypassword", async_session)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -630,7 +641,7 @@ class TestAuthenticateUser:
         async_session.add(principal)
         await async_session.commit()
         await async_session.refresh(principal)
-        
+
         # Create identity with null password
         identity = KPrincipalIdentity(
             principal_id=user_id,
@@ -640,9 +651,9 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
+
         result = await authenticate_user("nullpass", "anypassword", async_session)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -664,7 +675,7 @@ class TestAuthenticateUser:
         )
         async_session.add(principal)
         await async_session.commit()
-        
+
         password = "password123"
         hashed_password = get_password_hash(password)
         identity = KPrincipalIdentity(
@@ -675,13 +686,15 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
+
         result = await authenticate_user("disabled", password, async_session)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_non_human_principal(self, async_session, creator_id):
+    async def test_authenticate_user_non_human_principal(
+        self, async_session, creator_id
+    ):
         """Test authentication fails for non-human principals (service accounts)."""
         user_id = uuid4()
         principal = KPrincipal(
@@ -699,7 +712,7 @@ class TestAuthenticateUser:
         )
         async_session.add(principal)
         await async_session.commit()
-        
+
         password = "password123"
         hashed_password = get_password_hash(password)
         identity = KPrincipalIdentity(
@@ -710,9 +723,9 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
+
         result = await authenticate_user("serviceaccount", password, async_session)
-        
+
         assert result is None
 
     @pytest.mark.asyncio
@@ -734,7 +747,7 @@ class TestAuthenticateUser:
         )
         async_session.add(principal)
         await async_session.commit()
-        
+
         password = "password123"
         hashed_password = get_password_hash(password)
         identity = KPrincipalIdentity(
@@ -745,8 +758,7 @@ class TestAuthenticateUser:
         )
         async_session.add(identity)
         await async_session.commit()
-        
-        result = await authenticate_user("customscope", password, async_session)
-        
-        assert result is None
 
+        result = await authenticate_user("customscope", password, async_session)
+
+        assert result is None

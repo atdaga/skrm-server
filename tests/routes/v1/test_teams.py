@@ -14,22 +14,25 @@ from app.schemas.user import TokenData
 
 
 @pytest.fixture
-def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData) -> FastAPI:
+def app_with_overrides(
+    async_session: AsyncSession, mock_token_data: TokenData
+) -> FastAPI:
     """Create a FastAPI app with dependency overrides for testing."""
     app = FastAPI()
     app.include_router(router)
-    
+
     # Override dependencies
     async def override_get_db():
         yield async_session
-    
+
     async def override_get_current_token():
         return mock_token_data
-    
+
     from app.core.db.database import get_db
+
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_token] = override_get_current_token
-    
+
     return app
 
 
@@ -37,8 +40,7 @@ def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData) 
 async def client(app_with_overrides: FastAPI) -> AsyncClient:
     """Create an async HTTP client for testing."""
     async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides),
-        base_url="http://test"
+        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
     ) as ac:
         yield ac
 
@@ -56,11 +58,11 @@ class TestCreateTeam:
         """Test successfully creating a new team."""
         team_data = {
             "name": "Engineering Team",
-            "meta": {"department": "Engineering", "location": "SF"}
+            "meta": {"department": "Engineering", "location": "SF"},
         }
-        
+
         response = await client.post("/teams", json=team_data)
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Engineering Team"
@@ -80,12 +82,10 @@ class TestCreateTeam:
         test_scope: str,
     ):
         """Test creating a team with minimal required fields."""
-        team_data = {
-            "name": "Minimal Team"
-        }
-        
+        team_data = {"name": "Minimal Team"}
+
         response = await client.post("/teams", json=team_data)
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Minimal Team"
@@ -110,15 +110,12 @@ class TestCreateTeam:
         )
         async_session.add(team)
         await async_session.commit()
-        
+
         # Try to create another team with same name
-        team_data = {
-            "name": "Duplicate Team",
-            "meta": {}
-        }
-        
+        team_data = {"name": "Duplicate Team", "meta": {}}
+
         response = await client.post("/teams", json=team_data)
-        
+
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
@@ -128,13 +125,10 @@ class TestCreateTeam:
         client: AsyncClient,
     ):
         """Test creating a team with explicitly empty meta."""
-        team_data = {
-            "name": "Empty Meta Team",
-            "meta": {}
-        }
-        
+        team_data = {"name": "Empty Meta Team", "meta": {}}
+
         response = await client.post("/teams", json=team_data)
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["meta"] == {}
@@ -149,17 +143,14 @@ class TestCreateTeam:
             "name": "Complex Meta Team",
             "meta": {
                 "department": "Engineering",
-                "settings": {
-                    "notifications": True,
-                    "visibility": "private"
-                },
+                "settings": {"notifications": True, "visibility": "private"},
                 "tags": ["backend", "api", "microservices"],
-                "member_count": 10
-            }
+                "member_count": 10,
+            },
         }
-        
+
         response = await client.post("/teams", json=team_data)
-        
+
         assert response.status_code == 201
         data = response.json()
         assert data["meta"] == team_data["meta"]
@@ -175,7 +166,7 @@ class TestListTeams:
     ):
         """Test listing teams when none exist."""
         response = await client.get("/teams")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["teams"] == []
@@ -200,9 +191,9 @@ class TestListTeams:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
+
         response = await client.get("/teams")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["teams"]) == 1
@@ -224,7 +215,7 @@ class TestListTeams:
             {"name": "Team Beta", "meta": {"priority": 2}},
             {"name": "Team Gamma", "meta": {"priority": 3}},
         ]
-        
+
         for team_data in teams_data:
             team = KTeam(
                 name=team_data["name"],
@@ -234,11 +225,11 @@ class TestListTeams:
                 last_modified_by=test_user_id,
             )
             async_session.add(team)
-        
+
         await async_session.commit()
-        
+
         response = await client.get("/teams")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["teams"]) == 3
@@ -262,7 +253,7 @@ class TestListTeams:
             last_modified_by=test_user_id,
         )
         async_session.add(team_in_scope)
-        
+
         # Create team in different scope
         team_out_scope = KTeam(
             name="Team Out Of Scope",
@@ -271,11 +262,11 @@ class TestListTeams:
             last_modified_by=test_user_id,
         )
         async_session.add(team_out_scope)
-        
+
         await async_session.commit()
-        
+
         response = await client.get("/teams")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert len(data["teams"]) == 1
@@ -305,9 +296,9 @@ class TestGetTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
+
         response = await client.get(f"/teams/{team.id}")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(team.id)
@@ -322,9 +313,9 @@ class TestGetTeam:
     ):
         """Test getting a team that doesn't exist."""
         non_existent_id = uuid4()
-        
+
         response = await client.get(f"/teams/{non_existent_id}")
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -346,9 +337,9 @@ class TestGetTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
+
         response = await client.get(f"/teams/{team.id}")
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -359,7 +350,7 @@ class TestGetTeam:
     ):
         """Test getting a team with an invalid UUID."""
         response = await client.get("/teams/not-a-uuid")
-        
+
         assert response.status_code == 422  # Validation error
 
 
@@ -385,13 +376,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
-        update_data = {
-            "name": "New Name"
-        }
-        
+
+        update_data = {"name": "New Name"}
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "New Name"
@@ -417,13 +406,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
-        update_data = {
-            "meta": {"new": "data", "updated": True}
-        }
-        
+
+        update_data = {"meta": {"new": "data", "updated": True}}
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
@@ -449,14 +436,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
-        update_data = {
-            "name": "New Name",
-            "meta": {"new": "data"}
-        }
-        
+
+        update_data = {"name": "New Name", "meta": {"new": "data"}}
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "New Name"
@@ -469,12 +453,10 @@ class TestUpdateTeam:
     ):
         """Test updating a team that doesn't exist."""
         non_existent_id = uuid4()
-        update_data = {
-            "name": "New Name"
-        }
-        
+        update_data = {"name": "New Name"}
+
         response = await client.patch(f"/teams/{non_existent_id}", json=update_data)
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -496,13 +478,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
-        update_data = {
-            "name": "New Name"
-        }
-        
+
+        update_data = {"name": "New Name"}
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -532,14 +512,12 @@ class TestUpdateTeam:
         async_session.add(team2)
         await async_session.commit()
         await async_session.refresh(team2)
-        
+
         # Try to rename team2 to team1's name
-        update_data = {
-            "name": "Team One"
-        }
-        
+        update_data = {"name": "Team One"}
+
         response = await client.patch(f"/teams/{team2.id}", json=update_data)
-        
+
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
@@ -563,11 +541,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
+
         update_data = {}
-        
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Test Team"  # Unchanged
@@ -592,15 +570,11 @@ class TestUpdateTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
-        original_modified = team.last_modified
-        
-        update_data = {
-            "name": "Updated Team"
-        }
-        
+
+        update_data = {"name": "Updated Team"}
+
         response = await client.patch(f"/teams/{team.id}", json=update_data)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["last_modified_by"] == str(test_user_id)
@@ -631,12 +605,12 @@ class TestDeleteTeam:
         await async_session.commit()
         await async_session.refresh(team)
         team_id = team.id
-        
+
         response = await client.delete(f"/teams/{team_id}")
-        
+
         assert response.status_code == 204
         assert response.content == b""  # No content in response
-        
+
         # Verify team is actually deleted
         result = await async_session.get(KTeam, team_id)
         assert result is None
@@ -648,9 +622,9 @@ class TestDeleteTeam:
     ):
         """Test deleting a team that doesn't exist."""
         non_existent_id = uuid4()
-        
+
         response = await client.delete(f"/teams/{non_existent_id}")
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
@@ -672,12 +646,12 @@ class TestDeleteTeam:
         async_session.add(team)
         await async_session.commit()
         await async_session.refresh(team)
-        
+
         response = await client.delete(f"/teams/{team.id}")
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-        
+
         # Verify team still exists
         result = await async_session.get(KTeam, team.id)
         assert result is not None
@@ -689,6 +663,5 @@ class TestDeleteTeam:
     ):
         """Test deleting a team with an invalid UUID."""
         response = await client.delete("/teams/not-a-uuid")
-        
-        assert response.status_code == 422  # Validation error
 
+        assert response.status_code == 422  # Validation error

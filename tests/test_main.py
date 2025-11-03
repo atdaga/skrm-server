@@ -14,31 +14,31 @@ class TestApplicationConfiguration:
     def test_app_is_fastapi_instance(self):
         """Test that app is a FastAPI instance."""
         from app.main import app
-        
+
         assert isinstance(app, FastAPI)
 
     def test_app_title(self):
         """Test that app has correct title from settings."""
         from app.main import app
-        
+
         assert app.title == "Python Server"
 
     def test_app_version(self):
         """Test that app has correct version."""
         from app.main import app
-        
+
         assert app.version == "0.1.0"
 
     def test_app_description(self):
         """Test that app has a description."""
         from app.main import app
-        
+
         assert app.description == "A modern Python web server built with FastAPI"
 
     def test_app_has_lifespan(self):
         """Test that app has lifespan context manager configured."""
         from app.main import app
-        
+
         assert app.router.lifespan_context is not None
 
 
@@ -48,7 +48,7 @@ class TestRouterRegistration:
     def test_health_router_registered(self):
         """Test that health router is registered."""
         from app.main import app
-        
+
         # Check that health routes are registered
         routes = [route.path for route in app.routes]
         assert "/health" in routes
@@ -56,7 +56,7 @@ class TestRouterRegistration:
     def test_auth_router_registered(self):
         """Test that auth router is registered with /api prefix."""
         from app.main import app
-        
+
         # Check for auth routes with /api prefix
         routes = [route.path for route in app.routes]
         assert "/api/auth/login" in routes
@@ -64,7 +64,7 @@ class TestRouterRegistration:
     def test_v1_router_registered(self):
         """Test that v1 router is registered with /api/v1 prefix."""
         from app.main import app
-        
+
         # Check for v1 routes with /api/v1 prefix
         routes = [route.path for route in app.routes]
         # Check for teams and users routes
@@ -74,9 +74,9 @@ class TestRouterRegistration:
     def test_all_routers_included(self):
         """Test that all expected routers are included."""
         from app.main import app
-        
+
         routes = [route.path for route in app.routes]
-        
+
         # Should have routes from all routers
         assert "/health" in routes  # health router
         assert any("/api/auth" in r for r in routes)  # auth router
@@ -95,17 +95,17 @@ class TestLifespanManager:
     ):
         """Test successful application startup."""
         from app.main import lifespan
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         app = MagicMock(spec=FastAPI)
-        
+
         async with lifespan(app):
             # Verify startup actions were called
             mock_init_db.assert_called_once()
             mock_create_tables.assert_called_once()
-        
+
         # Verify cleanup was called on shutdown
         mock_cleanup_db.assert_called_once()
 
@@ -118,11 +118,11 @@ class TestLifespanManager:
     ):
         """Test that database initialization errors are raised."""
         from app.main import lifespan
-        
+
         mock_init_db.side_effect = Exception("Database connection failed")
-        
+
         app = MagicMock(spec=FastAPI)
-        
+
         with pytest.raises(Exception, match="Database connection failed"):
             async with lifespan(app):
                 pass
@@ -136,11 +136,11 @@ class TestLifespanManager:
     ):
         """Test that table creation errors are raised."""
         from app.main import lifespan
-        
+
         mock_create_tables.side_effect = Exception("Failed to create tables")
-        
+
         app = MagicMock(spec=FastAPI)
-        
+
         with pytest.raises(Exception, match="Failed to create tables"):
             async with lifespan(app):
                 pass
@@ -154,12 +154,12 @@ class TestLifespanManager:
     ):
         """Test that cleanup errors are caught and logged."""
         from app.main import lifespan
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.side_effect = Exception("Cleanup failed")
-        
+
         app = MagicMock(spec=FastAPI)
-        
+
         # Should not raise exception even if cleanup fails
         async with lifespan(app):
             pass
@@ -177,10 +177,10 @@ class TestApplicationEndpoints:
     ):
         """Test that health endpoint is accessible."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -196,10 +196,10 @@ class TestApplicationEndpoints:
     ):
         """Test that OpenAPI schema is accessible."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -219,10 +219,10 @@ class TestApplicationEndpoints:
     ):
         """Test that API docs endpoint is accessible."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -239,13 +239,13 @@ class TestLoggingSetup:
         # Since the module is already imported, we can't directly test this
         # but we can verify the logger exists
         from app.main import logger
-        
+
         assert logger is not None
 
     def test_logger_has_name(self):
         """Test that logger has correct name."""
         from app.main import logger
-        
+
         # Logger should be configured
         assert logger is not None
 
@@ -273,21 +273,21 @@ class TestApplicationRoutes:
     def test_health_routes_exist(self):
         """Test that health check routes exist."""
         from app.main import app
-        
+
         paths = [route.path for route in app.routes]
         assert "/health" in paths
 
     def test_auth_routes_exist(self):
         """Test that authentication routes exist."""
         from app.main import app
-        
+
         paths = [route.path for route in app.routes]
         assert "/api/auth/login" in paths
 
     def test_v1_teams_routes_exist(self):
         """Test that v1 teams routes exist."""
         from app.main import app
-        
+
         paths = [route.path for route in app.routes]
         teams_routes = [p for p in paths if "/api/v1/teams" in p]
         assert len(teams_routes) > 0
@@ -295,14 +295,14 @@ class TestApplicationRoutes:
     def test_v1_users_routes_exist(self):
         """Test that v1 users routes exist."""
         from app.main import app
-        
+
         paths = [route.path for route in app.routes]
         assert "/api/v1/users/me" in paths
 
     def test_route_count(self):
         """Test that app has expected number of routes."""
         from app.main import app
-        
+
         # Should have multiple routes from all routers
         assert len(app.routes) > 5
 
@@ -314,20 +314,20 @@ class TestApplicationMetadata:
         """Test that app debug mode matches settings."""
         from app.config import settings
         from app.main import app
-        
+
         assert app.debug == settings.debug
 
     def test_app_openapi_url(self):
         """Test that OpenAPI URL is configured."""
         from app.main import app
-        
+
         # Default OpenAPI URL should be set
         assert app.openapi_url is not None
 
     def test_app_docs_url(self):
         """Test that docs URL is configured."""
         from app.main import app
-        
+
         # Default docs URL should be set
         assert app.docs_url is not None
 
@@ -344,10 +344,10 @@ class TestApplicationIntegration:
     ):
         """Test complete application lifecycle."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         # Simulate startup and make a request
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
@@ -355,7 +355,7 @@ class TestApplicationIntegration:
             # Make requests to different routers
             health_response = await client.get("/health")
             assert health_response.status_code == 200
-            
+
             # OpenAPI should be available
             openapi_response = await client.get("/openapi.json")
             assert openapi_response.status_code == 200
@@ -369,10 +369,10 @@ class TestApplicationIntegration:
     ):
         """Test that app returns 404 for non-existent routes."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -388,10 +388,10 @@ class TestApplicationIntegration:
     ):
         """Test that app handles multiple sequential requests."""
         from app.main import app
-        
+
         mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
-        
+
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:

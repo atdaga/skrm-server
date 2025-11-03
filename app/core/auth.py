@@ -12,7 +12,6 @@ from app.schemas.user import UserDetail
 
 from ..config import settings
 from ..models import KPrincipal, KPrincipalIdentity
-from .db.database import get_db_session
 
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.algorithm
@@ -97,12 +96,12 @@ async def authenticate_user(
     db: Any,  # AsyncSession - using Any to avoid circular import
 ) -> UserDetail | None:
     """Authenticate a user with username and password.
-    
+
     Args:
         username: Username to authenticate
         password: Plain text password to verify
         db: Database session
-        
+
     Returns:
         UserDetail if authentication successful, None otherwise
     """
@@ -120,7 +119,7 @@ async def authenticate_user(
 
     # Query for the user's password hash
     identity_stmt = select(KPrincipalIdentity).where(
-        KPrincipalIdentity.principal_id == principal.id,  # type: ignore
+        KPrincipalIdentity.principal_id == principal.id,
         KPrincipalIdentity.password != None,  # type: ignore  # noqa: E711
     )
     identity_result = await db.execute(identity_stmt)

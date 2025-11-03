@@ -23,16 +23,16 @@ async def create_team(
     db: AsyncSession,
 ) -> KTeam:
     """Create a new team.
-    
+
     Args:
         team_data: Team creation data
         user_id: ID of the user creating the team
         scope: Scope for the team
         db: Database session
-        
+
     Returns:
         The created team model
-        
+
     Raises:
         TeamAlreadyExistsException: If a team with the same name already exists in the scope
     """
@@ -59,11 +59,11 @@ async def create_team(
 
 async def list_teams(scope: str, db: AsyncSession) -> list[KTeam]:
     """List all teams in the given scope.
-    
+
     Args:
         scope: Scope to filter teams by
         db: Database session
-        
+
     Returns:
         List of team models
     """
@@ -75,15 +75,15 @@ async def list_teams(scope: str, db: AsyncSession) -> list[KTeam]:
 
 async def get_team(team_id: UUID, scope: str, db: AsyncSession) -> KTeam:
     """Get a single team by ID.
-    
+
     Args:
         team_id: ID of the team to retrieve
         scope: Scope to filter by
         db: Database session
-        
+
     Returns:
         The team model
-        
+
     Raises:
         TeamNotFoundException: If the team is not found in the given scope
     """
@@ -105,17 +105,17 @@ async def update_team(
     db: AsyncSession,
 ) -> KTeam:
     """Update a team.
-    
+
     Args:
         team_id: ID of the team to update
         team_data: Team update data
         user_id: ID of the user performing the update
         scope: Scope to filter by
         db: Database session
-        
+
     Returns:
         The updated team model
-        
+
     Raises:
         TeamNotFoundException: If the team is not found
         TeamUpdateConflictException: If updating causes a name conflict
@@ -153,12 +153,12 @@ async def update_team(
 
 async def delete_team(team_id: UUID, scope: str, db: AsyncSession) -> None:
     """Delete a team.
-    
+
     Args:
         team_id: ID of the team to delete
         scope: Scope to filter by
         db: Database session
-        
+
     Raises:
         TeamNotFoundException: If the team is not found
     """
@@ -171,4 +171,3 @@ async def delete_team(team_id: UUID, scope: str, db: AsyncSession) -> None:
 
     await db.delete(team)
     await db.commit()
-

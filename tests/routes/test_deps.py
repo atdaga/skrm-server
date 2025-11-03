@@ -28,14 +28,16 @@ class TestGetCurrentToken:
         test_payload = {
             "sub": str(uuid4()),
             "scope": "test-scope",
-            "iss": "test-issuer"
+            "iss": "test-issuer",
         }
-        
-        with patch('app.logic.deps.get_token_data', new_callable=AsyncMock) as mock_get_token:
+
+        with patch(
+            "app.logic.deps.get_token_data", new_callable=AsyncMock
+        ) as mock_get_token:
             mock_get_token.return_value = TokenData(**test_payload)
-            
+
             result = await get_current_token("valid_token")
-            
+
             assert isinstance(result, TokenData)
             assert result.sub == test_payload["sub"]
             assert result.scope == test_payload["scope"]
@@ -46,10 +48,14 @@ class TestGetCurrentToken:
     async def test_get_current_token_invalid_token(self):
         """Test that invalid token raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
-        
-        with patch('app.logic.deps.get_token_data', new_callable=AsyncMock) as mock_get_token:
-            mock_get_token.side_effect = InvalidTokenException(reason="Token verification failed")
-            
+
+        with patch(
+            "app.logic.deps.get_token_data", new_callable=AsyncMock
+        ) as mock_get_token:
+            mock_get_token.side_effect = InvalidTokenException(
+                reason="Token verification failed"
+            )
+
             with pytest.raises(UnauthorizedException):
                 await get_current_token("invalid_token")
 
@@ -57,11 +63,15 @@ class TestGetCurrentToken:
     async def test_get_current_token_missing_claims(self):
         """Test that token missing required claims raises error."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
-        
-        with patch('app.logic.deps.get_token_data', new_callable=AsyncMock) as mock_get_token:
+
+        with patch(
+            "app.logic.deps.get_token_data", new_callable=AsyncMock
+        ) as mock_get_token:
             # Logic layer would detect missing claims and raise exception
-            mock_get_token.side_effect = InvalidTokenException(reason="Missing required claims")
-            
+            mock_get_token.side_effect = InvalidTokenException(
+                reason="Missing required claims"
+            )
+
             with pytest.raises(UnauthorizedException):
                 await get_current_token("incomplete_token")
 
@@ -86,19 +96,23 @@ class TestGetCurrentUser:
         )
 
     @pytest.mark.asyncio
-    async def test_get_current_user_success(self, async_session: AsyncSession, mock_principal: KPrincipal):
+    async def test_get_current_user_success(
+        self, async_session: AsyncSession, mock_principal: KPrincipal
+    ):
         """Test successful user retrieval from valid token."""
         async_session.add(mock_principal)
         await async_session.commit()
         await async_session.refresh(mock_principal)
-        
+
         expected_user = UserDetail.model_validate(mock_principal)
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
             mock_get_user.return_value = expected_user
-            
+
             result = await get_current_user("valid_token", async_session)
-            
+
             assert isinstance(result, UserDetail)
             assert result.id == mock_principal.id
             assert result.username == "testuser"
@@ -109,10 +123,14 @@ class TestGetCurrentUser:
     async def test_get_current_user_invalid_token(self, async_session: AsyncSession):
         """Test that invalid token raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
-            mock_get_user.side_effect = InvalidTokenException(reason="Token verification failed")
-            
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
+            mock_get_user.side_effect = InvalidTokenException(
+                reason="Token verification failed"
+            )
+
             with pytest.raises(UnauthorizedException):
                 await get_current_user("invalid_token", async_session)
 
@@ -120,42 +138,50 @@ class TestGetCurrentUser:
     async def test_get_current_user_invalid_uuid(self, async_session: AsyncSession):
         """Test that invalid UUID in token raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import InvalidUserIdException
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
-            mock_get_user.side_effect = InvalidUserIdException(user_id_str="not-a-valid-uuid")
-            
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
+            mock_get_user.side_effect = InvalidUserIdException(
+                user_id_str="not-a-valid-uuid"
+            )
+
             with pytest.raises(UnauthorizedException) as exc_info:
                 await get_current_user("token", async_session)
-            
+
             assert "Invalid user ID" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_current_user_not_found(self, async_session: AsyncSession):
         """Test that non-existent user raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import UserNotFoundException
-        
+
         non_existent_id = uuid4()
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
             mock_get_user.side_effect = UserNotFoundException(user_id=non_existent_id)
-            
+
             with pytest.raises(UnauthorizedException) as exc_info:
                 await get_current_user("token", async_session)
-            
+
             assert "User" in str(exc_info.value) and "not found" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_current_user_empty_sub(self, async_session: AsyncSession):
         """Test that empty sub claim raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import InvalidUserIdException
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
             # Empty string is invalid UUID
             mock_get_user.side_effect = InvalidUserIdException(user_id_str="")
-            
+
             with pytest.raises(UnauthorizedException) as exc_info:
                 await get_current_user("token", async_session)
-            
+
             # Empty string is invalid UUID, so we get "Invalid user ID" error
             assert "Invalid user ID" in str(exc_info.value)
 
@@ -171,67 +197,91 @@ class TestGetOptionalUser:
         return request
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_no_auth_header(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_no_auth_header(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that missing auth header returns None."""
         result = await get_optional_user(mock_request, async_session)
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_invalid_format(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_invalid_format(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that invalid auth header format returns None."""
         mock_request.headers = {"Authorization": "InvalidFormat"}
-        
+
         result = await get_optional_user(mock_request, async_session)
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_not_bearer(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_not_bearer(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that non-Bearer token type returns None."""
         mock_request.headers = {"Authorization": "Basic sometoken"}
-        
+
         result = await get_optional_user(mock_request, async_session)
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_empty_token(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_empty_token(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that empty token returns None."""
         mock_request.headers = {"Authorization": "Bearer "}
-        
+
         result = await get_optional_user(mock_request, async_session)
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_invalid_token_returns_none(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_invalid_token_returns_none(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that invalid token returns None (doesn't raise)."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
-        
+
         mock_request.headers = {"Authorization": "Bearer invalid_token"}
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
-            mock_get_user.side_effect = InvalidTokenException(reason="Token verification failed")
-            
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
+            mock_get_user.side_effect = InvalidTokenException(
+                reason="Token verification failed"
+            )
+
             result = await get_optional_user(mock_request, async_session)
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_handles_401_exception(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_handles_401_exception(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that 401 exceptions are caught and return None."""
         mock_request.headers = {"Authorization": "Bearer some_token"}
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
-            mock_get_user.side_effect = HTTPException(status_code=401, detail="Unauthorized")
-            
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
+            mock_get_user.side_effect = HTTPException(
+                status_code=401, detail="Unauthorized"
+            )
+
             result = await get_optional_user(mock_request, async_session)
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_handles_generic_exception(self, mock_request, async_session: AsyncSession):
+    async def test_get_optional_user_handles_generic_exception(
+        self, mock_request, async_session: AsyncSession
+    ):
         """Test that generic exceptions are caught and return None."""
         mock_request.headers = {"Authorization": "Bearer some_token"}
-        
-        with patch('app.logic.deps.get_user_from_token', new_callable=AsyncMock) as mock_get_user:
+
+        with patch(
+            "app.logic.deps.get_user_from_token", new_callable=AsyncMock
+        ) as mock_get_user:
             mock_get_user.side_effect = Exception("Some error")
-            
+
             result = await get_optional_user(mock_request, async_session)
             assert result is None
 
@@ -303,16 +353,18 @@ class TestGetCurrentSuperuser:
     async def test_get_current_superuser_success(self, superuser: UserDetail):
         """Test that superuser is returned for user with superuser flag."""
         result = await get_current_superuser(superuser)
-        
+
         assert result == superuser
         assert result.meta.get("is_superuser") is True
 
     @pytest.mark.asyncio
-    async def test_get_current_superuser_regular_user_denied(self, regular_user: UserDetail):
+    async def test_get_current_superuser_regular_user_denied(
+        self, regular_user: UserDetail
+    ):
         """Test that regular user is denied superuser access."""
         with pytest.raises(HTTPException) as exc_info:
             await get_current_superuser(regular_user)
-        
+
         assert exc_info.value.status_code == 403
         assert "Insufficient privileges" in exc_info.value.detail
 
@@ -345,10 +397,10 @@ class TestGetCurrentSuperuser:
             last_modified=now,
             last_modified_by=creator_id,
         )
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_superuser(user)
-        
+
         assert exc_info.value.status_code == 403
 
     @pytest.mark.asyncio
@@ -380,9 +432,8 @@ class TestGetCurrentSuperuser:
             last_modified=now,
             last_modified_by=creator_id,
         )
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_superuser(user)
-        
-        assert exc_info.value.status_code == 403
 
+        assert exc_info.value.status_code == 403

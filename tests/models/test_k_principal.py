@@ -1,9 +1,10 @@
 """Unit tests for KPrincipal model."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -14,7 +15,9 @@ class TestKPrincipalModel:
     """Test suite for KPrincipal model."""
 
     @pytest.mark.asyncio
-    async def test_create_principal_with_required_fields(self, session: AsyncSession, creator_id: UUID):
+    async def test_create_principal_with_required_fields(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating a principal with only required fields."""
         principal = KPrincipal(
             username="testuser",
@@ -39,7 +42,9 @@ class TestKPrincipalModel:
         assert principal.display_name == "Test User"
 
     @pytest.mark.asyncio
-    async def test_principal_default_values(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_default_values(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that default values are set correctly."""
         principal = KPrincipal(
             username="testuser",
@@ -72,7 +77,9 @@ class TestKPrincipalModel:
         assert isinstance(principal.last_modified, datetime)
 
     @pytest.mark.asyncio
-    async def test_principal_with_all_fields(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_with_all_fields(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating a principal with all fields populated."""
         principal = KPrincipal(
             scope="tenant1",
@@ -119,7 +126,9 @@ class TestKPrincipalModel:
         assert principal.meta == {"department": "Engineering", "employee_id": "12345"}
 
     @pytest.mark.asyncio
-    async def test_principal_unique_constraint(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_unique_constraint(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that scope+username combination must be unique."""
         principal1 = KPrincipal(
             scope="global",
@@ -148,11 +157,13 @@ class TestKPrincipalModel:
         )
 
         session.add(principal2)
-        with pytest.raises(Exception):  # Should raise IntegrityError
+        with pytest.raises(IntegrityError):
             await session.commit()
 
     @pytest.mark.asyncio
-    async def test_principal_same_username_different_scope(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_same_username_different_scope(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that same username can exist in different scopes."""
         principal1 = KPrincipal(
             scope="tenant1",
@@ -265,7 +276,9 @@ class TestKPrincipalModel:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_principal_meta_json_field(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_meta_json_field(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that meta field correctly stores and retrieves JSON data."""
         meta_data = {
             "custom_field": "value",
@@ -294,7 +307,9 @@ class TestKPrincipalModel:
         assert principal.meta["array"] == [1, 2, 3]
 
     @pytest.mark.asyncio
-    async def test_principal_disabled_flag(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_disabled_flag(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that principals can be disabled."""
         principal = KPrincipal(
             username="disabletest",
@@ -314,7 +329,9 @@ class TestKPrincipalModel:
         assert principal.enabled is False
 
     @pytest.mark.asyncio
-    async def test_principal_non_human_flag(self, session: AsyncSession, creator_id: UUID):
+    async def test_principal_non_human_flag(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating a non-human principal (service account)."""
         principal = KPrincipal(
             username="service.bot",

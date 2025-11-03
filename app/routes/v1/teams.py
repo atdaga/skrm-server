@@ -28,7 +28,7 @@ async def create_team(
 ) -> TeamDetail:
     """Create a new team."""
     user_id = UUID(token_data.sub)
-    
+
     try:
         team = await teams_logic.create_team(
             team_data=team_data,
@@ -84,7 +84,7 @@ async def update_team(
 ) -> TeamDetail:
     """Update a team."""
     user_id = UUID(token_data.sub)
-    
+
     try:
         team = await teams_logic.update_team(
             team_id=team_id,

@@ -1,9 +1,10 @@
 """Unit tests for KTeam model."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -14,7 +15,9 @@ class TestKTeamModel:
     """Test suite for KTeam model."""
 
     @pytest.mark.asyncio
-    async def test_create_team_with_required_fields(self, session: AsyncSession, creator_id: UUID):
+    async def test_create_team_with_required_fields(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating a team with only required fields."""
         team = KTeam(
             name="Engineering",
@@ -49,7 +52,9 @@ class TestKTeamModel:
         assert isinstance(team.last_modified, datetime)
 
     @pytest.mark.asyncio
-    async def test_team_with_custom_scope(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_with_custom_scope(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test creating a team with a custom scope."""
         team = KTeam(
             scope="tenant1",
@@ -91,7 +96,9 @@ class TestKTeamModel:
         assert team.meta["budget"] == 1000000
 
     @pytest.mark.asyncio
-    async def test_team_unique_constraint(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_unique_constraint(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that scope+name combination must be unique."""
         team1 = KTeam(
             scope="global",
@@ -112,11 +119,13 @@ class TestKTeamModel:
         )
 
         session.add(team2)
-        with pytest.raises(Exception):  # Should raise IntegrityError
+        with pytest.raises(IntegrityError):
             await session.commit()
 
     @pytest.mark.asyncio
-    async def test_team_same_name_different_scope(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_same_name_different_scope(
+        self, session: AsyncSession, creator_id: UUID
+    ):
         """Test that same team name can exist in different scopes."""
         team1 = KTeam(
             scope="tenant1",

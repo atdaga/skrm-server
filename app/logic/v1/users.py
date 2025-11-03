@@ -18,21 +18,20 @@ from ...schemas.user import UserDetail
 
 async def get_current_user_info(user: UserDetail, db: AsyncSession) -> UserDetail:
     """Get current user information.
-    
+
     Currently just returns the provided user, but included for consistency
     and to provide a hook point for future enhancements like:
     - Loading additional user relationships
     - Computing derived fields
     - Logging user access
     - etc.
-    
+
     Args:
         user: The authenticated user from the token
         db: Database session (for future use)
-        
+
     Returns:
         User detail model
     """
     # Future: Could load additional relationships, compute derived fields, etc.
     return user
-

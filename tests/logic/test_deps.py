@@ -32,14 +32,16 @@ class TestGetTokenData:
         test_payload = {
             "sub": str(uuid4()),
             "scope": "test-scope",
-            "iss": "test-issuer"
+            "iss": "test-issuer",
         }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             result = await get_token_data("valid_token")
-            
+
             assert isinstance(result, TokenData)
             assert result.sub == test_payload["sub"]
             assert result.scope == test_payload["scope"]
@@ -49,20 +51,26 @@ class TestGetTokenData:
     @pytest.mark.asyncio
     async def test_get_token_data_invalid_token(self):
         """Test that invalid token raises InvalidTokenException."""
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = None
-            
+
             with pytest.raises(InvalidTokenException) as exc_info:
                 await get_token_data("invalid_token")
-            
+
             assert "Token verification failed" in exc_info.value.message
 
     @pytest.mark.asyncio
     async def test_get_token_data_expired_token(self):
         """Test that expired token raises InvalidTokenException."""
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
-            mock_verify.return_value = None  # verify_token returns None for expired tokens
-            
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
+            mock_verify.return_value = (
+                None  # verify_token returns None for expired tokens
+            )
+
             with pytest.raises(InvalidTokenException):
                 await get_token_data("expired_token")
 
@@ -87,14 +95,16 @@ class TestGetUserById:
         )
 
     @pytest.mark.asyncio
-    async def test_get_user_by_id_success(self, async_session: AsyncSession, mock_principal: KPrincipal):
+    async def test_get_user_by_id_success(
+        self, async_session: AsyncSession, mock_principal: KPrincipal
+    ):
         """Test successful user retrieval by ID."""
         async_session.add(mock_principal)
         await async_session.commit()
         await async_session.refresh(mock_principal)
-        
+
         result = await get_user_by_id(mock_principal.id, async_session)
-        
+
         assert isinstance(result, UserDetail)
         assert result.id == mock_principal.id
         assert result.username == mock_principal.username
@@ -104,10 +114,10 @@ class TestGetUserById:
     async def test_get_user_by_id_not_found(self, async_session: AsyncSession):
         """Test that non-existent user raises UserNotFoundException."""
         non_existent_id = uuid4()
-        
+
         with pytest.raises(UserNotFoundException) as exc_info:
             await get_user_by_id(non_existent_id, async_session)
-        
+
         assert exc_info.value.user_id == non_existent_id
         assert str(non_existent_id) in exc_info.value.message
 
@@ -132,23 +142,23 @@ class TestGetUserFromToken:
         )
 
     @pytest.mark.asyncio
-    async def test_get_user_from_token_success(self, async_session: AsyncSession, mock_principal: KPrincipal):
+    async def test_get_user_from_token_success(
+        self, async_session: AsyncSession, mock_principal: KPrincipal
+    ):
         """Test successful user retrieval from valid token."""
         async_session.add(mock_principal)
         await async_session.commit()
         await async_session.refresh(mock_principal)
-        
-        test_payload = {
-            "sub": str(mock_principal.id),
-            "scope": "global",
-            "iss": "test"
-        }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+
+        test_payload = {"sub": str(mock_principal.id), "scope": "global", "iss": "test"}
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             result = await get_user_from_token("valid_token", async_session)
-            
+
             assert isinstance(result, UserDetail)
             assert result.id == mock_principal.id
             assert result.username == mock_principal.username
@@ -156,72 +166,68 @@ class TestGetUserFromToken:
     @pytest.mark.asyncio
     async def test_get_user_from_token_invalid_token(self, async_session: AsyncSession):
         """Test that invalid token raises InvalidTokenException."""
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = None
-            
+
             with pytest.raises(InvalidTokenException):
                 await get_user_from_token("invalid_token", async_session)
 
     @pytest.mark.asyncio
     async def test_get_user_from_token_invalid_uuid(self, async_session: AsyncSession):
         """Test that invalid UUID raises InvalidUserIdException."""
-        test_payload = {
-            "sub": "not-a-valid-uuid",
-            "scope": "global",
-            "iss": "test"
-        }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        test_payload = {"sub": "not-a-valid-uuid", "scope": "global", "iss": "test"}
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             with pytest.raises(InvalidUserIdException) as exc_info:
                 await get_user_from_token("token", async_session)
-            
+
             assert exc_info.value.user_id_str == "not-a-valid-uuid"
 
     @pytest.mark.asyncio
     async def test_get_user_from_token_empty_sub(self, async_session: AsyncSession):
         """Test that empty sub claim raises InvalidUserIdException."""
-        test_payload = {
-            "sub": "",
-            "scope": "global",
-            "iss": "test"
-        }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        test_payload = {"sub": "", "scope": "global", "iss": "test"}
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             with pytest.raises(InvalidUserIdException):
                 await get_user_from_token("token", async_session)
 
     @pytest.mark.asyncio
     async def test_get_user_from_token_none_sub(self, async_session: AsyncSession):
         """Test that None sub claim raises InvalidUserIdException."""
-        test_payload = {
-            "sub": None,
-            "scope": "global",
-            "iss": "test"
-        }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        test_payload = {"sub": None, "scope": "global", "iss": "test"}
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             with pytest.raises(InvalidUserIdException):
                 await get_user_from_token("token", async_session)
 
     @pytest.mark.asyncio
-    async def test_get_user_from_token_user_not_found(self, async_session: AsyncSession):
+    async def test_get_user_from_token_user_not_found(
+        self, async_session: AsyncSession
+    ):
         """Test that non-existent user raises UserNotFoundException."""
         non_existent_id = uuid4()
-        test_payload = {
-            "sub": str(non_existent_id),
-            "scope": "global",
-            "iss": "test"
-        }
-        
-        with patch("app.logic.deps.verify_token", new_callable=AsyncMock) as mock_verify:
+        test_payload = {"sub": str(non_existent_id), "scope": "global", "iss": "test"}
+
+        with patch(
+            "app.logic.deps.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
             mock_verify.return_value = test_payload
-            
+
             with pytest.raises(UserNotFoundException):
                 await get_user_from_token("token", async_session)
 
@@ -298,7 +304,7 @@ class TestCheckSuperuserPrivileges:
         """Test that regular user fails privilege check."""
         with pytest.raises(InsufficientPrivilegesException) as exc_info:
             check_superuser_privileges(regular_user)
-        
+
         assert exc_info.value.required_privilege == "superuser"
         assert exc_info.value.user_id == regular_user.id
 
@@ -330,7 +336,7 @@ class TestCheckSuperuserPrivileges:
             last_modified=now,
             last_modified_by=creator_id,
         )
-        
+
         with pytest.raises(InsufficientPrivilegesException):
             check_superuser_privileges(user)
 
@@ -362,7 +368,7 @@ class TestCheckSuperuserPrivileges:
             last_modified=now,
             last_modified_by=creator_id,
         )
-        
+
         with pytest.raises(InsufficientPrivilegesException):
             check_superuser_privileges(user)
 
@@ -394,7 +400,6 @@ class TestCheckSuperuserPrivileges:
             last_modified=now,
             last_modified_by=creator_id,
         )
-        
+
         with pytest.raises(InsufficientPrivilegesException):
             check_superuser_privileges(user)
-

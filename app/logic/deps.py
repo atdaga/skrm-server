@@ -18,13 +18,13 @@ from ..schemas.user import TokenData, UserDetail
 
 async def get_token_data(token: str) -> TokenData:
     """Extract and validate token data.
-    
+
     Args:
         token: JWT token string
-        
+
     Returns:
         Token data with sub, scope, and iss
-        
+
     Raises:
         InvalidTokenException: If token is invalid or expired
     """
@@ -39,14 +39,14 @@ async def get_token_data(token: str) -> TokenData:
 
 async def get_user_by_id(user_id: UUID, db: AsyncSession) -> UserDetail:
     """Get a user by their ID.
-    
+
     Args:
         user_id: UUID of the user
         db: Database session
-        
+
     Returns:
         User detail model
-        
+
     Raises:
         UserNotFoundException: If user is not found in database
     """
@@ -62,14 +62,14 @@ async def get_user_by_id(user_id: UUID, db: AsyncSession) -> UserDetail:
 
 async def get_user_from_token(token: str, db: AsyncSession) -> UserDetail:
     """Get user from a JWT token.
-    
+
     Args:
         token: JWT token string
         db: Database session
-        
+
     Returns:
         User detail model
-        
+
     Raises:
         InvalidTokenException: If token is invalid
         InvalidUserIdException: If user ID in token is malformed
@@ -90,10 +90,10 @@ async def get_user_from_token(token: str, db: AsyncSession) -> UserDetail:
 
 def check_superuser_privileges(user: UserDetail) -> None:
     """Check if user has superuser privileges.
-    
+
     Args:
         user: User to check privileges for
-        
+
     Raises:
         InsufficientPrivilegesException: If user is not a superuser
     """
@@ -103,4 +103,3 @@ def check_superuser_privileges(user: UserDetail) -> None:
             required_privilege="superuser",
             user_id=user.id,
         )
-

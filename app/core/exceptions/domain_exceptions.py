@@ -11,9 +11,11 @@ from uuid import UUID
 class DomainException(Exception):
     """Base class for all domain exceptions."""
 
-    def __init__(self, message: str, entity_type: str | None = None, entity_id: Any | None = None):
+    def __init__(
+        self, message: str, entity_type: str | None = None, entity_id: Any | None = None
+    ):
         """Initialize domain exception.
-        
+
         Args:
             message: Human-readable error message
             entity_type: Type of entity involved (e.g., 'team', 'user')
@@ -72,6 +74,7 @@ class UserNotFoundException(DomainException):
     """Raised when a user cannot be found."""
 
     def __init__(self, user_id: UUID | None = None, username: str | None = None):
+        entity_id: UUID | str | None
         if user_id:
             message = f"User with id '{user_id}' not found"
             entity_id = user_id
@@ -112,7 +115,9 @@ class InvalidCredentialsException(DomainException):
 class InsufficientPrivilegesException(DomainException):
     """Raised when a user lacks required privileges for an operation."""
 
-    def __init__(self, required_privilege: str | None = None, user_id: UUID | None = None):
+    def __init__(
+        self, required_privilege: str | None = None, user_id: UUID | None = None
+    ):
         message = "Insufficient privileges"
         if required_privilege:
             message += f": requires '{required_privilege}'"
@@ -135,6 +140,7 @@ class InvalidTokenException(DomainException):
 class TokenNotFoundException(DomainException):
     """Raised when no token is provided."""
 
-    def __init__(self):
-        super().__init__("Authentication token not provided", entity_type="authorization")
-
+    def __init__(self) -> None:
+        super().__init__(
+            "Authentication token not provided", entity_type="authorization"
+        )

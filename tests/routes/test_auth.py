@@ -24,8 +24,7 @@ def app() -> FastAPI:
 async def client(app: FastAPI) -> AsyncClient:
     """Create an async HTTP client for testing."""
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
 
@@ -68,74 +67,79 @@ class TestLoginEndpoint:
     async def test_login_success(self, client: AsyncClient, mock_user: UserDetail):
         """Test successful login with valid credentials."""
         from app.schemas.user import Token
-        
-        with patch('app.logic.auth.perform_login', new_callable=AsyncMock) as mock_login:
-            mock_login.return_value = Token(access_token="test_access_token_12345", token_type="bearer")
-            
-            response = await client.post(
-                "/auth/login",
-                data={
-                    "username": "testuser",
-                    "password": "testpassword"
-                }
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_access_token_12345", token_type="bearer"
             )
-            
+
+            response = await client.post(
+                "/auth/login", data={"username": "testuser", "password": "testpassword"}
+            )
+
             assert response.status_code == 200
             data = response.json()
             assert data["access_token"] == "test_access_token_12345"
             assert data["token_type"] == "bearer"
-            
+
             # Verify perform_login was called with correct params
             mock_login.assert_called_once_with(
                 username="testuser",
                 password="testpassword",
                 db=ANY,  # Database session from dependency injection
-                scopes=[]
+                scopes=[],
             )
 
     @pytest.mark.asyncio
-    async def test_login_with_custom_scopes(self, client: AsyncClient, mock_user: UserDetail):
+    async def test_login_with_custom_scopes(
+        self, client: AsyncClient, mock_user: UserDetail
+    ):
         """Test login with custom scopes."""
         from app.schemas.user import Token
-        
-        with patch('app.logic.auth.perform_login', new_callable=AsyncMock) as mock_login:
-            mock_login.return_value = Token(access_token="test_token", token_type="bearer")
-            
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_token", token_type="bearer"
+            )
+
             response = await client.post(
                 "/auth/login",
                 data={
                     "username": "testuser",
                     "password": "testpassword",
-                    "scope": "read write"
-                }
+                    "scope": "read write",
+                },
             )
-            
+
             assert response.status_code == 200
-            
+
             # Verify perform_login was called with custom scopes
             mock_login.assert_called_once_with(
                 username="testuser",
                 password="testpassword",
                 db=ANY,  # Database session from dependency injection
-                scopes=["read", "write"]
+                scopes=["read", "write"],
             )
 
     @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, client: AsyncClient):
         """Test login with invalid credentials returns 401."""
         from app.core.exceptions.domain_exceptions import InvalidCredentialsException
-        
-        with patch('app.logic.auth.perform_login', new_callable=AsyncMock) as mock_login:
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
             mock_login.side_effect = InvalidCredentialsException(username="wronguser")
-            
+
             response = await client.post(
                 "/auth/login",
-                data={
-                    "username": "wronguser",
-                    "password": "wrongpassword"
-                }
+                data={"username": "wronguser", "password": "wrongpassword"},
             )
-            
+
             assert response.status_code == 401
             data = response.json()
             assert "Invalid username or password" in data["detail"]
@@ -144,78 +148,67 @@ class TestLoginEndpoint:
     @pytest.mark.asyncio
     async def test_login_missing_username(self, client: AsyncClient):
         """Test login without username returns validation error."""
-        response = await client.post(
-            "/auth/login",
-            data={
-                "password": "testpassword"
-            }
-        )
-        
+        response = await client.post("/auth/login", data={"password": "testpassword"})
+
         assert response.status_code == 422  # Validation error
 
     @pytest.mark.asyncio
     async def test_login_missing_password(self, client: AsyncClient):
         """Test login without password returns validation error."""
-        response = await client.post(
-            "/auth/login",
-            data={
-                "username": "testuser"
-            }
-        )
-        
+        response = await client.post("/auth/login", data={"username": "testuser"})
+
         assert response.status_code == 422  # Validation error
 
     @pytest.mark.asyncio
     async def test_login_empty_credentials(self, client: AsyncClient):
         """Test login with empty credentials."""
         response = await client.post(
-            "/auth/login",
-            data={
-                "username": "",
-                "password": ""
-            }
+            "/auth/login", data={"username": "", "password": ""}
         )
-        
+
         # Should still call authentication (which will fail)
         assert response.status_code in [401, 422]
 
     @pytest.mark.asyncio
-    async def test_login_token_includes_issuer(self, client: AsyncClient, mock_user: UserDetail):
+    async def test_login_token_includes_issuer(
+        self, client: AsyncClient, mock_user: UserDetail
+    ):
         """Test that generated token includes issuer claim."""
         from app.schemas.user import Token
-        
-        with patch('app.logic.auth.perform_login', new_callable=AsyncMock) as mock_login:
-            mock_login.return_value = Token(access_token="test_token", token_type="bearer")
-            
-            response = await client.post(
-                "/auth/login",
-                data={
-                    "username": "testuser",
-                    "password": "testpassword"
-                }
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_token", token_type="bearer"
             )
-            
+
+            response = await client.post(
+                "/auth/login", data={"username": "testuser", "password": "testpassword"}
+            )
+
             assert response.status_code == 200
             # The issuer is handled in the logic layer (perform_login)
             # This test now just verifies the endpoint works correctly
 
     @pytest.mark.asyncio
-    async def test_login_returns_bearer_token_type(self, client: AsyncClient, mock_user: UserDetail):
+    async def test_login_returns_bearer_token_type(
+        self, client: AsyncClient, mock_user: UserDetail
+    ):
         """Test that login always returns 'bearer' token type."""
         from app.schemas.user import Token
-        
-        with patch('app.logic.auth.perform_login', new_callable=AsyncMock) as mock_login:
-            mock_login.return_value = Token(access_token="test_token", token_type="bearer")
-            
-            response = await client.post(
-                "/auth/login",
-                data={
-                    "username": "testuser",
-                    "password": "testpassword"
-                }
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_token", token_type="bearer"
             )
-            
+
+            response = await client.post(
+                "/auth/login", data={"username": "testuser", "password": "testpassword"}
+            )
+
             assert response.status_code == 200
             data = response.json()
             assert data["token_type"] == "bearer"
-

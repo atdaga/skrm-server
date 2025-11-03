@@ -45,24 +45,28 @@ class TestPerformLogin:
         )
 
     @pytest.mark.asyncio
-    async def test_perform_login_success_default_scope(self, mock_user: UserDetail, async_session):
+    async def test_perform_login_success_default_scope(
+        self, mock_user: UserDetail, async_session
+    ):
         """Test successful login with default scope."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth, \
-             patch("app.logic.auth.create_access_token", new_callable=AsyncMock) as mock_token:
-            
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth, patch(
+            "app.logic.auth.create_access_token", new_callable=AsyncMock
+        ) as mock_token:
             mock_auth.return_value = mock_user
             mock_token.return_value = "test_access_token_12345"
-            
+
             result = await perform_login("testuser", "password123", async_session)
-            
+
             # Verify result
             assert isinstance(result, Token)
             assert result.access_token == "test_access_token_12345"
             assert result.token_type == "bearer"
-            
+
             # Verify authenticate_user was called correctly
             mock_auth.assert_called_once_with("testuser", "password123", async_session)
-            
+
             # Verify create_access_token was called with correct data
             mock_token.assert_called_once()
             call_kwargs = mock_token.call_args[1]
@@ -71,31 +75,41 @@ class TestPerformLogin:
             assert call_kwargs["data"]["iss"] == "https://auth.baseklass.io"
 
     @pytest.mark.asyncio
-    async def test_perform_login_success_custom_scopes(self, mock_user: UserDetail, async_session):
+    async def test_perform_login_success_custom_scopes(
+        self, mock_user: UserDetail, async_session
+    ):
         """Test successful login with custom scopes."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth, \
-             patch("app.logic.auth.create_access_token", new_callable=AsyncMock) as mock_token:
-            
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth, patch(
+            "app.logic.auth.create_access_token", new_callable=AsyncMock
+        ) as mock_token:
             mock_auth.return_value = mock_user
             mock_token.return_value = "test_token"
-            
-            result = await perform_login("testuser", "password123", async_session, scopes=["read", "write"])
-            
+
+            await perform_login(
+                "testuser", "password123", async_session, scopes=["read", "write"]
+            )
+
             # Verify token was created with custom scopes
             call_kwargs = mock_token.call_args[1]
             assert call_kwargs["data"]["scope"] == "read write"
 
     @pytest.mark.asyncio
-    async def test_perform_login_success_empty_scopes_list(self, mock_user: UserDetail, async_session):
+    async def test_perform_login_success_empty_scopes_list(
+        self, mock_user: UserDetail, async_session
+    ):
         """Test login with empty scopes list defaults to 'global'."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth, \
-             patch("app.logic.auth.create_access_token", new_callable=AsyncMock) as mock_token:
-            
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth, patch(
+            "app.logic.auth.create_access_token", new_callable=AsyncMock
+        ) as mock_token:
             mock_auth.return_value = mock_user
             mock_token.return_value = "test_token"
-            
-            result = await perform_login("testuser", "password123", async_session, scopes=[])
-            
+
+            await perform_login("testuser", "password123", async_session, scopes=[])
+
             # Empty list should result in "global" scope
             call_kwargs = mock_token.call_args[1]
             assert call_kwargs["data"]["scope"] == "global"
@@ -103,12 +117,14 @@ class TestPerformLogin:
     @pytest.mark.asyncio
     async def test_perform_login_invalid_credentials(self, async_session):
         """Test login with invalid credentials raises exception."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth:
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth:
             mock_auth.return_value = None  # Authentication failed
-            
+
             with pytest.raises(InvalidCredentialsException) as exc_info:
                 await perform_login("wronguser", "wrongpassword", async_session)
-            
+
             # Verify exception details
             assert exc_info.value.username == "wronguser"
             assert "Invalid username or password" in exc_info.value.message
@@ -116,39 +132,55 @@ class TestPerformLogin:
     @pytest.mark.asyncio
     async def test_perform_login_invalid_credentials_with_scopes(self, async_session):
         """Test login fails even when scopes are provided if credentials are wrong."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth:
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth:
             mock_auth.return_value = None
-            
+
             with pytest.raises(InvalidCredentialsException):
-                await perform_login("wronguser", "wrongpassword", async_session, scopes=["admin"])
+                await perform_login(
+                    "wronguser", "wrongpassword", async_session, scopes=["admin"]
+                )
 
     @pytest.mark.asyncio
-    async def test_perform_login_token_includes_issuer(self, mock_user: UserDetail, async_session):
+    async def test_perform_login_token_includes_issuer(
+        self, mock_user: UserDetail, async_session
+    ):
         """Test that generated token always includes issuer."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth, \
-             patch("app.logic.auth.create_access_token", new_callable=AsyncMock) as mock_token:
-            
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth, patch(
+            "app.logic.auth.create_access_token", new_callable=AsyncMock
+        ) as mock_token:
             mock_auth.return_value = mock_user
             mock_token.return_value = "test_token"
-            
+
             await perform_login("testuser", "password123", async_session)
-            
+
             # Verify issuer is included
             call_kwargs = mock_token.call_args[1]
             assert "iss" in call_kwargs["data"]
             assert call_kwargs["data"]["iss"] == "https://auth.baseklass.io"
 
     @pytest.mark.asyncio
-    async def test_perform_login_multiple_scopes(self, mock_user: UserDetail, async_session):
+    async def test_perform_login_multiple_scopes(
+        self, mock_user: UserDetail, async_session
+    ):
         """Test login with multiple scopes joins them correctly."""
-        with patch("app.logic.auth.authenticate_user", new_callable=AsyncMock) as mock_auth, \
-             patch("app.logic.auth.create_access_token", new_callable=AsyncMock) as mock_token:
-            
+        with patch(
+            "app.logic.auth.authenticate_user", new_callable=AsyncMock
+        ) as mock_auth, patch(
+            "app.logic.auth.create_access_token", new_callable=AsyncMock
+        ) as mock_token:
             mock_auth.return_value = mock_user
             mock_token.return_value = "test_token"
-            
-            await perform_login("testuser", "password123", async_session, scopes=["read", "write", "admin"])
-            
+
+            await perform_login(
+                "testuser",
+                "password123",
+                async_session,
+                scopes=["read", "write", "admin"],
+            )
+
             call_kwargs = mock_token.call_args[1]
             assert call_kwargs["data"]["scope"] == "read write admin"
-

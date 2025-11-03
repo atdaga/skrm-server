@@ -6,7 +6,6 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.routes.deps import get_current_user
 from app.routes.v1.users import router
@@ -47,13 +46,13 @@ def app_with_overrides(mock_user_detail: UserDetail) -> FastAPI:
     """Create a FastAPI app with dependency overrides for testing."""
     app = FastAPI()
     app.include_router(router)
-    
+
     # Override dependencies
     async def override_get_current_user():
         return mock_user_detail
-    
+
     app.dependency_overrides[get_current_user] = override_get_current_user
-    
+
     return app
 
 
@@ -61,8 +60,7 @@ def app_with_overrides(mock_user_detail: UserDetail) -> FastAPI:
 async def client(app_with_overrides: FastAPI) -> AsyncClient:
     """Create an async HTTP client for testing."""
     async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides),
-        base_url="http://test"
+        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
     ) as ac:
         yield ac
 
@@ -78,10 +76,10 @@ class TestGetCurrentUserInfo:
     ):
         """Test successfully getting current user information."""
         response = await client.get("/users/me")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify all expected fields are present and correct
         assert data["id"] == str(mock_user_detail.id)
         assert data["scope"] == mock_user_detail.scope
@@ -114,21 +112,35 @@ class TestGetCurrentUserInfo:
     ):
         """Test that response conforms to UserDetail schema."""
         response = await client.get("/users/me")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Validate that all required UserDetail fields are present
         required_fields = [
-            "id", "scope", "username", "primary_email", "primary_email_verified",
-            "primary_phone_verified", "enabled", "time_zone", "first_name",
-            "last_name", "display_name", "default_locale", "system_role",
-            "meta", "created", "created_by", "last_modified", "last_modified_by"
+            "id",
+            "scope",
+            "username",
+            "primary_email",
+            "primary_email_verified",
+            "primary_phone_verified",
+            "enabled",
+            "time_zone",
+            "first_name",
+            "last_name",
+            "display_name",
+            "default_locale",
+            "system_role",
+            "meta",
+            "created",
+            "created_by",
+            "last_modified",
+            "last_modified_by",
         ]
-        
+
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
-        
+
         # Validate UUID fields
         assert UUID(data["id"])
         assert UUID(data["created_by"])
@@ -162,25 +174,24 @@ class TestGetCurrentUserInfo:
             last_modified=datetime.now(),
             last_modified_by=uuid4(),
         )
-        
+
         # Create app with minimal user override
         app = FastAPI()
         app.include_router(router)
-        
+
         async def override_get_current_user():
             return minimal_user
-        
+
         app.dependency_overrides[get_current_user] = override_get_current_user
-        
+
         async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.get("/users/me")
-            
+
             assert response.status_code == 200
             data = response.json()
-            
+
             # Verify null fields are properly handled
             assert data["primary_phone"] is None
             assert data["name_prefix"] is None
@@ -214,39 +225,34 @@ class TestGetCurrentUserInfo:
                 "team": "Backend",
                 "preferences": {
                     "theme": "dark",
-                    "notifications": {
-                        "email": True,
-                        "push": False,
-                        "sms": True
-                    }
+                    "notifications": {"email": True, "push": False, "sms": True},
                 },
                 "tags": ["senior", "fullstack", "lead"],
-                "employee_id": 12345
+                "employee_id": 12345,
             },
             created=datetime.now(),
             created_by=uuid4(),
             last_modified=datetime.now(),
             last_modified_by=uuid4(),
         )
-        
+
         # Create app with complex user override
         app = FastAPI()
         app.include_router(router)
-        
+
         async def override_get_current_user():
             return complex_user
-        
+
         app.dependency_overrides[get_current_user] = override_get_current_user
-        
+
         async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.get("/users/me")
-            
+
             assert response.status_code == 200
             data = response.json()
-            
+
             # Verify complex metadata is properly returned
             assert data["meta"] == complex_user.meta
             assert data["meta"]["preferences"]["theme"] == "dark"
@@ -257,7 +263,7 @@ class TestGetCurrentUserInfo:
     async def test_get_current_user_different_roles(self):
         """Test getting current user with different system roles."""
         roles = ["user", "admin", "superuser", "guest"]
-        
+
         for role in roles:
             role_user = UserDetail(
                 id=uuid4(),
@@ -283,22 +289,21 @@ class TestGetCurrentUserInfo:
                 last_modified=datetime.now(),
                 last_modified_by=uuid4(),
             )
-            
+
             # Create app with role-specific user override
             app = FastAPI()
             app.include_router(router)
-            
-            async def override_get_current_user():
-                return role_user
-            
+
+            async def override_get_current_user(user=role_user):
+                return user
+
             app.dependency_overrides[get_current_user] = override_get_current_user
-            
+
             async with AsyncClient(
-                transport=ASGITransport(app=app),
-                base_url="http://test"
+                transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/users/me")
-                
+
                 assert response.status_code == 200
                 data = response.json()
                 assert data["system_role"] == role
@@ -333,22 +338,21 @@ class TestGetCurrentUserInfo:
             last_modified=datetime.now(),
             last_modified_by=uuid4(),
         )
-        
+
         # Create app with disabled user override
         app = FastAPI()
         app.include_router(router)
-        
+
         async def override_get_current_user():
             return disabled_user
-        
+
         app.dependency_overrides[get_current_user] = override_get_current_user
-        
+
         async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
+            transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.get("/users/me")
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["enabled"] is False
@@ -356,8 +360,14 @@ class TestGetCurrentUserInfo:
     @pytest.mark.asyncio
     async def test_get_current_user_different_time_zones(self):
         """Test getting current user with different time zones."""
-        time_zones = ["UTC", "America/New_York", "Europe/London", "Asia/Tokyo", "Australia/Sydney"]
-        
+        time_zones = [
+            "UTC",
+            "America/New_York",
+            "Europe/London",
+            "Asia/Tokyo",
+            "Australia/Sydney",
+        ]
+
         for tz in time_zones:
             tz_user = UserDetail(
                 id=uuid4(),
@@ -383,22 +393,21 @@ class TestGetCurrentUserInfo:
                 last_modified=datetime.now(),
                 last_modified_by=uuid4(),
             )
-            
+
             # Create app with tz user override
             app = FastAPI()
             app.include_router(router)
-            
-            async def override_get_current_user():
-                return tz_user
-            
+
+            async def override_get_current_user(user=tz_user):
+                return user
+
             app.dependency_overrides[get_current_user] = override_get_current_user
-            
+
             async with AsyncClient(
-                transport=ASGITransport(app=app),
-                base_url="http://test"
+                transport=ASGITransport(app=app), base_url="http://test"
             ) as client:
                 response = await client.get("/users/me")
-                
+
                 assert response.status_code == 200
                 data = response.json()
                 assert data["time_zone"] == tz
@@ -408,11 +417,11 @@ class TestGetCurrentUserInfo:
         """Test that the endpoint is accessible at the correct path."""
         response = await client.get("/users/me")
         assert response.status_code == 200
-        
+
         # Verify incorrect paths return 404
         response = await client.get("/users")
         assert response.status_code == 404
-        
+
         response = await client.get("/users/current")
         assert response.status_code == 404
 
@@ -422,17 +431,17 @@ class TestGetCurrentUserInfo:
         # GET should work
         response = await client.get("/users/me")
         assert response.status_code == 200
-        
+
         # Other methods should not be allowed
         response = await client.post("/users/me")
         assert response.status_code == 405  # Method Not Allowed
-        
+
         response = await client.put("/users/me")
         assert response.status_code == 405
-        
+
         response = await client.patch("/users/me")
         assert response.status_code == 405
-        
+
         response = await client.delete("/users/me")
         assert response.status_code == 405
 
@@ -447,17 +456,16 @@ class TestGetCurrentUserInfo:
         response1 = await client.get("/users/me")
         response2 = await client.get("/users/me")
         response3 = await client.get("/users/me")
-        
+
         # All should be successful
         assert response1.status_code == 200
         assert response2.status_code == 200
         assert response3.status_code == 200
-        
+
         # All should return the same data
         data1 = response1.json()
         data2 = response2.json()
         data3 = response3.json()
-        
+
         assert data1 == data2 == data3
         assert data1["id"] == str(mock_user_detail.id)
-

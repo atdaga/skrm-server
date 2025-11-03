@@ -24,11 +24,9 @@ class TestDomainException:
     def test_domain_exception_with_all_params(self):
         """Test DomainException with all parameters."""
         exception = DomainException(
-            message="Test error",
-            entity_type="test",
-            entity_id="123"
+            message="Test error", entity_type="test", entity_id="123"
         )
-        
+
         assert exception.message == "Test error"
         assert exception.entity_type == "test"
         assert exception.entity_id == "123"
@@ -37,7 +35,7 @@ class TestDomainException:
     def test_domain_exception_minimal(self):
         """Test DomainException with only message."""
         exception = DomainException("Minimal error")
-        
+
         assert exception.message == "Minimal error"
         assert exception.entity_type is None
         assert exception.entity_id is None
@@ -50,7 +48,7 @@ class TestTeamExceptions:
         """Test TeamNotFoundException with team ID and scope."""
         team_id = uuid4()
         exception = TeamNotFoundException(team_id=team_id, scope="test-scope")
-        
+
         assert exception.team_id == team_id
         assert exception.scope == "test-scope"
         assert str(team_id) in exception.message
@@ -62,7 +60,7 @@ class TestTeamExceptions:
         """Test TeamNotFoundException without scope."""
         team_id = uuid4()
         exception = TeamNotFoundException(team_id=team_id)
-        
+
         assert exception.team_id == team_id
         assert exception.scope is None
         assert str(team_id) in exception.message
@@ -70,7 +68,7 @@ class TestTeamExceptions:
     def test_team_already_exists_exception(self):
         """Test TeamAlreadyExistsException."""
         exception = TeamAlreadyExistsException(name="TestTeam", scope="test-scope")
-        
+
         assert exception.name == "TestTeam"
         assert exception.scope == "test-scope"
         assert "TestTeam" in exception.message
@@ -81,11 +79,9 @@ class TestTeamExceptions:
         """Test TeamUpdateConflictException."""
         team_id = uuid4()
         exception = TeamUpdateConflictException(
-            team_id=team_id,
-            name="ConflictName",
-            scope="test-scope"
+            team_id=team_id, name="ConflictName", scope="test-scope"
         )
-        
+
         assert exception.team_id == team_id
         assert exception.name == "ConflictName"
         assert exception.scope == "test-scope"
@@ -100,7 +96,7 @@ class TestUserExceptions:
         """Test UserNotFoundException with user_id parameter."""
         user_id = uuid4()
         exception = UserNotFoundException(user_id=user_id)
-        
+
         assert exception.user_id == user_id
         assert exception.username is None
         assert str(user_id) in exception.message
@@ -110,7 +106,7 @@ class TestUserExceptions:
     def test_user_not_found_with_username(self):
         """Test UserNotFoundException with username parameter."""
         exception = UserNotFoundException(username="testuser")
-        
+
         assert exception.user_id is None
         assert exception.username == "testuser"
         assert "testuser" in exception.message
@@ -120,7 +116,7 @@ class TestUserExceptions:
     def test_user_not_found_with_no_params(self):
         """Test UserNotFoundException with no parameters."""
         exception = UserNotFoundException()
-        
+
         assert exception.user_id is None
         assert exception.username is None
         assert exception.message == "User not found"
@@ -130,7 +126,7 @@ class TestUserExceptions:
     def test_invalid_user_id_exception(self):
         """Test InvalidUserIdException."""
         exception = InvalidUserIdException(user_id_str="not-a-uuid")
-        
+
         assert exception.user_id_str == "not-a-uuid"
         assert "not-a-uuid" in exception.message
         assert exception.entity_type == "user"
@@ -138,7 +134,7 @@ class TestUserExceptions:
     def test_invalid_credentials_exception_with_username(self):
         """Test InvalidCredentialsException with username."""
         exception = InvalidCredentialsException(username="testuser")
-        
+
         assert exception.username == "testuser"
         assert "Invalid username or password" in exception.message
         assert exception.entity_type == "user"
@@ -146,7 +142,7 @@ class TestUserExceptions:
     def test_invalid_credentials_exception_without_username(self):
         """Test InvalidCredentialsException without username."""
         exception = InvalidCredentialsException()
-        
+
         assert exception.username is None
         assert "Invalid username or password" in exception.message
 
@@ -158,10 +154,9 @@ class TestAuthorizationExceptions:
         """Test InsufficientPrivilegesException with all parameters."""
         user_id = uuid4()
         exception = InsufficientPrivilegesException(
-            required_privilege="superuser",
-            user_id=user_id
+            required_privilege="superuser", user_id=user_id
         )
-        
+
         assert exception.required_privilege == "superuser"
         assert exception.user_id == user_id
         assert "superuser" in exception.message
@@ -170,7 +165,7 @@ class TestAuthorizationExceptions:
     def test_insufficient_privileges_without_params(self):
         """Test InsufficientPrivilegesException without parameters."""
         exception = InsufficientPrivilegesException()
-        
+
         assert exception.required_privilege is None
         assert exception.user_id is None
         assert exception.message == "Insufficient privileges"
@@ -178,7 +173,7 @@ class TestAuthorizationExceptions:
     def test_invalid_token_with_reason(self):
         """Test InvalidTokenException with reason."""
         exception = InvalidTokenException(reason="Token expired")
-        
+
         assert exception.reason == "Token expired"
         assert "Token expired" in exception.message
         assert exception.entity_type == "authorization"
@@ -186,14 +181,14 @@ class TestAuthorizationExceptions:
     def test_invalid_token_without_reason(self):
         """Test InvalidTokenException without reason."""
         exception = InvalidTokenException()
-        
+
         assert exception.reason is None
         assert exception.message == "Invalid or expired token"
 
     def test_token_not_found_exception(self):
         """Test TokenNotFoundException."""
         exception = TokenNotFoundException()
-        
+
         assert exception.message == "Authentication token not provided"
         assert exception.entity_type == "authorization"
 
@@ -206,21 +201,21 @@ class TestExceptionRaising:
         team_id = uuid4()
         with pytest.raises(TeamNotFoundException) as exc_info:
             raise TeamNotFoundException(team_id=team_id, scope="test")
-        
+
         assert exc_info.value.team_id == team_id
 
     def test_raise_user_not_found(self):
         """Test raising UserNotFoundException."""
         with pytest.raises(UserNotFoundException) as exc_info:
             raise UserNotFoundException(username="nonexistent")
-        
+
         assert exc_info.value.username == "nonexistent"
 
     def test_raise_invalid_credentials(self):
         """Test raising InvalidCredentialsException."""
         with pytest.raises(InvalidCredentialsException) as exc_info:
             raise InvalidCredentialsException(username="baduser")
-        
+
         assert exc_info.value.username == "baduser"
 
     def test_raise_token_not_found(self):
@@ -233,12 +228,11 @@ class TestExceptionRaising:
         # Test TeamNotFoundException
         with pytest.raises(DomainException):
             raise TeamNotFoundException(team_id=uuid4())
-        
+
         # Test UserNotFoundException
         with pytest.raises(DomainException):
             raise UserNotFoundException()
-        
+
         # Test TokenNotFoundException
         with pytest.raises(DomainException):
             raise TokenNotFoundException()
-

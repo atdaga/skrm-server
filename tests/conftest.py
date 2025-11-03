@@ -1,7 +1,6 @@
 """Pytest configuration and fixtures for tests."""
 
 import asyncio
-from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -11,14 +10,14 @@ from sqlmodel import SQLModel
 
 from app.schemas.user import TokenData
 
-
 # Pytest hooks for cleanup
+
 
 def pytest_sessionfinish(session, exitstatus):
     """Clean up database connections before pytest exits."""
     # Import here to avoid circular imports
     from app.core.db.database import db_config
-    
+
     if db_config._initialized and db_config.engine is not None:
         # Get or create event loop for cleanup
         try:
@@ -29,7 +28,7 @@ def pytest_sessionfinish(session, exitstatus):
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         # Run the cleanup in the event loop
         try:
             loop.run_until_complete(db_config.engine.dispose())
@@ -48,6 +47,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 # Core async database fixtures
 
+
 @pytest.fixture
 async def async_engine():
     """Create an async in-memory SQLite engine for testing."""
@@ -56,12 +56,12 @@ async def async_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-    
+
     yield engine
-    
+
     await engine.dispose()
 
 
@@ -77,7 +77,6 @@ async def async_session(async_engine):
 async def session(async_session):
     """Alias for async_session to simplify test code."""
     return async_session
-
 
 
 # Helper fixtures
@@ -115,8 +114,4 @@ def test_scope() -> str:
 @pytest.fixture
 def mock_token_data(test_user_id: UUID, test_scope: str) -> TokenData:
     """Create mock token data for authentication testing."""
-    return TokenData(
-        sub=str(test_user_id),
-        scope=test_scope,
-        iss="test-issuer"
-    )
+    return TokenData(sub=str(test_user_id), scope=test_scope, iss="test-issuer")

@@ -10,7 +10,6 @@ from app.core.db.database import (
     cleanup_database,
     cleanup_database_sync,
     create_all_tables,
-    db_config,
     get_db,
     get_db_session,
     initialize_database,
@@ -23,7 +22,7 @@ class TestDatabaseConfig:
     def test_database_config_initialization(self):
         """Test DatabaseConfig initialization."""
         config = DatabaseConfig()
-        
+
         assert config.engine is None
         assert config.session_factory is None
         assert config._initialized is False
@@ -42,13 +41,13 @@ class TestDatabaseConfig:
         mock_settings.db_user = "test_user"
         mock_settings.db_password = "test_pass"
         mock_settings.db_name = "test_db"
-        
+
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         config.initialize()
-        
+
         assert config._initialized is True
         assert config.engine is not None
         assert config.session_factory is not None
@@ -68,14 +67,14 @@ class TestDatabaseConfig:
         mock_settings.db_user = "test_user"
         mock_settings.db_password = "test_pass"
         mock_settings.db_name = "test_db"
-        
+
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         config.initialize()
         config.initialize()  # Call again
-        
+
         # Should only be called once
         assert mock_create_engine.call_count == 1
 
@@ -83,7 +82,7 @@ class TestDatabaseConfig:
     async def test_database_config_create_tables_not_initialized(self):
         """Test create_tables raises error when not initialized."""
         config = DatabaseConfig()
-        
+
         with pytest.raises(RuntimeError, match="Database not initialized"):
             await config.create_tables()
 
@@ -102,24 +101,24 @@ class TestDatabaseConfig:
         mock_settings.db_user = "test_user"
         mock_settings.db_password = "test_pass"
         mock_settings.db_name = "test_db"
-        
+
         # Setup mock engine with begin context manager
         mock_conn = MagicMock()
         mock_conn.run_sync = AsyncMock()
-        
+
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_begin = AsyncMock()
         mock_begin.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_begin.__aexit__ = AsyncMock(return_value=None)
         mock_engine.begin.return_value = mock_begin
-        
+
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         config.initialize()
-        
+
         await config.create_tables()
-        
+
         mock_engine.begin.assert_called_once()
         mock_conn.run_sync.assert_called_once()
 
@@ -135,16 +134,16 @@ class TestDatabaseConfig:
         mock_settings.db_user = "test_user"
         mock_settings.db_password = "test_pass"
         mock_settings.db_name = "test_db"
-        
+
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_engine.dispose = AsyncMock()
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
         config.initialize()
-        
+
         await config.close()
-        
+
         mock_engine.dispose.assert_called_once()
         assert config._initialized is False
 
@@ -158,21 +157,21 @@ class TestGetDbSession:
         """Test that get_db_session initializes database if not initialized."""
         mock_db_config._initialized = False
         mock_db_config.initialize = MagicMock()
-        
+
         mock_session = MagicMock(spec=AsyncSession)
         mock_session.close = AsyncMock()
-        
+
         mock_factory = MagicMock()
         mock_context = AsyncMock()
         mock_context.__aenter__ = AsyncMock(return_value=mock_session)
         mock_context.__aexit__ = AsyncMock(return_value=None)
         mock_factory.return_value = mock_context
-        
+
         mock_db_config.session_factory = mock_factory
-        
+
         async with get_db_session() as session:
             assert session == mock_session
-        
+
         mock_db_config.initialize.assert_called_once()
 
     @pytest.mark.asyncio
@@ -180,18 +179,18 @@ class TestGetDbSession:
     async def test_get_db_session_yields_session(self, mock_db_config):
         """Test that get_db_session yields a session."""
         mock_db_config._initialized = True
-        
+
         mock_session = MagicMock(spec=AsyncSession)
         mock_session.close = AsyncMock()
-        
+
         mock_factory = MagicMock()
         mock_context = AsyncMock()
         mock_context.__aenter__ = AsyncMock(return_value=mock_session)
         mock_context.__aexit__ = AsyncMock(return_value=None)
         mock_factory.return_value = mock_context
-        
+
         mock_db_config.session_factory = mock_factory
-        
+
         async with get_db_session() as session:
             assert session == mock_session
 
@@ -201,7 +200,7 @@ class TestGetDbSession:
         """Test get_db_session raises error when session factory is None."""
         mock_db_config._initialized = True
         mock_db_config.session_factory = None
-        
+
         with pytest.raises(RuntimeError, match="session factory not initialized"):
             async with get_db_session():
                 pass
@@ -211,23 +210,23 @@ class TestGetDbSession:
     async def test_get_db_session_rolls_back_on_exception(self, mock_db_config):
         """Test that get_db_session rolls back on exception."""
         mock_db_config._initialized = True
-        
+
         mock_session = MagicMock(spec=AsyncSession)
         mock_session.rollback = AsyncMock()
         mock_session.close = AsyncMock()
-        
+
         mock_factory = MagicMock()
         mock_context = AsyncMock()
         mock_context.__aenter__ = AsyncMock(return_value=mock_session)
         mock_context.__aexit__ = AsyncMock(return_value=None)
         mock_factory.return_value = mock_context
-        
+
         mock_db_config.session_factory = mock_factory
-        
+
         with pytest.raises(ValueError):
-            async with get_db_session() as session:
+            async with get_db_session():
                 raise ValueError("Test exception")
-        
+
         mock_session.rollback.assert_called_once()
 
 
@@ -239,12 +238,12 @@ class TestGetDb:
     async def test_get_db_yields_session(self, mock_get_db_session):
         """Test that get_db yields a session from get_db_session."""
         mock_session = MagicMock(spec=AsyncSession)
-        
+
         mock_context = AsyncMock()
         mock_context.__aenter__ = AsyncMock(return_value=mock_session)
         mock_context.__aexit__ = AsyncMock(return_value=None)
         mock_get_db_session.return_value = mock_context
-        
+
         async for session in get_db():
             assert session == mock_session
 
@@ -253,15 +252,15 @@ class TestGetDb:
     async def test_get_db_calls_get_db_session(self, mock_get_db_session):
         """Test that get_db calls get_db_session."""
         mock_session = MagicMock(spec=AsyncSession)
-        
+
         mock_context = AsyncMock()
         mock_context.__aenter__ = AsyncMock(return_value=mock_session)
         mock_context.__aexit__ = AsyncMock(return_value=None)
         mock_get_db_session.return_value = mock_context
-        
+
         async for _ in get_db():
             pass
-        
+
         mock_get_db_session.assert_called_once()
 
 
@@ -275,9 +274,9 @@ class TestCreateAllTables:
         mock_db_config._initialized = False
         mock_db_config.initialize = MagicMock()
         mock_db_config.create_tables = AsyncMock()
-        
+
         await create_all_tables()
-        
+
         mock_db_config.initialize.assert_called_once()
         mock_db_config.create_tables.assert_called_once()
 
@@ -287,9 +286,9 @@ class TestCreateAllTables:
         """Test that create_all_tables calls db_config.create_tables."""
         mock_db_config._initialized = True
         mock_db_config.create_tables = AsyncMock()
-        
+
         await create_all_tables()
-        
+
         mock_db_config.create_tables.assert_called_once()
 
 
@@ -300,9 +299,9 @@ class TestInitializeDatabase:
     def test_initialize_database_calls_initialize(self, mock_db_config):
         """Test that initialize_database calls db_config.initialize."""
         mock_db_config.initialize = MagicMock()
-        
+
         initialize_database()
-        
+
         mock_db_config.initialize.assert_called_once()
 
 
@@ -316,12 +315,12 @@ class TestCleanupDatabase:
         """Test that cleanup_database disposes the engine."""
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_engine.dispose = AsyncMock()
-        
+
         mock_db_config._initialized = True
         mock_db_config.engine = mock_engine
-        
+
         await cleanup_database()
-        
+
         mock_engine.dispose.assert_called_once()
         assert mock_db_config._initialized is False
 
@@ -331,7 +330,7 @@ class TestCleanupDatabase:
         """Test cleanup_database when database is not initialized."""
         mock_db_config._initialized = False
         mock_db_config.engine = None
-        
+
         # Should not raise error
         await cleanup_database()
 
@@ -342,10 +341,10 @@ class TestCleanupDatabase:
         """Test that cleanup_database handles errors gracefully."""
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_engine.dispose = AsyncMock(side_effect=Exception("Cleanup error"))
-        
+
         mock_db_config._initialized = True
         mock_db_config.engine = mock_engine
-        
+
         # Should not raise error
         await cleanup_database()
 
@@ -355,17 +354,19 @@ class TestCleanupDatabaseSync:
 
     @patch("app.core.db.database.db_config")
     @patch("app.core.db.database.logger")
-    def test_cleanup_database_sync_marks_uninitialized(self, mock_logger, mock_db_config):
+    def test_cleanup_database_sync_marks_uninitialized(
+        self, mock_logger, mock_db_config
+    ):
         """Test that cleanup_database_sync marks database as uninitialized."""
         mock_engine = MagicMock()
         mock_engine.sync_engine = MagicMock()
         mock_engine.sync_engine.dispose = MagicMock()
-        
+
         mock_db_config._initialized = True
         mock_db_config.engine = mock_engine
-        
+
         cleanup_database_sync()
-        
+
         assert mock_db_config._initialized is False
 
     @patch("app.core.db.database.db_config")
@@ -373,7 +374,7 @@ class TestCleanupDatabaseSync:
         """Test cleanup_database_sync when database is not initialized."""
         mock_db_config._initialized = False
         mock_db_config.engine = None
-        
+
         # Should not raise error
         cleanup_database_sync()
 
@@ -383,10 +384,10 @@ class TestCleanupDatabaseSync:
         mock_engine = MagicMock()
         mock_engine.sync_engine = MagicMock()
         mock_engine.sync_engine.dispose = MagicMock(side_effect=Exception("Error"))
-        
+
         mock_db_config._initialized = True
         mock_db_config.engine = mock_engine
-        
+
         # Should not raise error
         cleanup_database_sync()
 
@@ -395,13 +396,13 @@ class TestCleanupDatabaseSync:
         """Test cleanup_database_sync when engine has no sync_engine."""
         mock_engine = MagicMock(spec=AsyncEngine)
         # No sync_engine attribute
-        
+
         mock_db_config._initialized = True
         mock_db_config.engine = mock_engine
-        
+
         # Should not raise error and should mark as uninitialized
         cleanup_database_sync()
-        
+
         assert mock_db_config._initialized is False
 
 
@@ -423,18 +424,17 @@ class TestDatabaseIntegration:
         mock_settings.db_user = "test_user"
         mock_settings.db_password = "test_pass"
         mock_settings.db_name = "test_db"
-        
+
         mock_engine = MagicMock(spec=AsyncEngine)
         mock_engine.dispose = AsyncMock()
         mock_create_engine.return_value = mock_engine
-        
+
         config = DatabaseConfig()
-        
+
         # Initialize
         config.initialize()
         assert config._initialized is True
-        
+
         # Close
         await config.close()
         assert config._initialized is False
-
