@@ -134,6 +134,7 @@ asyncio_mode = "auto"
 concurrency = ["thread", "greenlet"]
 source = ["app"]
 omit = [
+    "tests/**",
     "__init__.py",
     "app/core/weaviate/*.py",
 ]

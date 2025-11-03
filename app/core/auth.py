@@ -91,35 +91,47 @@ async def verify_token(token: str) -> dict[str, Any] | None:
         return None
 
 
-async def authenticate_user(username: str, password: str) -> UserDetail | None:
-    """Authenticate a user with username and password."""
-    async with get_db_session() as session:
-        stmt = select(KPrincipal).where(
-            KPrincipal.scope == "global",  # type: ignore
-            KPrincipal.human == True,  # type: ignore  # noqa: E712
-            KPrincipal.enabled == True,  # type: ignore  # noqa: E712
-            KPrincipal.username == username,  # type: ignore
-        )
-        result = await session.execute(stmt)
-        principal = result.scalar_one_or_none()
+async def authenticate_user(
+    username: str,
+    password: str,
+    db: Any,  # AsyncSession - using Any to avoid circular import
+) -> UserDetail | None:
+    """Authenticate a user with username and password.
+    
+    Args:
+        username: Username to authenticate
+        password: Plain text password to verify
+        db: Database session
+        
+    Returns:
+        UserDetail if authentication successful, None otherwise
+    """
+    stmt = select(KPrincipal).where(
+        KPrincipal.scope == "global",  # type: ignore
+        KPrincipal.human == True,  # type: ignore  # noqa: E712
+        KPrincipal.enabled == True,  # type: ignore  # noqa: E712
+        KPrincipal.username == username,  # type: ignore
+    )
+    result = await db.execute(stmt)
+    principal = result.scalar_one_or_none()
 
-        if not principal:
-            return None
+    if not principal:
+        return None
 
-        # Query for the user's password hash
-        identity_stmt = select(KPrincipalIdentity).where(
-            KPrincipalIdentity.principal_id == principal.id,  # type: ignore
-            KPrincipalIdentity.password != None,  # type: ignore  # noqa: E711
-        )
-        identity_result = await session.execute(identity_stmt)
-        principal_identity = identity_result.scalar_one_or_none()
+    # Query for the user's password hash
+    identity_stmt = select(KPrincipalIdentity).where(
+        KPrincipalIdentity.principal_id == principal.id,  # type: ignore
+        KPrincipalIdentity.password != None,  # type: ignore  # noqa: E711
+    )
+    identity_result = await db.execute(identity_stmt)
+    principal_identity = identity_result.scalar_one_or_none()
 
-        if not principal_identity or not principal_identity.password:
-            return None
+    if not principal_identity or not principal_identity.password:
+        return None
 
-        # Verify the password
-        if await verify_password(password, principal_identity.password):
-            return UserDetail.model_validate(principal)
+    # Verify the password
+    if await verify_password(password, principal_identity.password):
+        return UserDetail.model_validate(principal)
 
     return None
 

@@ -4,29 +4,35 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..core.auth import authenticate_user, create_access_token
+from ..core.db.database import get_db
+from ..core.exceptions.domain_exceptions import InvalidCredentialsException
+from ..logic import auth as auth_logic
 from ..schemas.user import Token
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+async def login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> Token:
     """Authenticate user and return access token.
 
     The scope field accepts a space-separated list of scopes (e.g., "read write").
     """
-    user = await authenticate_user(form_data.username, form_data.password)
-    if not user:
+    try:
+        return await auth_logic.perform_login(
+            username=form_data.username,
+            password=form_data.password,
+            db=db,
+            scopes=form_data.scopes,
+        )
+    except InvalidCredentialsException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail=e.message,
             headers={"WWW-Authenticate": "Bearer"},
-        )
-    # Use the requested scopes from the form, or default to "global"
-    scope = " ".join(form_data.scopes) if form_data.scopes else "global"
-    access_token = await create_access_token(
-        data={"sub": str(user.id), "scope": scope, "iss": "https://auth.baseklass.io"}
-    )
-    return Token(access_token=access_token, token_type="bearer")
+        ) from e

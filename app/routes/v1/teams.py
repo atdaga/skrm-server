@@ -1,16 +1,18 @@
 """Team management endpoints for creating, listing, updating, and deleting teams."""
 
-from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
-from ...models import KTeam
+from ...core.exceptions.domain_exceptions import (
+    TeamAlreadyExistsException,
+    TeamNotFoundException,
+    TeamUpdateConflictException,
+)
+from ...logic.v1 import teams as teams_logic
 from ...schemas.team import TeamCreate, TeamDetail, TeamList, TeamUpdate
 from ...schemas.user import TokenData
 from ..deps import get_current_token
@@ -25,31 +27,21 @@ async def create_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Create a new team."""
-    # Convert user ID from string to UUID
     user_id = UUID(token_data.sub)
     
-    # Create new team with audit fields
-    new_team = KTeam(
-        name=team_data.name,
-        scope=token_data.scope,
-        meta=team_data.meta,
-        created_by=user_id,
-        last_modified_by=user_id,
-    )
-
-    db.add(new_team)
-
     try:
-        await db.commit()
-        await db.refresh(new_team)
-    except IntegrityError as e:
-        await db.rollback()
+        team = await teams_logic.create_team(
+            team_data=team_data,
+            user_id=user_id,
+            scope=token_data.scope,
+            db=db,
+        )
+        return TeamDetail.model_validate(team)
+    except TeamAlreadyExistsException as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Team with name '{team_data.name}' already exists in scope '{token_data.scope}'",
+            detail=e.message,
         ) from e
-
-    return TeamDetail.model_validate(new_team)
 
 
 @router.get("", response_model=TeamList)
@@ -58,10 +50,7 @@ async def list_teams(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamList:
     """List all teams in the current user's scope."""
-    stmt = select(KTeam).where(KTeam.scope == token_data.scope)  # type: ignore
-    result = await db.execute(stmt)
-    teams = result.scalars().all()
-
+    teams = await teams_logic.list_teams(scope=token_data.scope, db=db)
     return TeamList(teams=[TeamDetail.model_validate(team) for team in teams])
 
 
@@ -72,17 +61,18 @@ async def get_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Get a single team by ID."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
-    result = await db.execute(stmt)
-    team = result.scalar_one_or_none()
-
-    if not team:
+    try:
+        team = await teams_logic.get_team(
+            team_id=team_id,
+            scope=token_data.scope,
+            db=db,
+        )
+        return TeamDetail.model_validate(team)
+    except TeamNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with id '{team_id}' not found",
-        )
-
-    return TeamDetail.model_validate(team)
+            detail=e.message,
+        ) from e
 
 
 @router.patch("/{team_id}", response_model=TeamDetail)
@@ -93,37 +83,27 @@ async def update_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Update a team."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
-    result = await db.execute(stmt)
-    team = result.scalar_one_or_none()
-
-    if not team:
+    user_id = UUID(token_data.sub)
+    
+    try:
+        team = await teams_logic.update_team(
+            team_id=team_id,
+            team_data=team_data,
+            user_id=user_id,
+            scope=token_data.scope,
+            db=db,
+        )
+        return TeamDetail.model_validate(team)
+    except TeamNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with id '{team_id}' not found",
-        )
-
-    # Update only provided fields
-    if team_data.name is not None:
-        team.name = team_data.name
-    if team_data.meta is not None:
-        team.meta = team_data.meta
-
-    # Update audit fields
-    team.last_modified = datetime.now()
-    team.last_modified_by = UUID(token_data.sub)  # type: ignore
-
-    try:
-        await db.commit()
-        await db.refresh(team)
-    except IntegrityError as e:
-        await db.rollback()
+            detail=e.message,
+        ) from e
+    except TeamUpdateConflictException as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Team with name '{team_data.name}' already exists in scope '{token_data.scope}'",
+            detail=e.message,
         ) from e
-
-    return TeamDetail.model_validate(team)
 
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -133,15 +113,14 @@ async def delete_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete a team (cascades to team members)."""
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == token_data.scope)  # type: ignore
-    result = await db.execute(stmt)
-    team = result.scalar_one_or_none()
-
-    if not team:
+    try:
+        await teams_logic.delete_team(
+            team_id=team_id,
+            scope=token_data.scope,
+            db=db,
+        )
+    except TeamNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with id '{team_id}' not found",
-        )
-
-    await db.delete(team)
-    await db.commit()
+            detail=e.message,
+        ) from e

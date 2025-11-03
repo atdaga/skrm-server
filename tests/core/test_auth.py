@@ -9,12 +9,15 @@ import pytest
 from jose import jwt
 
 from app.core.auth import (
+    authenticate_user,
     create_access_token,
     create_refresh_token,
     get_password_hash,
     verify_password,
     verify_token,
 )
+from app.models import KPrincipal, KPrincipalIdentity
+from app.schemas.user import UserDetail
 
 
 class TestPasswordHashing:
@@ -489,4 +492,261 @@ class TestTokenIntegration:
         payload = await verify_token(token)
         assert payload is not None
         assert payload["sub"] == user_id
+
+
+class TestAuthenticateUser:
+    """Test suite for authenticate_user function with database integration."""
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_success(self, async_session, creator_id):
+        """Test successful user authentication with valid credentials."""
+        # Create a principal
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="testuser",
+            primary_email="test@example.com",
+            human=True,
+            enabled=True,
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        await async_session.refresh(principal)
+        
+        # Create identity with password
+        password = "test_password_123"
+        hashed_password = get_password_hash(password)
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=hashed_password,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        # Authenticate
+        result = await authenticate_user("testuser", password, async_session)
+        
+        # Verify
+        assert result is not None
+        assert isinstance(result, UserDetail)
+        assert result.username == "testuser"
+        assert result.id == user_id
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_wrong_password(self, async_session, creator_id):
+        """Test authentication fails with wrong password."""
+        # Create principal and identity
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="testuser2",
+            primary_email="test2@example.com",
+            human=True,
+            enabled=True,
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        await async_session.refresh(principal)
+        
+        password = "correct_password"
+        hashed_password = get_password_hash(password)
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=hashed_password,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        # Try wrong password
+        result = await authenticate_user("testuser2", "wrong_password", async_session)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_not_found(self, async_session):
+        """Test authentication fails when user doesn't exist."""
+        result = await authenticate_user("nonexistent", "password", async_session)
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_no_password_identity(self, async_session, creator_id):
+        """Test authentication fails when user has no password identity."""
+        # Create principal without identity
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="nopassword",
+            primary_email="nopass@example.com",
+            human=True,
+            enabled=True,
+            first_name="No",
+            last_name="Password",
+            display_name="No Password",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        
+        # No identity added
+        result = await authenticate_user("nopassword", "anypassword", async_session)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_null_password(self, async_session, creator_id):
+        """Test authentication fails when password field is None."""
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="nullpass",
+            primary_email="null@example.com",
+            human=True,
+            enabled=True,
+            first_name="Null",
+            last_name="Pass",
+            display_name="Null Pass",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        await async_session.refresh(principal)
+        
+        # Create identity with null password
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=None,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        result = await authenticate_user("nullpass", "anypassword", async_session)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_disabled_account(self, async_session, creator_id):
+        """Test authentication fails for disabled accounts."""
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="disabled",
+            primary_email="disabled@example.com",
+            human=True,
+            enabled=False,  # Disabled
+            first_name="Disabled",
+            last_name="User",
+            display_name="Disabled User",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        
+        password = "password123"
+        hashed_password = get_password_hash(password)
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=hashed_password,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        result = await authenticate_user("disabled", password, async_session)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_non_human_principal(self, async_session, creator_id):
+        """Test authentication fails for non-human principals (service accounts)."""
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="global",
+            username="serviceaccount",
+            primary_email="service@example.com",
+            human=False,  # Not human
+            enabled=True,
+            first_name="Service",
+            last_name="Account",
+            display_name="Service Account",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        
+        password = "password123"
+        hashed_password = get_password_hash(password)
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=hashed_password,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        result = await authenticate_user("serviceaccount", password, async_session)
+        
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_wrong_scope(self, async_session, creator_id):
+        """Test authentication fails for users not in 'global' scope."""
+        user_id = uuid4()
+        principal = KPrincipal(
+            id=user_id,
+            scope="custom-scope",  # Not global
+            username="customscope",
+            primary_email="custom@example.com",
+            human=True,
+            enabled=True,
+            first_name="Custom",
+            last_name="Scope",
+            display_name="Custom Scope",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+        
+        password = "password123"
+        hashed_password = get_password_hash(password)
+        identity = KPrincipalIdentity(
+            principal_id=user_id,
+            password=hashed_password,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+        async_session.add(identity)
+        await async_session.commit()
+        
+        result = await authenticate_user("customscope", password, async_session)
+        
+        assert result is None
 
