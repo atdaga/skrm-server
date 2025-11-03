@@ -38,4 +38,10 @@ class TeamDetail(Team):
     last_modified_by: UUID
 
 
-__all__ = ["TeamCreate", "TeamUpdate", "Team", "TeamDetail"]
+class TeamList(BaseModel):
+    """Schema for team list response."""
+
+    teams: list[TeamDetail]
+
+
+__all__ = ["TeamCreate", "TeamUpdate", "Team", "TeamDetail", "TeamList"]

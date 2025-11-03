@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...models import KTeam
-from ...schemas.team import TeamCreate, TeamDetail, TeamUpdate
+from ...schemas.team import TeamCreate, TeamDetail, TeamList, TeamUpdate
 from ...schemas.user import TokenData
 from ..deps import get_current_token
 
@@ -49,17 +49,17 @@ async def create_team(
     return TeamDetail.model_validate(new_team)
 
 
-@router.get("", response_model=list[TeamDetail])
+@router.get("", response_model=TeamList)
 async def list_teams(
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> list[TeamDetail]:
+) -> TeamList:
     """List all teams in the current user's scope."""
     stmt = select(KTeam).where(KTeam.scope == token_data.scope)  # type: ignore
     result = await db.execute(stmt)
     teams = result.scalars().all()
 
-    return [TeamDetail.model_validate(team) for team in teams]
+    return TeamList(teams=[TeamDetail.model_validate(team) for team in teams])
 
 
 @router.get("/{team_id}", response_model=TeamDetail)
