@@ -41,9 +41,6 @@ async def get_current_user(
     except ValueError as e:
         raise UnauthorizedException("Invalid user ID.") from e
 
-    if not id:
-        raise UnauthorizedException("User not authenticated.")
-
     # Query the database for the user by username
     stmt = select(KPrincipal).where(KPrincipal.id == uuid)  # type: ignore
     result = await db.execute(stmt)
@@ -73,12 +70,6 @@ async def get_optional_user(
             return None
 
         return await get_current_user(token_value, db=db)
-
-    except HTTPException as http_exc:
-        if http_exc.status_code != 401:
-            # Log unexpected errors but don't raise
-            pass
-        return None
 
     except Exception:
         # Log unexpected errors but don't raise

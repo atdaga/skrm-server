@@ -130,18 +130,31 @@ async def cleanup_database() -> None:
 
 
 def cleanup_database_sync() -> None:
-    """Synchronous cleanup for signal handlers and atexit."""
+    """Synchronous cleanup for signal handlers and atexit.
+    
+    Note: This is a best-effort cleanup. For asyncpg connections,
+    we cannot properly close them in a synchronous context due to
+    greenlet requirements. The OS will clean up the connections
+    when the process exits.
+    """
     if db_config._initialized and db_config.engine is not None:
-        logger.info("Closing database engine (sync backup)")
         try:
-            # Use synchronous dispose for signal handlers
-            db_config.engine.sync_engine.dispose()
+            # Only attempt cleanup if we have a sync_engine available
+            # For asyncpg (async-only engines), skip the cleanup to avoid
+            # "MissingGreenlet" errors during process exit
+            if hasattr(db_config.engine, 'sync_engine'):
+                logger.info("Closing database engine (sync backup)")
+                db_config.engine.sync_engine.dispose()
+                logger.info("Database engine closed (sync backup)")
+            # Mark as uninitialized regardless
             db_config._initialized = False
-            logger.info("Database engine closed (sync backup)")
         except Exception:
-            # Ignore cleanup errors during process exit
+            # Ignore all cleanup errors during process exit
+            # This is especially important for async database drivers
             pass
 
 
 # Register cleanup function to run on process exit as backup
+# Note: This may not work properly with asyncpg due to greenlet requirements,
+# but we register it anyway for other database drivers
 atexit.register(cleanup_database_sync)

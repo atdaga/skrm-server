@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for tests."""
 
+import asyncio
 from datetime import datetime
 from uuid import UUID, uuid4
 
@@ -9,6 +10,40 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
 from app.schemas.user import TokenData
+
+
+# Pytest hooks for cleanup
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up database connections before pytest exits."""
+    # Import here to avoid circular imports
+    from app.core.db.database import db_config
+    
+    if db_config._initialized and db_config.engine is not None:
+        # Get or create event loop for cleanup
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        # Run the cleanup in the event loop
+        try:
+            loop.run_until_complete(db_config.engine.dispose())
+            db_config._initialized = False
+        except Exception:
+            # Ignore cleanup errors
+            pass
+        finally:
+            # Don't close the loop if it was already running
+            if not loop.is_running():
+                try:
+                    loop.close()
+                except Exception:
+                    pass
 
 
 # Core async database fixtures

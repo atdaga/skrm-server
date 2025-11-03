@@ -129,3 +129,18 @@ minversion = "6.0"
 addopts = "-ra -q --strict-markers --strict-config"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+concurrency = ["thread", "greenlet"]
+source = ["app"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
