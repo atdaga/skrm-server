@@ -1,5 +1,6 @@
 """Business logic for dependency operations (user lookup, token verification, etc.)."""
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -23,7 +24,7 @@ async def get_token_data(token: str) -> TokenData:
         token: JWT token string
 
     Returns:
-        Token data with sub, scope, and iss
+        Token data with all JWT claims
 
     Raises:
         InvalidTokenException: If token is invalid or expired
@@ -34,7 +35,21 @@ async def get_token_data(token: str) -> TokenData:
 
     # TODO: Check blacklist of tokens or principal IDs.
 
-    return TokenData(sub=payload["sub"], scope=payload["scope"], iss=payload["iss"])
+    # Convert Unix timestamps back to datetime objects
+    iat = datetime.fromtimestamp(payload["iat"], tz=UTC).replace(tzinfo=None)
+    exp = datetime.fromtimestamp(payload["exp"], tz=UTC).replace(tzinfo=None)
+    ss = datetime.fromtimestamp(payload["ss"], tz=UTC).replace(tzinfo=None)
+
+    return TokenData(
+        sub=payload["sub"],
+        scope=payload["scope"],
+        iss=payload["iss"],
+        aud=payload["aud"],
+        jti=payload["jti"],
+        iat=iat,
+        exp=exp,
+        ss=ss,
+    )
 
 
 async def get_user_by_id(user_id: UUID, db: AsyncSession) -> UserDetail:

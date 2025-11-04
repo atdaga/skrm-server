@@ -1,6 +1,6 @@
 """Unit tests for route dependencies."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -25,10 +25,16 @@ class TestGetCurrentToken:
     @pytest.mark.asyncio
     async def test_get_current_token_success(self):
         """Test successful token extraction and validation."""
+        now = datetime.now(UTC).replace(tzinfo=None)
         test_payload = {
             "sub": str(uuid4()),
             "scope": "test-scope",
             "iss": "test-issuer",
+            "aud": "test-audience",
+            "jti": str(uuid4()),
+            "iat": now,
+            "exp": now,
+            "ss": now,
         }
 
         with patch(
@@ -42,6 +48,8 @@ class TestGetCurrentToken:
             assert result.sub == test_payload["sub"]
             assert result.scope == test_payload["scope"]
             assert result.iss == test_payload["iss"]
+            assert result.aud == test_payload["aud"]
+            assert result.jti == test_payload["jti"]
             mock_get_token.assert_called_once_with("valid_token")
 
     @pytest.mark.asyncio

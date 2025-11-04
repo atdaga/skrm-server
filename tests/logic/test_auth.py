@@ -1,6 +1,6 @@
 """Unit tests for authentication logic layer."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -79,14 +79,14 @@ class TestPerformLogin:
             call_kwargs = mock_access.call_args[1]
             assert call_kwargs["data"]["sub"] == str(mock_user.id)
             assert call_kwargs["data"]["scope"] == "global"
-            assert call_kwargs["data"]["iss"] == "https://auth.baseklass.io"
+            # Note: iss, aud, jti, iat, exp, ss are added inside create_access_token
 
             # Verify create_refresh_token was called with same data
             mock_refresh.assert_called_once()
             refresh_kwargs = mock_refresh.call_args[1]
             assert refresh_kwargs["data"]["sub"] == str(mock_user.id)
             assert refresh_kwargs["data"]["scope"] == "global"
-            assert refresh_kwargs["data"]["iss"] == "https://auth.baseklass.io"
+            # Note: iss, aud, jti, iat, exp, ss are added inside create_refresh_token
 
     @pytest.mark.asyncio
     async def test_perform_login_success_custom_scopes(
@@ -180,10 +180,11 @@ class TestPerformLogin:
 
             await perform_login("testuser", "password123", async_session)
 
-            # Verify issuer is included
+            # Verify token creation was called (iss is added inside create_access_token)
             call_kwargs = mock_access.call_args[1]
-            assert "iss" in call_kwargs["data"]
-            assert call_kwargs["data"]["iss"] == "https://auth.baseklass.io"
+            assert call_kwargs["data"]["sub"] == str(mock_user.id)
+            assert call_kwargs["data"]["scope"] == "global"
+            # Note: iss is added inside create_access_token, not in the data passed to it
 
     @pytest.mark.asyncio
     async def test_perform_login_multiple_scopes(
@@ -219,10 +220,18 @@ class TestRefreshAccessToken:
     async def test_refresh_token_success(self):
         """Test successful token refresh with valid refresh token."""
         user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         mock_payload = {
             "sub": user_id,
             "scope": "global",
             "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": now_ts,
         }
 
         with patch(
@@ -253,10 +262,12 @@ class TestRefreshAccessToken:
             assert access_call_kwargs["data"]["sub"] == user_id
             assert access_call_kwargs["data"]["scope"] == "global"
             assert access_call_kwargs["data"]["iss"] == "https://auth.baseklass.io"
+            # Note: aud, jti, iat, exp, ss are added inside create_access_token
 
             mock_refresh.assert_called_once()
             refresh_call_kwargs = mock_refresh.call_args[1]
             assert refresh_call_kwargs["data"]["sub"] == user_id
+            # Note: iss, aud, jti, iat, exp, ss are added inside create_refresh_token
 
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self):
@@ -274,9 +285,17 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_missing_subject(self):
         """Test token refresh with missing subject in payload raises exception."""
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         mock_payload = {
             "scope": "global",
             "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": now_ts,
             # Missing "sub"
         }
 
@@ -294,10 +313,18 @@ class TestRefreshAccessToken:
     async def test_refresh_token_preserves_scope(self):
         """Test that token refresh preserves the original scope."""
         user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         mock_payload = {
             "sub": user_id,
             "scope": "read write admin",
             "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": now_ts,
         }
 
         with patch(
@@ -321,10 +348,18 @@ class TestRefreshAccessToken:
     async def test_refresh_token_default_scope(self):
         """Test that token refresh uses default scope if not present in payload."""
         user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         mock_payload = {
             "sub": user_id,
             # No scope provided
             "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": now_ts,
         }
 
         with patch(
@@ -348,10 +383,18 @@ class TestRefreshAccessToken:
     async def test_refresh_token_preserves_issuer(self):
         """Test that token refresh preserves the original issuer."""
         user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         mock_payload = {
             "sub": user_id,
             "scope": "global",
             "iss": "https://custom-issuer.example.com",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": now_ts,
         }
 
         with patch(
@@ -367,8 +410,69 @@ class TestRefreshAccessToken:
 
             await refresh_access_token("valid_token")
 
-            # Verify issuer was preserved
+            # Verify issuer was passed to token creation
+            # Note: The issuer from the original token is preserved in the data passed to create_access_token
+            # It will be used if provided in data, otherwise create_access_token uses default
             access_call_kwargs = mock_access.call_args[1]
             assert (
                 access_call_kwargs["data"]["iss"] == "https://custom-issuer.example.com"
             )
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_missing_session_start(self):
+        """Test token refresh with missing session start claim raises exception."""
+        user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
+        mock_payload = {
+            "sub": user_id,
+            "scope": "global",
+            "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            # Missing "ss"
+        }
+
+        with patch(
+            "app.logic.auth.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
+            mock_verify.return_value = mock_payload
+
+            with pytest.raises(InvalidTokenException) as exc_info:
+                await refresh_access_token("token_without_session_start")
+
+            assert "Missing session start claim" in exc_info.value.message
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_absolute_expiration_exceeded(self):
+        """Test token refresh fails when absolute expiration time is exceeded."""
+        user_id = str(uuid4())
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
+        # Session started 31 days ago (more than 1 month)
+        session_start_ts = now_ts - (31 * 24 * 60 * 60)
+
+        mock_payload = {
+            "sub": user_id,
+            "scope": "global",
+            "iss": "https://auth.baseklass.io",
+            "aud": "https://dev.skrm.io",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,
+            "ss": session_start_ts,  # Session started 31 days ago
+        }
+
+        with patch(
+            "app.logic.auth.verify_token", new_callable=AsyncMock
+        ) as mock_verify:
+            mock_verify.return_value = mock_payload
+
+            with pytest.raises(InvalidTokenException) as exc_info:
+                await refresh_access_token("expired_session_token")
+
+            assert "absolute expiration" in exc_info.value.message

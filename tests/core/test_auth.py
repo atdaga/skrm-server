@@ -165,7 +165,8 @@ class TestAccessTokenCreation:
     async def test_create_access_token_returns_string(self):
         """Test that create_access_token returns a string."""
         data = {"sub": "user123", "scope": "test"}
-        token = await create_access_token(data)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(data, now)
 
         assert isinstance(token, str)
         assert len(token) > 0
@@ -175,17 +176,27 @@ class TestAccessTokenCreation:
         """Test that created token contains the provided data."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "test-scope"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        token = await create_access_token(data)
+        token = await create_access_token(data, now)
 
         # Decode token without verification to check contents
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         assert decoded["sub"] == user_id
         assert decoded["scope"] == "test-scope"
         assert "exp" in decoded
+        assert "iat" in decoded
+        assert "iss" in decoded
+        assert decoded["iss"] == "https://auth.baseklass.io"
+        assert "aud" in decoded
+        assert decoded["aud"] == "https://dev.skrm.io"
+        assert "jti" in decoded
+        assert "ss" in decoded
 
     @pytest.mark.asyncio
     async def test_create_access_token_with_custom_expiry(self):
@@ -194,16 +205,20 @@ class TestAccessTokenCreation:
         expires_delta = timedelta(minutes=30)
 
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
-        token = await create_access_token(data, expires_delta)
+        token = await create_access_token(
+            data, current_time_before, expires_delta=expires_delta
+        )
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         # Check that expiration is set
         assert "exp" in decoded
-        # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
-        exp_time = datetime.utcfromtimestamp(decoded["exp"])
+        # Use fromtimestamp with UTC to get naive UTC datetime (matching the token creation)
+        exp_time = datetime.fromtimestamp(decoded["exp"], tz=UTC).replace(tzinfo=None)
 
         # Expiration should be roughly 30 minutes from when token was created
         time_diff = exp_time - current_time_before
@@ -215,15 +230,17 @@ class TestAccessTokenCreation:
         data = {"sub": "user123"}
 
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
-        token = await create_access_token(data)
+        token = await create_access_token(data, current_time_before)
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         assert "exp" in decoded
-        # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
-        exp_time = datetime.utcfromtimestamp(decoded["exp"])
+        # Use fromtimestamp with UTC to get naive UTC datetime (matching the token creation)
+        exp_time = datetime.fromtimestamp(decoded["exp"], tz=UTC).replace(tzinfo=None)
 
         # Should be in the future (at least a few minutes)
         time_diff = exp_time - current_time_before
@@ -234,8 +251,9 @@ class TestAccessTokenCreation:
         """Test that creating token doesn't modify input data dict."""
         data = {"sub": "user123", "scope": "test"}
         original_data = data.copy()
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        await create_access_token(data)
+        await create_access_token(data, now)
 
         # Original data should not be modified
         assert data == original_data
@@ -245,9 +263,10 @@ class TestAccessTokenCreation:
         """Test that different data produces different tokens."""
         data1 = {"sub": "user1"}
         data2 = {"sub": "user2"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        token1 = await create_access_token(data1)
-        token2 = await create_access_token(data2)
+        token1 = await create_access_token(data1, now)
+        token2 = await create_access_token(data2, now)
 
         assert token1 != token2
 
@@ -259,7 +278,8 @@ class TestRefreshTokenCreation:
     async def test_create_refresh_token_returns_string(self):
         """Test that create_refresh_token returns a string."""
         data = {"sub": "user123"}
-        token = await create_refresh_token(data)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_refresh_token(data, now)
 
         assert isinstance(token, str)
         assert len(token) > 0
@@ -269,16 +289,26 @@ class TestRefreshTokenCreation:
         """Test that created refresh token contains the provided data."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "test-scope"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        token = await create_refresh_token(data)
+        token = await create_refresh_token(data, now)
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         assert decoded["sub"] == user_id
         assert decoded["scope"] == "test-scope"
         assert "exp" in decoded
+        assert "iat" in decoded
+        assert "iss" in decoded
+        assert decoded["iss"] == "https://auth.baseklass.io"
+        assert "aud" in decoded
+        assert decoded["aud"] == "https://dev.skrm.io"
+        assert "jti" in decoded
+        assert "ss" in decoded
 
     @pytest.mark.asyncio
     async def test_create_refresh_token_with_custom_expiry(self):
@@ -287,15 +317,19 @@ class TestRefreshTokenCreation:
         expires_delta = timedelta(days=7)
 
         current_time_before = datetime.now(UTC).replace(tzinfo=None)
-        token = await create_refresh_token(data, expires_delta)
+        token = await create_refresh_token(
+            data, current_time_before, expires_delta=expires_delta
+        )
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         assert "exp" in decoded
-        # Use utcfromtimestamp to get naive UTC datetime (matching the token creation)
-        exp_time = datetime.utcfromtimestamp(decoded["exp"])
+        # Use fromtimestamp with UTC to get naive UTC datetime (matching the token creation)
+        exp_time = datetime.fromtimestamp(decoded["exp"], tz=UTC).replace(tzinfo=None)
 
         # Expiration should be roughly 7 days from when token was created
         time_diff = exp_time - current_time_before
@@ -305,12 +339,15 @@ class TestRefreshTokenCreation:
     async def test_create_refresh_token_default_expiry(self):
         """Test that default expiration is applied for refresh token."""
         data = {"sub": "user123"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        token = await create_refresh_token(data)
+        token = await create_refresh_token(data, now)
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        decoded = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_aud": False}
+        )
 
         assert "exp" in decoded
         exp_time = datetime.fromtimestamp(decoded["exp"])
@@ -323,14 +360,25 @@ class TestRefreshTokenCreation:
     async def test_create_refresh_token_longer_than_access_token(self):
         """Test that refresh token expiry is longer than access token."""
         data = {"sub": "user123"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        access_token = await create_access_token(data)
-        refresh_token = await create_refresh_token(data)
+        access_token = await create_access_token(data, now)
+        refresh_token = await create_refresh_token(data, now)
 
         from app.core.auth import ALGORITHM, SECRET_KEY
 
-        access_decoded = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        refresh_decoded = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        access_decoded = jwt.decode(
+            access_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options={"verify_aud": False},
+        )
+        refresh_decoded = jwt.decode(
+            refresh_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options={"verify_aud": False},
+        )
 
         # Refresh token should expire later than access token
         assert refresh_decoded["exp"] > access_decoded["exp"]
@@ -343,7 +391,8 @@ class TestTokenVerification:
     async def test_verify_token_valid_token(self):
         """Test verifying a valid token."""
         data = {"sub": "user123", "scope": "test"}
-        token = await create_access_token(data)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(data, now)
 
         payload = await verify_token(token)
 
@@ -366,7 +415,8 @@ class TestTokenVerification:
         data = {"sub": "user123"}
         # Create token with negative expiry (already expired)
         expires_delta = timedelta(seconds=-1)
-        token = await create_access_token(data, expires_delta)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(data, now, expires_delta=expires_delta)
 
         payload = await verify_token(token)
 
@@ -387,6 +437,40 @@ class TestTokenVerification:
         payload = await verify_token(token)
 
         assert payload is None
+
+    @pytest.mark.asyncio
+    async def test_verify_token_missing_required_claims(self):
+        """Test verifying token with missing required claims."""
+        from app.core.auth import ALGORITHM, SECRET_KEY
+
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_utc = now.replace(tzinfo=UTC)
+
+        # Test missing each required claim
+        required_claims = ["sub", "scope", "iss", "aud", "jti", "iat", "exp", "ss"]
+
+        for missing_claim in required_claims:
+            # Create token with all claims except the one we're testing
+            data = {
+                "sub": "test-user",
+                "scope": "test",
+                "iss": "test-issuer",
+                "aud": "test-audience",
+                "jti": str(uuid4()),
+                "iat": int(now_utc.timestamp()),
+                "exp": int((now_utc + timedelta(minutes=15)).timestamp()),
+                "ss": int(now_utc.timestamp()),
+            }
+            # Remove the claim we're testing
+            del data[missing_claim]
+
+            token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
+            payload = await verify_token(token)
+
+            # Token should be rejected
+            assert (
+                payload is None
+            ), f"Token missing '{missing_claim}' should be rejected"
 
     @pytest.mark.asyncio
     async def test_verify_token_empty_string(self):
@@ -419,7 +503,8 @@ class TestTokenVerification:
             "role": "admin",
             "custom_claim": "custom_value",
         }
-        token = await create_access_token(data)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(data, now)
 
         payload = await verify_token(token)
 
@@ -438,9 +523,10 @@ class TestTokenIntegration:
         """Test creating and verifying an access token."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "global"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
         # Create token
-        token = await create_access_token(data)
+        token = await create_access_token(data, now)
         assert isinstance(token, str)
 
         # Verify token
@@ -454,9 +540,10 @@ class TestTokenIntegration:
         """Test creating and verifying a refresh token."""
         user_id = str(uuid4())
         data = {"sub": user_id, "scope": "global"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
         # Create refresh token
-        token = await create_refresh_token(data)
+        token = await create_refresh_token(data, now)
         assert isinstance(token, str)
 
         # Verify token
@@ -469,9 +556,10 @@ class TestTokenIntegration:
         """Test that multiple tokens are independent."""
         data1 = {"sub": "user1", "scope": "scope1"}
         data2 = {"sub": "user2", "scope": "scope2"}
+        now = datetime.now(UTC).replace(tzinfo=None)
 
-        token1 = await create_access_token(data1)
-        token2 = await create_access_token(data2)
+        token1 = await create_access_token(data1, now)
+        token2 = await create_access_token(data2, now)
 
         payload1 = await verify_token(token1)
         payload2 = await verify_token(token2)
@@ -495,7 +583,8 @@ class TestTokenIntegration:
         # Create token after successful verification
         user_id = str(uuid4())
         token_data = {"sub": user_id, "scope": "global"}
-        token = await create_access_token(token_data)
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(token_data, now)
 
         # Verify token
         payload = await verify_token(token)

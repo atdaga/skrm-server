@@ -1,6 +1,7 @@
 """Pytest configuration and fixtures for tests."""
 
 import asyncio
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -114,4 +115,14 @@ def test_scope() -> str:
 @pytest.fixture
 def mock_token_data(test_user_id: UUID, test_scope: str) -> TokenData:
     """Create mock token data for authentication testing."""
-    return TokenData(sub=str(test_user_id), scope=test_scope, iss="test-issuer")
+    now = datetime.now(UTC).replace(tzinfo=None)
+    return TokenData(
+        sub=str(test_user_id),
+        scope=test_scope,
+        iss="test-issuer",
+        aud="test-audience",
+        jti=str(uuid4()),
+        iat=now,
+        exp=now,
+        ss=now,
+    )

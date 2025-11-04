@@ -102,3 +102,8 @@ class TokenData(BaseModel):
     sub: str
     scope: str
     iss: str
+    aud: str
+    jti: str
+    iat: datetime
+    exp: datetime
+    ss: datetime  # Session start time

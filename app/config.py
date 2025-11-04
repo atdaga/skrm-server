@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = Field(
         default=7, description="Refresh token expiration in days"
     )
+    refresh_token_absolute_expire_months: int = Field(
+        default=1,
+        description="Absolute refresh token expiration in months from session start",
+    )
 
     @property
     def database_url(self) -> str:

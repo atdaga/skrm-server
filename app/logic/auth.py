@@ -1,7 +1,10 @@
 """Business logic for authentication operations."""
 
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
 from ..core.auth import (
     authenticate_user,
     create_access_token,
@@ -45,11 +48,14 @@ async def perform_login(
     token_data = {
         "sub": str(user.id),
         "scope": scope,
-        "iss": "https://auth.baseklass.io",
     }
 
-    access_token = await create_access_token(data=token_data)
-    refresh_token = await create_refresh_token(data=token_data)
+    now = datetime.now(UTC).replace(tzinfo=None)
+    access_token = await create_access_token(data=token_data, now=now)
+    refresh_token = await create_refresh_token(data=token_data, now=now)
+
+    print(f"Access token: {access_token}")
+    print(f"Refresh token: {refresh_token}")
 
     return Token(
         access_token=access_token,
@@ -68,7 +74,7 @@ async def refresh_access_token(refresh_token: str) -> Token:
         Token object containing new access and refresh tokens
 
     Raises:
-        InvalidTokenException: If the refresh token is invalid or expired
+        InvalidTokenException: If the refresh token is invalid or expired, or if the absolute expiration has been exceeded
     """
     payload = await verify_token(refresh_token)
     if not payload:
@@ -78,14 +84,40 @@ async def refresh_access_token(refresh_token: str) -> Token:
     user_id = payload.get("sub")
     scope = payload.get("scope", "global")
     issuer = payload.get("iss", "https://auth.baseklass.io")
+    session_start_timestamp = payload.get("ss")
 
     if not user_id:
         raise InvalidTokenException(reason="Missing subject in refresh token payload")
 
-    # Create new tokens
+    if not session_start_timestamp:
+        raise InvalidTokenException(
+            reason="Missing session start claim in refresh token payload"
+        )
+
+    # Check absolute expiration
+    now = datetime.now(UTC).replace(tzinfo=None)
+    session_start = datetime.fromtimestamp(session_start_timestamp, tz=UTC).replace(
+        tzinfo=None
+    )
+
+    # Calculate absolute expiration time (approximating months as 30 days)
+    absolute_expiration = session_start + timedelta(
+        days=settings.refresh_token_absolute_expire_months * 30
+    )
+
+    if now >= absolute_expiration:
+        raise InvalidTokenException(
+            reason="Session has exceeded absolute expiration time"
+        )
+
+    # Create new tokens with the original session start time
     token_data = {"sub": user_id, "scope": scope, "iss": issuer}
-    new_access_token = await create_access_token(data=token_data)
-    new_refresh_token = await create_refresh_token(data=token_data)
+    new_access_token = await create_access_token(
+        data=token_data, now=now, ss=session_start
+    )
+    new_refresh_token = await create_refresh_token(
+        data=token_data, now=now, ss=session_start
+    )
 
     return Token(
         access_token=new_access_token,

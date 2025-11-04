@@ -1,6 +1,6 @@
 """Unit tests for dependency logic layer."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -29,10 +29,18 @@ class TestGetTokenData:
     @pytest.mark.asyncio
     async def test_get_token_data_success(self):
         """Test successful token data extraction."""
+        now = datetime.now(UTC).replace(tzinfo=None)
+        now_ts = int(now.replace(tzinfo=UTC).timestamp())
+
         test_payload = {
             "sub": str(uuid4()),
             "scope": "test-scope",
             "iss": "test-issuer",
+            "aud": "test-audience",
+            "jti": str(uuid4()),
+            "iat": now_ts,
+            "exp": now_ts + 1800,  # 30 minutes later
+            "ss": now_ts,  # session start
         }
 
         with patch(
@@ -46,6 +54,11 @@ class TestGetTokenData:
             assert result.sub == test_payload["sub"]
             assert result.scope == test_payload["scope"]
             assert result.iss == test_payload["iss"]
+            assert result.aud == test_payload["aud"]
+            assert result.jti == test_payload["jti"]
+            assert isinstance(result.iat, datetime)
+            assert isinstance(result.exp, datetime)
+            assert isinstance(result.ss, datetime)
             mock_verify.assert_called_once_with("valid_token")
 
     @pytest.mark.asyncio
