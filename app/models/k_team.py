@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_team_member import KTeamMember
+    from .k_team_reviewer import KTeamReviewer
 
 
 class KTeam(SQLModel, table=True):
@@ -24,6 +25,9 @@ class KTeam(SQLModel, table=True):
 
     # Relationships
     team_members: list["KTeamMember"] = Relationship(
+        back_populates="team", cascade_delete=True
+    )
+    team_reviewers: list["KTeamReviewer"] = Relationship(
         back_populates="team", cascade_delete=True
     )
 

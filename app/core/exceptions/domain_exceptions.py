@@ -144,3 +144,61 @@ class TokenNotFoundException(DomainException):
         super().__init__(
             "Authentication token not provided", entity_type="authorization"
         )
+
+
+# ============================================================================
+# Team Member-related exceptions
+# ============================================================================
+
+
+class TeamMemberNotFoundException(DomainException):
+    """Raised when a team member cannot be found."""
+
+    def __init__(self, team_id: UUID, principal_id: UUID, scope: str | None = None):
+        message = f"Team member with team_id '{team_id}' and principal_id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="team_member", entity_id=principal_id)
+        self.team_id = team_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+class TeamMemberAlreadyExistsException(DomainException):
+    """Raised when attempting to add a team member that already exists."""
+
+    def __init__(self, team_id: UUID, principal_id: UUID, scope: str):
+        message = f"Team member with team_id '{team_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="team_member", entity_id=principal_id)
+        self.team_id = team_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+# ============================================================================
+# Team Reviewer-related exceptions
+# ============================================================================
+
+
+class TeamReviewerNotFoundException(DomainException):
+    """Raised when a team reviewer cannot be found."""
+
+    def __init__(self, team_id: UUID, principal_id: UUID, scope: str | None = None):
+        message = f"Team reviewer with team_id '{team_id}' and principal_id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="team_reviewer", entity_id=principal_id)
+        self.team_id = team_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+class TeamReviewerAlreadyExistsException(DomainException):
+    """Raised when attempting to add a team reviewer that already exists."""
+
+    def __init__(self, team_id: UUID, principal_id: UUID, scope: str):
+        message = f"Team reviewer with team_id '{team_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="team_reviewer", entity_id=principal_id)
+        self.team_id = team_id
+        self.principal_id = principal_id
+        self.scope = scope

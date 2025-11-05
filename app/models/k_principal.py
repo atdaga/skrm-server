@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_team_member import KTeamMember
+    from .k_team_reviewer import KTeamReviewer
 
 
 class KPrincipal(SQLModel, table=True):
@@ -39,6 +40,9 @@ class KPrincipal(SQLModel, table=True):
 
     # Relationships
     team_memberships: list["KTeamMember"] = Relationship(back_populates="principal")
+    team_reviewer_assignments: list["KTeamReviewer"] = Relationship(
+        back_populates="principal"
+    )
 
 
 __all__ = ["KPrincipal"]

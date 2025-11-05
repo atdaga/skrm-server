@@ -144,7 +144,9 @@ def parse_client_data(client_data_json: str) -> CollectedClientData:  # pragma: 
     return CollectedClientData(base64.urlsafe_b64decode(client_data_json))
 
 
-def parse_attestation_object(attestation_object: str) -> AttestationObject:  # pragma: no cover
+def parse_attestation_object(
+    attestation_object: str,
+) -> AttestationObject:  # pragma: no cover
     """Parse attestation object.
 
     Args:
@@ -156,7 +158,9 @@ def parse_attestation_object(attestation_object: str) -> AttestationObject:  # p
     return AttestationObject(base64.urlsafe_b64decode(attestation_object))
 
 
-def parse_authenticator_data(authenticator_data: str) -> AuthenticatorData:  # pragma: no cover
+def parse_authenticator_data(
+    authenticator_data: str,
+) -> AuthenticatorData:  # pragma: no cover
     """Parse authenticator data.
 
     Args:

@@ -104,7 +104,10 @@ async def fido2_register_begin(
         # In production, consider using signed cookies or session storage
         response.publicKey["sessionId"] = session_id
         return response
-    except (InvalidCredentialsException, InvalidTokenException) as e:  # pragma: no cover
+    except (
+        InvalidCredentialsException,
+        InvalidTokenException,
+    ) as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=e.message,
@@ -141,7 +144,10 @@ async def fido2_register_complete(
             db,
         )
         return Fido2RegistrationCompleteResponse(credential_id=credential_id)
-    except (InvalidCredentialsException, InvalidTokenException) as e:  # pragma: no cover
+    except (
+        InvalidCredentialsException,
+        InvalidTokenException,
+    ) as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=e.message,
@@ -176,7 +182,10 @@ async def fido2_authenticate_begin(
         # Store session_id in response for client to send back
         response.publicKey["sessionId"] = session_id
         return response
-    except (InvalidCredentialsException, InvalidTokenException) as e:  # pragma: no cover
+    except (
+        InvalidCredentialsException,
+        InvalidTokenException,
+    ) as e:  # pragma: no cover
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=e.message,

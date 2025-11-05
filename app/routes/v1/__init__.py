@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from . import teams, users
+from . import team_members, team_reviewers, teams, users
 
 # Create main v1 router
 router = APIRouter()
@@ -10,5 +10,7 @@ router = APIRouter()
 # Include all v1 subrouters
 router.include_router(users.router)
 router.include_router(teams.router)
+router.include_router(team_members.router)
+router.include_router(team_reviewers.router)
 
 __all__ = ["router"]

@@ -25,10 +25,10 @@ def app_with_overrides(mock_user: UserDetail) -> FastAPI:
     """Create a FastAPI app with auth router and dependency overrides."""
     app = FastAPI()
     app.include_router(router)
-    
+
     # Override the authentication dependency
     app.dependency_overrides[get_current_user] = lambda: mock_user
-    
+
     return app
 
 
@@ -99,7 +99,7 @@ class TestFido2RegisterBeginEndpoint:
             "app.logic.auth.begin_fido2_registration", new_callable=AsyncMock
         ) as mock_begin:
             challenge_bytes = secrets.token_bytes(32)
-            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode('utf-8')
+            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode("utf-8")
             response = Fido2RegistrationBeginResponse(
                 publicKey={
                     "challenge": challenge_b64,
@@ -170,7 +170,7 @@ class TestFido2AuthenticateBeginEndpoint:
             "app.logic.auth.begin_fido2_authentication", new_callable=AsyncMock
         ) as mock_begin:
             challenge_bytes = secrets.token_bytes(32)
-            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode('utf-8')
+            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode("utf-8")
             response = Fido2AuthenticationBeginResponse(
                 publicKey={
                     "challenge": challenge_b64,
@@ -200,7 +200,7 @@ class TestFido2AuthenticateBeginEndpoint:
             "app.logic.auth.begin_fido2_authentication", new_callable=AsyncMock
         ) as mock_begin:
             challenge_bytes = secrets.token_bytes(32)
-            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode('utf-8')
+            challenge_b64 = base64.urlsafe_b64encode(challenge_bytes).decode("utf-8")
             response = Fido2AuthenticationBeginResponse(
                 publicKey={
                     "challenge": challenge_b64,
