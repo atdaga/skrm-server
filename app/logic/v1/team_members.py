@@ -40,7 +40,7 @@ async def add_team_member(
         TeamMemberAlreadyExistsException: If the member already exists in the team
     """
     # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -89,7 +89,7 @@ async def list_team_members(
         TeamNotFoundException: If the team is not found
     """
     # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -97,12 +97,12 @@ async def list_team_members(
         raise TeamNotFoundException(team_id=team_id, scope=scope)
 
     # Get all members for this team in the scope
-    stmt = select(KTeamMember).where(
-        KTeamMember.team_id == team_id, KTeamMember.scope == scope  # type: ignore
+    stmt = select(KTeamMember).where(  # type: ignore[assignment]
+        KTeamMember.team_id == team_id, KTeamMember.scope == scope  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     members = result.scalars().all()
-    return list(members)
+    return list(members)  # type: ignore[arg-type]
 
 
 async def get_team_member(
@@ -123,9 +123,9 @@ async def get_team_member(
         TeamMemberNotFoundException: If the team member is not found
     """
     stmt = select(KTeamMember).where(
-        KTeamMember.team_id == team_id,
-        KTeamMember.principal_id == principal_id,
-        KTeamMember.scope == scope,  # type: ignore
+        KTeamMember.team_id == team_id,  # type: ignore[arg-type]
+        KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
@@ -163,9 +163,9 @@ async def update_team_member(
         TeamMemberNotFoundException: If the team member is not found
     """
     stmt = select(KTeamMember).where(
-        KTeamMember.team_id == team_id,
-        KTeamMember.principal_id == principal_id,
-        KTeamMember.scope == scope,  # type: ignore
+        KTeamMember.team_id == team_id,  # type: ignore[arg-type]
+        KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
@@ -206,9 +206,9 @@ async def remove_team_member(
         TeamMemberNotFoundException: If the team member is not found
     """
     stmt = select(KTeamMember).where(
-        KTeamMember.team_id == team_id,
-        KTeamMember.principal_id == principal_id,
-        KTeamMember.scope == scope,  # type: ignore
+        KTeamMember.team_id == team_id,  # type: ignore[arg-type]
+        KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()

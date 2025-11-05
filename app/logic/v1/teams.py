@@ -67,7 +67,7 @@ async def list_teams(scope: str, db: AsyncSession) -> list[KTeam]:
     Returns:
         List of team models
     """
-    stmt = select(KTeam).where(KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     teams = result.scalars().all()
     return list(teams)
@@ -87,7 +87,7 @@ async def get_team(team_id: UUID, scope: str, db: AsyncSession) -> KTeam:
     Raises:
         TeamNotFoundException: If the team is not found in the given scope
     """
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -120,7 +120,7 @@ async def update_team(
         TeamNotFoundException: If the team is not found
         TeamUpdateConflictException: If updating causes a name conflict
     """
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -162,7 +162,7 @@ async def delete_team(team_id: UUID, scope: str, db: AsyncSession) -> None:
     Raises:
         TeamNotFoundException: If the team is not found
     """
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 

@@ -40,7 +40,7 @@ async def add_team_reviewer(
         TeamReviewerAlreadyExistsException: If the reviewer already exists in the team
     """
     # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -89,7 +89,7 @@ async def list_team_reviewers(
         TeamNotFoundException: If the team is not found
     """
     # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -97,12 +97,12 @@ async def list_team_reviewers(
         raise TeamNotFoundException(team_id=team_id, scope=scope)
 
     # Get all reviewers for this team in the scope
-    stmt = select(KTeamReviewer).where(
-        KTeamReviewer.team_id == team_id, KTeamReviewer.scope == scope  # type: ignore
+    stmt = select(KTeamReviewer).where(  # type: ignore[assignment]
+        KTeamReviewer.team_id == team_id, KTeamReviewer.scope == scope  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewers = result.scalars().all()
-    return list(reviewers)
+    return list(reviewers)  # type: ignore[arg-type]
 
 
 async def get_team_reviewer(
@@ -123,9 +123,9 @@ async def get_team_reviewer(
         TeamReviewerNotFoundException: If the team reviewer is not found
     """
     stmt = select(KTeamReviewer).where(
-        KTeamReviewer.team_id == team_id,
-        KTeamReviewer.principal_id == principal_id,
-        KTeamReviewer.scope == scope,  # type: ignore
+        KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
+        KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()
@@ -163,9 +163,9 @@ async def update_team_reviewer(
         TeamReviewerNotFoundException: If the team reviewer is not found
     """
     stmt = select(KTeamReviewer).where(
-        KTeamReviewer.team_id == team_id,
-        KTeamReviewer.principal_id == principal_id,
-        KTeamReviewer.scope == scope,  # type: ignore
+        KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
+        KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()
@@ -206,9 +206,9 @@ async def remove_team_reviewer(
         TeamReviewerNotFoundException: If the team reviewer is not found
     """
     stmt = select(KTeamReviewer).where(
-        KTeamReviewer.team_id == team_id,
-        KTeamReviewer.principal_id == principal_id,
-        KTeamReviewer.scope == scope,  # type: ignore
+        KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
+        KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()

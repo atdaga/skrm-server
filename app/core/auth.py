@@ -149,10 +149,10 @@ async def authenticate_user(
         UserDetail if authentication successful, None otherwise
     """
     stmt = select(KPrincipal).where(
-        KPrincipal.scope == "global",  # type: ignore
-        KPrincipal.human == True,  # type: ignore  # noqa: E712
-        KPrincipal.enabled == True,  # type: ignore  # noqa: E712
-        KPrincipal.username == username,  # type: ignore
+        KPrincipal.scope == "global",  # type: ignore[arg-type]
+        KPrincipal.human == True,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.enabled == True,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.username == username,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     principal = result.scalar_one_or_none()
@@ -163,7 +163,7 @@ async def authenticate_user(
     # Query for the user's password hash
     identity_stmt = select(KPrincipalIdentity).where(
         KPrincipalIdentity.principal_id == principal.id,
-        KPrincipalIdentity.password != None,  # type: ignore  # noqa: E711
+        KPrincipalIdentity.password != None,  # type: ignore[arg-type]  # noqa: E711
     )
     identity_result = await db.execute(identity_stmt)
     principal_identity = identity_result.scalar_one_or_none()

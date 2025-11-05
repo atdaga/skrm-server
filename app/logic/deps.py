@@ -65,7 +65,7 @@ async def get_user_by_id(user_id: UUID, db: AsyncSession) -> UserDetail:
     Raises:
         UserNotFoundException: If user is not found in database
     """
-    stmt = select(KPrincipal).where(KPrincipal.id == user_id)  # type: ignore
+    stmt = select(KPrincipal).where(KPrincipal.id == user_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 

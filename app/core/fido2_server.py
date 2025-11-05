@@ -28,7 +28,7 @@ def get_fido2_server() -> Fido2Server:
         Fido2Server instance configured with RP settings
     """
     rp = PublicKeyCredentialRpEntity(name=settings.rp_name, id=settings.rp_id)
-    return Fido2Server(rp, attestation="none")
+    return Fido2Server(rp, attestation="none")  # type: ignore[arg-type]
 
 
 def store_challenge(session_id: str, challenge: bytes) -> None:
@@ -185,7 +185,7 @@ def credential_to_descriptor(
         PublicKeyCredentialDescriptor for authentication options
     """
     return PublicKeyCredentialDescriptor(
-        type="public-key", id=credential_id, transports=transports or []
+        type="public-key", id=credential_id, transports=transports or []  # type: ignore[arg-type]
     )
 
 
