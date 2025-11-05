@@ -35,6 +35,23 @@ class Settings(BaseSettings):
         description="Absolute refresh token expiration in months from session start",
     )
 
+    # FIDO2/WebAuthn configuration
+    rp_id: str = Field(
+        default="localhost", description="Relying Party ID (domain name)"
+    )
+    rp_name: str = Field(default="Python Server", description="Relying Party name")
+    rp_origin: str = Field(
+        default="http://localhost:8000",
+        description="Relying Party origin URL (must match browser origin)",
+    )
+    fido2_timeout: int = Field(
+        default=60000, description="FIDO2 operation timeout in milliseconds"
+    )
+    fido2_require_resident_key: bool = Field(
+        default=False,
+        description="Require resident key (discoverable credential) for registration",
+    )
+
     @property
     def database_url(self) -> str:
         """Construct the PostgreSQL database URL."""
