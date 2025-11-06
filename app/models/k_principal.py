@@ -6,6 +6,7 @@ from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from .k_organization_principal import KOrganizationPrincipal
     from .k_team_member import KTeamMember
     from .k_team_reviewer import KTeamReviewer
 
@@ -39,6 +40,9 @@ class KPrincipal(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization_memberships: list["KOrganizationPrincipal"] = Relationship(
+        back_populates="principal"
+    )
     team_memberships: list["KTeamMember"] = Relationship(back_populates="principal")
     team_reviewer_assignments: list["KTeamReviewer"] = Relationship(
         back_populates="principal"

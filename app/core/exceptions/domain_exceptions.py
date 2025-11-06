@@ -98,7 +98,13 @@ class OrganizationAlreadyExistsException(DomainException):
 class OrganizationUpdateConflictException(DomainException):
     """Raised when updating an organization causes a naming conflict."""
 
-    def __init__(self, org_id: UUID, identifier: str, identifier_type: str, scope: str | None = None):
+    def __init__(
+        self,
+        org_id: UUID,
+        identifier: str,
+        identifier_type: str,
+        scope: str | None = None,
+    ):
         message = f"Cannot update organization '{org_id}': {identifier_type} '{identifier}' already exists"
         if scope:
             message += f" in scope '{scope}'"
@@ -244,5 +250,38 @@ class TeamReviewerAlreadyExistsException(DomainException):
         message = f"Team reviewer with team_id '{team_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
         super().__init__(message, entity_type="team_reviewer", entity_id=principal_id)
         self.team_id = team_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+# ============================================================================
+# Organization Principal-related exceptions
+# ============================================================================
+
+
+class OrganizationPrincipalNotFoundException(DomainException):
+    """Raised when an organization principal cannot be found."""
+
+    def __init__(self, org_id: UUID, principal_id: UUID, scope: str | None = None):
+        message = f"Organization principal with org_id '{org_id}' and principal_id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(
+            message, entity_type="organization_principal", entity_id=principal_id
+        )
+        self.org_id = org_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+class OrganizationPrincipalAlreadyExistsException(DomainException):
+    """Raised when attempting to add an organization principal that already exists."""
+
+    def __init__(self, org_id: UUID, principal_id: UUID, scope: str):
+        message = f"Organization principal with org_id '{org_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
+        super().__init__(
+            message, entity_type="organization_principal", entity_id=principal_id
+        )
+        self.org_id = org_id
         self.principal_id = principal_id
         self.scope = scope

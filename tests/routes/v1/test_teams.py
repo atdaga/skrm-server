@@ -240,7 +240,6 @@ class TestListTeams:
         assert team_names == {"Team Alpha", "Team Beta", "Team Gamma"}
 
 
-
 class TestGetTeam:
     """Test suite for GET /teams/{team_id} endpoint."""
 
@@ -288,7 +287,6 @@ class TestGetTeam:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-
     @pytest.mark.asyncio
     async def test_get_team_invalid_uuid(
         self,
@@ -325,7 +323,9 @@ class TestUpdateTeam:
 
         update_data = {"name": "New Name"}
 
-        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -355,7 +355,9 @@ class TestUpdateTeam:
 
         update_data = {"meta": {"new": "data", "updated": True}}
 
-        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -385,7 +387,9 @@ class TestUpdateTeam:
 
         update_data = {"name": "New Name", "meta": {"new": "data"}}
 
-        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -402,11 +406,12 @@ class TestUpdateTeam:
         non_existent_id = uuid4()
         update_data = {"name": "New Name"}
 
-        response = await client.patch(f"/teams/{non_existent_id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{non_existent_id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-
 
     @pytest.mark.asyncio
     async def test_update_team_duplicate_name(
@@ -438,7 +443,9 @@ class TestUpdateTeam:
         # Try to rename team2 to team1's name
         update_data = {"name": "Team One"}
 
-        response = await client.patch(f"/teams/{team2.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team2.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
@@ -466,7 +473,9 @@ class TestUpdateTeam:
 
         update_data = {}
 
-        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -495,7 +504,9 @@ class TestUpdateTeam:
 
         update_data = {"name": "Updated Team"}
 
-        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -550,7 +561,6 @@ class TestDeleteTeam:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-
 
     @pytest.mark.asyncio
     async def test_delete_team_invalid_uuid(

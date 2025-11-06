@@ -1,8 +1,12 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, UniqueConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from .k_organization_principal import KOrganizationPrincipal
 
 
 class KOrganization(SQLModel, table=True):
@@ -20,6 +24,11 @@ class KOrganization(SQLModel, table=True):
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
     last_modified_by: UUID
+
+    # Relationships
+    organization_principals: list["KOrganizationPrincipal"] = Relationship(
+        back_populates="organization", cascade_delete=True
+    )
 
 
 __all__ = ["KOrganization"]

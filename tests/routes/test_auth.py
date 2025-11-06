@@ -167,12 +167,19 @@ class TestLoginEndpoint:
     @pytest.mark.asyncio
     async def test_login_empty_credentials(self, client: AsyncClient):
         """Test login with empty credentials."""
-        response = await client.post(
-            "/auth/login", data={"username": "", "password": ""}
-        )
+        from app.core.exceptions.domain_exceptions import InvalidCredentialsException
 
-        # Should still call authentication (which will fail)
-        assert response.status_code in [401, 422]
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.side_effect = InvalidCredentialsException(username="")
+
+            response = await client.post(
+                "/auth/login", data={"username": "", "password": ""}
+            )
+
+            # Should still call authentication (which will fail)
+            assert response.status_code in [401, 422]
 
     @pytest.mark.asyncio
     async def test_login_token_includes_issuer(

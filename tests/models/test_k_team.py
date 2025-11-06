@@ -35,7 +35,9 @@ class TestKTeamModel:
         assert team.name == "Engineering"
 
     @pytest.mark.asyncio
-    async def test_team_default_values(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_default_values(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test that default values are set correctly."""
         team = KTeam(
             org_id=test_org_id,
@@ -73,7 +75,9 @@ class TestKTeamModel:
         assert team.name == "Sales"
 
     @pytest.mark.asyncio
-    async def test_team_with_meta_data(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_with_meta_data(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test creating a team with metadata."""
         meta_data = {
             "department": "Engineering",
@@ -159,7 +163,9 @@ class TestKTeamModel:
         assert len(teams) == 2
 
     @pytest.mark.asyncio
-    async def test_team_query(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_query(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test querying teams from database."""
         team = KTeam(
             org_id=test_org_id,
@@ -225,7 +231,9 @@ class TestKTeamModel:
         assert team_names == {"Team A", "Team B"}
 
     @pytest.mark.asyncio
-    async def test_team_update(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_update(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test updating team fields."""
         team = KTeam(
             org_id=test_org_id,
@@ -249,7 +257,9 @@ class TestKTeamModel:
         assert team.meta == {"updated": True}
 
     @pytest.mark.asyncio
-    async def test_team_delete(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_delete(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test deleting a team."""
         team = KTeam(
             org_id=test_org_id,
@@ -271,7 +281,9 @@ class TestKTeamModel:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_team_meta_json_field(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_meta_json_field(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test that meta field correctly stores and retrieves complex JSON data."""
         meta_data = {
             "description": "A team for backend development",
@@ -374,7 +386,9 @@ class TestKTeamModel:
         assert len(org2_teams) == 2
 
     @pytest.mark.asyncio
-    async def test_team_empty_meta(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
+    async def test_team_empty_meta(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ):
         """Test that teams can have empty meta dictionaries."""
         team = KTeam(
             org_id=test_org_id,

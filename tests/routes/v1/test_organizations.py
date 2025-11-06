@@ -330,7 +330,6 @@ class TestListOrganizations:
         assert org_names == {"Org Alpha", "Org Beta", "Org Gamma"}
 
 
-
 class TestGetOrganization:
     """Test suite for GET /organizations/{org_id} endpoint."""
 
@@ -374,7 +373,6 @@ class TestGetOrganization:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-
 
 
 class TestUpdateOrganization:
@@ -772,4 +770,3 @@ class TestDeleteOrganization:
         response = await client.delete(f"/organizations/{fake_id}")
 
         assert response.status_code == 404
-

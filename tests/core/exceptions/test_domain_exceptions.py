@@ -273,9 +273,7 @@ class TestOrganizationExceptions:
     def test_organization_already_exists_exception_with_scope(self):
         """Test OrganizationAlreadyExistsException with scope."""
         exception = OrganizationAlreadyExistsException(
-            identifier="test-org",
-            identifier_type="name",
-            scope="test-scope"
+            identifier="test-org", identifier_type="name", scope="test-scope"
         )
 
         assert exception.identifier == "test-org"
@@ -289,8 +287,7 @@ class TestOrganizationExceptions:
     def test_organization_already_exists_exception_without_scope(self):
         """Test OrganizationAlreadyExistsException without scope."""
         exception = OrganizationAlreadyExistsException(
-            identifier="test-alias",
-            identifier_type="alias"
+            identifier="test-alias", identifier_type="alias"
         )
 
         assert exception.identifier == "test-alias"
@@ -306,7 +303,7 @@ class TestOrganizationExceptions:
             org_id=org_id,
             identifier="conflict-name",
             identifier_type="name",
-            scope="test-scope"
+            scope="test-scope",
         )
 
         assert exception.org_id == org_id
@@ -322,9 +319,7 @@ class TestOrganizationExceptions:
         """Test OrganizationUpdateConflictException without scope."""
         org_id = uuid4()
         exception = OrganizationUpdateConflictException(
-            org_id=org_id,
-            identifier="conflict-alias",
-            identifier_type="alias"
+            org_id=org_id, identifier="conflict-alias", identifier_type="alias"
         )
 
         assert exception.org_id == org_id
@@ -342,9 +337,7 @@ class TestTeamMemberExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamMemberNotFoundException(
-            team_id=team_id,
-            principal_id=principal_id,
-            scope="test-scope"
+            team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
 
         assert exception.team_id == team_id
@@ -360,8 +353,7 @@ class TestTeamMemberExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamMemberNotFoundException(
-            team_id=team_id,
-            principal_id=principal_id
+            team_id=team_id, principal_id=principal_id
         )
 
         assert exception.team_id == team_id
@@ -374,9 +366,7 @@ class TestTeamMemberExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamMemberAlreadyExistsException(
-            team_id=team_id,
-            principal_id=principal_id,
-            scope="test-scope"
+            team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
 
         assert exception.team_id == team_id
@@ -396,9 +386,7 @@ class TestTeamReviewerExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamReviewerNotFoundException(
-            team_id=team_id,
-            principal_id=principal_id,
-            scope="test-scope"
+            team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
 
         assert exception.team_id == team_id
@@ -414,8 +402,7 @@ class TestTeamReviewerExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamReviewerNotFoundException(
-            team_id=team_id,
-            principal_id=principal_id
+            team_id=team_id, principal_id=principal_id
         )
 
         assert exception.team_id == team_id
@@ -428,9 +415,7 @@ class TestTeamReviewerExceptions:
         team_id = uuid4()
         principal_id = uuid4()
         exception = TeamReviewerAlreadyExistsException(
-            team_id=team_id,
-            principal_id=principal_id,
-            scope="test-scope"
+            team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
 
         assert exception.team_id == team_id

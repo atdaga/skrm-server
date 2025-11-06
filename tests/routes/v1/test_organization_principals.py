@@ -1,4 +1,4 @@
-"""Unit tests for team member management endpoints."""
+"""Unit tests for organization principal management endpoints."""
 
 from uuid import UUID, uuid4
 
@@ -7,9 +7,9 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KPrincipal, KTeam, KTeamMember
+from app.models import KOrganization, KOrganizationPrincipal, KPrincipal
 from app.routes.deps import get_current_token
-from app.routes.v1.team_members import router
+from app.routes.v1.organization_principals import router
 from app.schemas.user import TokenData
 
 
@@ -46,20 +46,20 @@ async def client(app_with_overrides: FastAPI) -> AsyncClient:
 
 
 @pytest.fixture
-async def team(
-    async_session: AsyncSession, test_org_id: UUID, test_user_id: UUID
-) -> KTeam:
-    """Create a test team."""
-    team = KTeam(
-        name="Engineering Team",
-        org_id=test_org_id,
+async def organization(
+    async_session: AsyncSession, test_user_id: UUID
+) -> KOrganization:
+    """Create a test organization."""
+    organization = KOrganization(
+        name="Test Organization",
+        alias="test-org",
         created_by=test_user_id,
         last_modified_by=test_user_id,
     )
-    async_session.add(team)
+    async_session.add(organization)
     await async_session.commit()
-    await async_session.refresh(team)
-    return team
+    await async_session.refresh(organization)
+    return organization
 
 
 @pytest.fixture
@@ -80,133 +80,137 @@ async def principal(async_session: AsyncSession, test_user_id: UUID) -> KPrincip
     return principal
 
 
-class TestAddTeamMember:
-    """Test suite for POST /teams/{team_id}/members endpoint."""
+class TestAddOrganizationPrincipal:
+    """Test suite for POST /organizations/{org_id}/principals endpoint."""
 
     @pytest.mark.asyncio
-    async def test_add_team_member_success(
+    async def test_add_organization_principal_success(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test successfully adding a new team member."""
-        member_data = {
+        """Test successfully adding a new organization principal."""
+        principal_data = {
             "principal_id": str(principal.id),
-            "role": "developer",
-            "meta": {"department": "Backend", "level": "Senior"},
+            "role": "admin",
+            "meta": {"department": "Engineering", "level": "Senior"},
         }
 
-        response = await client.post(f"/teams/{team.id}/members", json=member_data)
+        response = await client.post(
+            f"/organizations/{organization.id}/principals", json=principal_data
+        )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["team_id"] == str(team.id)
+        assert data["org_id"] == str(organization.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["role"] == "developer"
-        assert data["meta"] == {"department": "Backend", "level": "Senior"}
+        assert data["role"] == "admin"
+        assert data["meta"] == {"department": "Engineering", "level": "Senior"}
         assert data["created_by"] == str(test_user_id)
         assert data["last_modified_by"] == str(test_user_id)
         assert "created" in data
         assert "last_modified" in data
 
     @pytest.mark.asyncio
-    async def test_add_team_member_minimal_data(
+    async def test_add_organization_principal_minimal_data(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
-        test_org_id: UUID,
     ):
-        """Test adding a team member with minimal required fields."""
-        member_data = {"principal_id": str(principal.id)}
+        """Test adding an organization principal with minimal required fields."""
+        principal_data = {"principal_id": str(principal.id)}
 
-        response = await client.post(f"/teams/{team.id}/members", json=member_data)
+        response = await client.post(
+            f"/organizations/{organization.id}/principals", json=principal_data
+        )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["team_id"] == str(team.id)
+        assert data["org_id"] == str(organization.id)
         assert data["principal_id"] == str(principal.id)
         assert data["role"] is None
         assert data["meta"] == {}
 
     @pytest.mark.asyncio
-    async def test_add_team_member_duplicate(
+    async def test_add_organization_principal_duplicate(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test that adding a duplicate team member fails."""
-        # Add member directly in database
-        member = KTeamMember(
-            team_id=team.id,
+        """Test that adding a duplicate organization principal fails."""
+        # Add principal directly in database
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
-        async_session.expunge(member)
+        async_session.expunge(org_principal)
 
-        # Try to add same member via API
-        member_data = {"principal_id": str(principal.id)}
+        # Try to add same principal via API
+        principal_data = {"principal_id": str(principal.id)}
 
-        response = await client.post(f"/teams/{team.id}/members", json=member_data)
+        response = await client.post(
+            f"/organizations/{organization.id}/principals", json=principal_data
+        )
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_add_team_member_team_not_found(
+    async def test_add_organization_principal_org_not_found(
         self,
         client: AsyncClient,
         principal: KPrincipal,
     ):
-        """Test adding a member to a non-existent team."""
-        non_existent_team_id = uuid4()
-        member_data = {"principal_id": str(principal.id)}
+        """Test adding a principal to a non-existent organization."""
+        non_existent_org_id = uuid4()
+        principal_data = {"principal_id": str(principal.id)}
 
         response = await client.post(
-            f"/teams/{non_existent_team_id}/members", json=member_data
+            f"/organizations/{non_existent_org_id}/principals", json=principal_data
         )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_add_team_member_with_role(
+    async def test_add_organization_principal_with_role(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
     ):
-        """Test adding a team member with a specific role."""
-        member_data = {"principal_id": str(principal.id), "role": "lead"}
+        """Test adding an organization principal with a specific role."""
+        principal_data = {"principal_id": str(principal.id), "role": "manager"}
 
-        response = await client.post(f"/teams/{team.id}/members", json=member_data)
+        response = await client.post(
+            f"/organizations/{organization.id}/principals", json=principal_data
+        )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["role"] == "lead"
+        assert data["role"] == "manager"
 
     @pytest.mark.asyncio
-    async def test_add_team_member_with_complex_meta(
+    async def test_add_organization_principal_with_complex_meta(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
     ):
-        """Test adding a team member with complex metadata."""
-        member_data = {
+        """Test adding an organization principal with complex metadata."""
+        principal_data = {
             "principal_id": str(principal.id),
-            "role": "developer",
+            "role": "engineer",
             "meta": {
                 "skills": ["Python", "FastAPI", "SQLAlchemy"],
                 "certifications": {"aws": True, "gcp": False},
@@ -214,76 +218,75 @@ class TestAddTeamMember:
             },
         }
 
-        response = await client.post(f"/teams/{team.id}/members", json=member_data)
+        response = await client.post(
+            f"/organizations/{organization.id}/principals", json=principal_data
+        )
 
         assert response.status_code == 201
         data = response.json()
-        assert data["meta"] == member_data["meta"]
+        assert data["meta"] == principal_data["meta"]
 
 
-class TestListTeamMembers:
-    """Test suite for GET /teams/{team_id}/members endpoint."""
+class TestListOrganizationPrincipals:
+    """Test suite for GET /organizations/{org_id}/principals endpoint."""
 
     @pytest.mark.asyncio
-    async def test_list_team_members_empty(
+    async def test_list_organization_principals_empty(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
     ):
-        """Test listing team members when none exist."""
-        response = await client.get(f"/teams/{team.id}/members")
+        """Test listing organization principals when none exist."""
+        response = await client.get(f"/organizations/{organization.id}/principals")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["members"] == []
+        assert data["principals"] == []
 
     @pytest.mark.asyncio
-    async def test_list_team_members_single(
+    async def test_list_organization_principals_single(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test listing team members with a single member."""
-        # Add a member
-        member = KTeamMember(
-            team_id=team.id,
+        """Test listing organization principals with a single principal."""
+        # Add a principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
-            role="developer",
+            role="admin",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
-        response = await client.get(f"/teams/{team.id}/members")
+        response = await client.get(f"/organizations/{organization.id}/principals")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["members"]) == 1
-        assert data["members"][0]["team_id"] == str(team.id)
-        assert data["members"][0]["principal_id"] == str(principal.id)
-        assert data["members"][0]["role"] == "developer"
+        assert len(data["principals"]) == 1
+        assert data["principals"][0]["org_id"] == str(organization.id)
+        assert data["principals"][0]["principal_id"] == str(principal.id)
+        assert data["principals"][0]["role"] == "admin"
 
     @pytest.mark.asyncio
-    async def test_list_team_members_multiple(
+    async def test_list_organization_principals_multiple(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test listing multiple team members."""
-        # Create multiple principals and add as members
+        """Test listing multiple organization principals."""
+        # Create multiple principals and add them
         principals_data = [
             {"username": "user1", "email": "user1@example.com", "role": "admin"},
-            {"username": "user2", "email": "user2@example.com", "role": "developer"},
-            {"username": "user3", "email": "user3@example.com", "role": "designer"},
+            {"username": "user2", "email": "user2@example.com", "role": "engineer"},
+            {"username": "user3", "email": "user3@example.com", "role": "manager"},
         ]
 
         for idx, p_data in enumerate(principals_data):
@@ -300,158 +303,155 @@ class TestListTeamMembers:
             await async_session.commit()
             await async_session.refresh(principal)
 
-            member = KTeamMember(
-                team_id=team.id,
+            org_principal = KOrganizationPrincipal(
+                org_id=organization.id,
                 principal_id=principal.id,
-                org_id=test_org_id,
                 role=p_data["role"],
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
             )
-            async_session.add(member)
+            async_session.add(org_principal)
 
         await async_session.commit()
 
-        response = await client.get(f"/teams/{team.id}/members")
+        response = await client.get(f"/organizations/{organization.id}/principals")
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data["members"]) == 3
-        roles = {m["role"] for m in data["members"]}
-        assert roles == {"admin", "developer", "designer"}
+        assert len(data["principals"]) == 3
+        roles = {p["role"] for p in data["principals"]}
+        assert roles == {"admin", "engineer", "manager"}
 
     @pytest.mark.asyncio
-    async def test_list_team_members_team_not_found(
+    async def test_list_organization_principals_org_not_found(
         self,
         client: AsyncClient,
     ):
-        """Test listing members of a non-existent team."""
-        non_existent_team_id = uuid4()
+        """Test listing principals of a non-existent organization."""
+        non_existent_org_id = uuid4()
 
-        response = await client.get(f"/teams/{non_existent_team_id}/members")
+        response = await client.get(f"/organizations/{non_existent_org_id}/principals")
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
 
-class TestGetTeamMember:
-    """Test suite for GET /teams/{team_id}/members/{principal_id} endpoint."""
+class TestGetOrganizationPrincipal:
+    """Test suite for GET /organizations/{org_id}/principals/{principal_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_team_member_success(
+    async def test_get_organization_principal_success(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test successfully getting a single team member."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        """Test successfully getting a single organization principal."""
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
-            role="developer",
+            role="admin",
             meta={"level": "senior"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
-        response = await client.get(f"/teams/{team.id}/members/{principal.id}")
+        response = await client.get(
+            f"/organizations/{organization.id}/principals/{principal.id}"
+        )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["team_id"] == str(team.id)
+        assert data["org_id"] == str(organization.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["role"] == "developer"
+        assert data["role"] == "admin"
         assert data["meta"] == {"level": "senior"}
 
     @pytest.mark.asyncio
-    async def test_get_team_member_not_found(
+    async def test_get_organization_principal_not_found(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
     ):
-        """Test getting a team member that doesn't exist."""
+        """Test getting an organization principal that doesn't exist."""
         non_existent_principal_id = uuid4()
 
         response = await client.get(
-            f"/teams/{team.id}/members/{non_existent_principal_id}"
+            f"/organizations/{organization.id}/principals/{non_existent_principal_id}"
         )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
 
-class TestUpdateTeamMember:
-    """Test suite for PATCH /teams/{team_id}/members/{principal_id} endpoint."""
+class TestUpdateOrganizationPrincipal:
+    """Test suite for PATCH /organizations/{org_id}/principals/{principal_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_update_team_member_role(
+    async def test_update_organization_principal_role(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test updating a team member's role."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        """Test updating an organization principal's role."""
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
-            role="developer",
+            role="member",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
-        update_data = {"role": "lead"}
+        update_data = {"role": "admin"}
 
         response = await client.patch(
-            f"/teams/{team.id}/members/{principal.id}", json=update_data
+            f"/organizations/{organization.id}/principals/{principal.id}",
+            json=update_data,
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "lead"
-        assert data["team_id"] == str(team.id)
+        assert data["role"] == "admin"
+        assert data["org_id"] == str(organization.id)
         assert data["principal_id"] == str(principal.id)
 
     @pytest.mark.asyncio
-    async def test_update_team_member_meta(
+    async def test_update_organization_principal_meta(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test updating a team member's metadata."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        """Test updating an organization principal's metadata."""
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
         update_data = {"meta": {"new": "data", "updated": True}}
 
         response = await client.patch(
-            f"/teams/{team.id}/members/{principal.id}", json=update_data
+            f"/organizations/{organization.id}/principals/{principal.id}",
+            json=update_data,
         )
 
         assert response.status_code == 200
@@ -459,145 +459,144 @@ class TestUpdateTeamMember:
         assert data["meta"] == {"new": "data", "updated": True}
 
     @pytest.mark.asyncio
-    async def test_update_team_member_both_fields(
+    async def test_update_organization_principal_both_fields(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating both role and meta."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
-            role="developer",
+            role="member",
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
-        update_data = {"role": "senior_developer", "meta": {"new": "data"}}
+        update_data = {"role": "senior_member", "meta": {"new": "data"}}
 
         response = await client.patch(
-            f"/teams/{team.id}/members/{principal.id}", json=update_data
+            f"/organizations/{organization.id}/principals/{principal.id}",
+            json=update_data,
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "senior_developer"
+        assert data["role"] == "senior_member"
         assert data["meta"] == {"new": "data"}
 
     @pytest.mark.asyncio
-    async def test_update_team_member_not_found(
+    async def test_update_organization_principal_not_found(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
     ):
-        """Test updating a team member that doesn't exist."""
+        """Test updating an organization principal that doesn't exist."""
         non_existent_principal_id = uuid4()
-        update_data = {"role": "lead"}
+        update_data = {"role": "admin"}
 
         response = await client.patch(
-            f"/teams/{team.id}/members/{non_existent_principal_id}", json=update_data
+            f"/organizations/{organization.id}/principals/{non_existent_principal_id}",
+            json=update_data,
         )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_update_team_member_empty_payload(
+    async def test_update_organization_principal_empty_payload(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating with empty payload (no changes)."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
-            role="developer",
+            role="member",
             meta={"key": "value"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
         update_data = {}
 
         response = await client.patch(
-            f"/teams/{team.id}/members/{principal.id}", json=update_data
+            f"/organizations/{organization.id}/principals/{principal.id}",
+            json=update_data,
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "developer"
+        assert data["role"] == "member"
         assert data["meta"] == {"key": "value"}
 
 
-class TestRemoveTeamMember:
-    """Test suite for DELETE /teams/{team_id}/members/{principal_id} endpoint."""
+class TestRemoveOrganizationPrincipal:
+    """Test suite for DELETE /organizations/{org_id}/principals/{principal_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_remove_team_member_success(
+    async def test_remove_organization_principal_success(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_org_id: UUID,
         test_user_id: UUID,
     ):
-        """Test successfully removing a team member."""
-        # Add member
-        member = KTeamMember(
-            team_id=team.id,
+        """Test successfully removing an organization principal."""
+        # Add principal
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
             principal_id=principal.id,
-            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(member)
+        async_session.add(org_principal)
         await async_session.commit()
 
-        response = await client.delete(f"/teams/{team.id}/members/{principal.id}")
+        response = await client.delete(
+            f"/organizations/{organization.id}/principals/{principal.id}"
+        )
 
         assert response.status_code == 204
         assert response.content == b""
 
-        # Verify member is actually deleted
+        # Verify principal is actually deleted
         from sqlmodel import select
 
         result = await async_session.execute(
-            select(KTeamMember).where(
-                KTeamMember.team_id == team.id,
-                KTeamMember.principal_id == principal.id,
+            select(KOrganizationPrincipal).where(
+                KOrganizationPrincipal.org_id == organization.id,
+                KOrganizationPrincipal.principal_id == principal.id,
             )
         )
         assert result.scalar_one_or_none() is None
 
     @pytest.mark.asyncio
-    async def test_remove_team_member_not_found(
+    async def test_remove_organization_principal_not_found(
         self,
         client: AsyncClient,
-        team: KTeam,
+        organization: KOrganization,
     ):
-        """Test removing a team member that doesn't exist."""
+        """Test removing an organization principal that doesn't exist."""
         non_existent_principal_id = uuid4()
 
         response = await client.delete(
-            f"/teams/{team.id}/members/{non_existent_principal_id}"
+            f"/organizations/{organization.id}/principals/{non_existent_principal_id}"
         )
 
         assert response.status_code == 404

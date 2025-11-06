@@ -73,9 +73,7 @@ async def add_team_member(
     return new_member
 
 
-async def list_team_members(
-    team_id: UUID, db: AsyncSession
-) -> list[KTeamMember]:
+async def list_team_members(team_id: UUID, db: AsyncSession) -> list[KTeamMember]:
     """List all members of a team.
 
     Args:

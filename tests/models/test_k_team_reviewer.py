@@ -17,7 +17,9 @@ class TestKTeamReviewerModel:
     """Test suite for KTeamReviewer model."""
 
     @pytest.fixture
-    async def team(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID) -> KTeam:
+    async def team(
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
+    ) -> KTeam:
         """Create a test team."""
         team = KTeam(
             name="Engineering",
@@ -199,7 +201,11 @@ class TestKTeamReviewerModel:
 
     @pytest.mark.asyncio
     async def test_principal_multiple_teams(
-        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID, test_org_id: UUID
+        self,
+        session: AsyncSession,
+        principal: KPrincipal,
+        creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that a principal can be a reviewer of multiple teams."""
         team1 = KTeam(

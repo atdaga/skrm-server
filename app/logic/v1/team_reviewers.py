@@ -73,9 +73,7 @@ async def add_team_reviewer(
     return new_reviewer
 
 
-async def list_team_reviewers(
-    team_id: UUID, db: AsyncSession
-) -> list[KTeamReviewer]:
+async def list_team_reviewers(team_id: UUID, db: AsyncSession) -> list[KTeamReviewer]:
     """List all reviewers of a team.
 
     Args:

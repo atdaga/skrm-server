@@ -153,6 +153,7 @@ class TestAddTeamReviewer:
         )
         async_session.add(reviewer)
         await async_session.commit()
+        async_session.expunge(reviewer)
 
         # Try to add same reviewer via API
         reviewer_data = {"principal_id": str(principal.id)}
@@ -178,7 +179,6 @@ class TestAddTeamReviewer:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-
 
     @pytest.mark.asyncio
     async def test_add_team_reviewer_with_role(
@@ -346,7 +346,6 @@ class TestListTeamReviewers:
         assert "not found" in response.json()["detail"]
 
 
-
 class TestGetTeamReviewer:
     """Test suite for GET /teams/{team_id}/reviewers/{principal_id} endpoint."""
 
@@ -398,7 +397,6 @@ class TestGetTeamReviewer:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-
 
 
 class TestUpdateTeamReviewer:
@@ -616,4 +614,3 @@ class TestRemoveTeamReviewer:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
-

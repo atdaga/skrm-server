@@ -213,9 +213,7 @@ class TestKOrganizationModel:
         assert len(organizations) == 2
 
     @pytest.mark.asyncio
-    async def test_organization_query(
-        self, session: AsyncSession, creator_id: UUID
-    ):
+    async def test_organization_query(self, session: AsyncSession, creator_id: UUID):
         """Test querying organizations from database."""
         org = KOrganization(
             name="Product Corp",
@@ -304,9 +302,7 @@ class TestKOrganizationModel:
         assert result.alias == "org_a"
 
     @pytest.mark.asyncio
-    async def test_organization_update(
-        self, session: AsyncSession, creator_id: UUID
-    ):
+    async def test_organization_update(self, session: AsyncSession, creator_id: UUID):
         """Test updating organization fields."""
         org = KOrganization(
             name="Old Name",
@@ -332,9 +328,7 @@ class TestKOrganizationModel:
         assert org.meta == {"updated": True}
 
     @pytest.mark.asyncio
-    async def test_organization_delete(
-        self, session: AsyncSession, creator_id: UUID
-    ):
+    async def test_organization_delete(self, session: AsyncSession, creator_id: UUID):
         """Test deleting an organization."""
         org = KOrganization(
             name="To Delete",
@@ -392,9 +386,7 @@ class TestKOrganizationModel:
         assert org.meta["metrics"]["employee_count"] == 100
 
     @pytest.mark.asyncio
-    async def test_organization_list_all(
-        self, session: AsyncSession, creator_id: UUID
-    ):
+    async def test_organization_list_all(self, session: AsyncSession, creator_id: UUID):
         """Test listing all organizations."""
         orgs_data = [
             {"name": "Org 1", "alias": "org_1"},

@@ -20,7 +20,9 @@ class OrganizationCreate(BaseModel):
         if not v[0].isalpha() or not v[0].islower():
             raise ValueError("Alias must start with a lowercase letter")
         if not all(c.isalnum() or c == "_" for c in v):
-            raise ValueError("Alias can only contain lowercase letters, digits, and underscores")
+            raise ValueError(
+                "Alias can only contain lowercase letters, digits, and underscores"
+            )
         if not v.islower():
             raise ValueError("Alias must be lowercase")
         return v
@@ -44,7 +46,9 @@ class OrganizationUpdate(BaseModel):
         if not v[0].isalpha() or not v[0].islower():
             raise ValueError("Alias must start with a lowercase letter")
         if not all(c.isalnum() or c == "_" for c in v):
-            raise ValueError("Alias can only contain lowercase letters, digits, and underscores")
+            raise ValueError(
+                "Alias can only contain lowercase letters, digits, and underscores"
+            )
         if not v.islower():
             raise ValueError("Alias must be lowercase")
         return v

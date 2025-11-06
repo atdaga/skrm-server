@@ -55,7 +55,9 @@ async def list_organizations(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationList:
     """List all organizations in the current user's scope."""
-    organizations = await organizations_logic.list_organizations(scope=token_data.scope, db=db)
+    organizations = await organizations_logic.list_organizations(
+        scope=token_data.scope, db=db
+    )
     return OrganizationList(
         organizations=[OrganizationDetail.model_validate(org) for org in organizations]
     )

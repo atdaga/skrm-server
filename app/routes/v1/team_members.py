@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
@@ -40,7 +40,6 @@ async def add_team_member(
             team_id=team_id,
             member_data=member_data,
             user_id=user_id,
-            
             db=db,
         )
         return TeamMemberDetail.model_validate(member)
@@ -64,9 +63,7 @@ async def list_team_members(
 ) -> TeamMemberList:
     """List all members of a team."""
     try:
-        members = await team_members_logic.list_team_members(
-            team_id=team_id,  db=db
-        )
+        members = await team_members_logic.list_team_members(team_id=team_id, db=db)
         return TeamMemberList(
             members=[TeamMemberDetail.model_validate(member) for member in members]
         )
@@ -89,7 +86,6 @@ async def get_team_member(
         member = await team_members_logic.get_team_member(
             team_id=team_id,
             principal_id=principal_id,
-            
             db=db,
         )
         return TeamMemberDetail.model_validate(member)
@@ -117,7 +113,6 @@ async def update_team_member(
             principal_id=principal_id,
             member_data=member_data,
             user_id=user_id,
-            
             db=db,
         )
         return TeamMemberDetail.model_validate(member)
@@ -140,7 +135,6 @@ async def remove_team_member(
         await team_members_logic.remove_team_member(
             team_id=team_id,
             principal_id=principal_id,
-            
             db=db,
         )
     except TeamMemberNotFoundException as e:

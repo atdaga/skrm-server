@@ -97,7 +97,7 @@ async def get_organization(org_id: UUID, scope: str, db: AsyncSession) -> KOrgan
     Raises:
         OrganizationNotFoundException: If the organization is not found
     """
-    stmt = select(KOrganization).where(KOrganization.id == org_id)
+    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -130,7 +130,7 @@ async def update_organization(
         OrganizationNotFoundException: If the organization is not found
         OrganizationUpdateConflictException: If updating causes a name or alias conflict
     """
-    stmt = select(KOrganization).where(KOrganization.id == org_id)
+    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -184,7 +184,7 @@ async def delete_organization(org_id: UUID, scope: str, db: AsyncSession) -> Non
     Raises:
         OrganizationNotFoundException: If the organization is not found
     """
-    stmt = select(KOrganization).where(KOrganization.id == org_id)
+    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
