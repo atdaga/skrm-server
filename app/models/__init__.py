@@ -2,6 +2,7 @@
 
 from .k_deployment_env import KDeploymentEnv
 from .k_doc import KDoc
+from .k_feature import FeatureType, KFeature, ReviewResult
 from .k_fido2_credential import KFido2Credential
 from .k_organization import KOrganization
 from .k_organization_principal import KOrganizationPrincipal
@@ -14,8 +15,10 @@ from .k_team_member import KTeamMember
 from .k_team_reviewer import KTeamReviewer
 
 __all__ = [
+    "FeatureType",
     "KDeploymentEnv",
     "KDoc",
+    "KFeature",
     "KFido2Credential",
     "KOrganization",
     "KOrganizationPrincipal",
@@ -26,4 +29,5 @@ __all__ = [
     "KTeam",
     "KTeamMember",
     "KTeamReviewer",
+    "ReviewResult",
 ]

@@ -444,3 +444,41 @@ class DeploymentEnvUpdateConflictException(DomainException):
         self.deployment_env_id = deployment_env_id
         self.name = name
         self.scope = scope
+
+
+# ============================================================================
+# Feature-related exceptions
+# ============================================================================
+
+
+class FeatureNotFoundException(DomainException):
+    """Raised when a feature cannot be found."""
+
+    def __init__(self, feature_id: UUID, scope: str | None = None):
+        message = f"Feature with id '{feature_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="feature", entity_id=feature_id)
+        self.feature_id = feature_id
+        self.scope = scope
+
+
+class FeatureAlreadyExistsException(DomainException):
+    """Raised when attempting to create a feature that already exists."""
+
+    def __init__(self, name: str, scope: str):
+        message = f"Feature with name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="feature", entity_id=name)
+        self.name = name
+        self.scope = scope
+
+
+class FeatureUpdateConflictException(DomainException):
+    """Raised when updating a feature causes a naming conflict."""
+
+    def __init__(self, feature_id: UUID, name: str, scope: str):
+        message = f"Cannot update feature '{feature_id}': name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="feature", entity_id=feature_id)
+        self.feature_id = feature_id
+        self.name = name
+        self.scope = scope

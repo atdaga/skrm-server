@@ -176,6 +176,9 @@ class TestKProjectTeamModel:
         session.add(project_team1)
         await session.commit()
 
+        # Clear session to test database constraint (not session constraint)
+        session.expunge(project_team1)
+
         # Try to create another project_team with the same project_id and team_id
         project_team2 = KProjectTeam(
             project_id=project.id,
