@@ -20,7 +20,6 @@ async def add_team_reviewer(
     team_id: UUID,
     reviewer_data: TeamReviewerCreate,
     user_id: UUID,
-    scope: str,
     db: AsyncSession,
 ) -> KTeamReviewer:
     """Add a new reviewer to a team.
@@ -29,7 +28,6 @@ async def add_team_reviewer(
         team_id: ID of the team
         reviewer_data: Team reviewer creation data
         user_id: ID of the user adding the reviewer
-        scope: Scope for the team reviewer
         db: Database session
 
     Returns:
@@ -39,19 +37,22 @@ async def add_team_reviewer(
         TeamNotFoundException: If the team is not found
         TeamReviewerAlreadyExistsException: If the reviewer already exists in the team
     """
-    # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
+    # Verify team exists and get its org_id
+    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
     if not team:
-        raise TeamNotFoundException(team_id=team_id, scope=scope)
+        raise TeamNotFoundException(team_id=team_id, scope=None)
+
+    # Store org_id to avoid lazy loading issues
+    org_id = team.org_id
 
     # Create new team reviewer with audit fields
     new_reviewer = KTeamReviewer(
         team_id=team_id,
         principal_id=reviewer_data.principal_id,
-        scope=scope,
+        org_id=org_id,
         role=reviewer_data.role,
         meta=reviewer_data.meta,
         created_by=user_id,
@@ -66,20 +67,19 @@ async def add_team_reviewer(
     except IntegrityError as e:
         await db.rollback()
         raise TeamReviewerAlreadyExistsException(
-            team_id=team_id, principal_id=reviewer_data.principal_id, scope=scope
+            team_id=team_id, principal_id=reviewer_data.principal_id, scope=str(org_id)
         ) from e
 
     return new_reviewer
 
 
 async def list_team_reviewers(
-    team_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, db: AsyncSession
 ) -> list[KTeamReviewer]:
     """List all reviewers of a team.
 
     Args:
         team_id: ID of the team
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -88,17 +88,17 @@ async def list_team_reviewers(
     Raises:
         TeamNotFoundException: If the team is not found
     """
-    # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
+    # Verify team exists and get its org_id
+    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
     if not team:
-        raise TeamNotFoundException(team_id=team_id, scope=scope)
+        raise TeamNotFoundException(team_id=team_id, scope=None)
 
-    # Get all reviewers for this team in the scope
+    # Get all reviewers for this team
     stmt = select(KTeamReviewer).where(  # type: ignore[assignment]
-        KTeamReviewer.team_id == team_id, KTeamReviewer.scope == scope  # type: ignore[arg-type]
+        KTeamReviewer.team_id == team_id  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewers = result.scalars().all()
@@ -106,14 +106,13 @@ async def list_team_reviewers(
 
 
 async def get_team_reviewer(
-    team_id: UUID, principal_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, principal_id: UUID, db: AsyncSession
 ) -> KTeamReviewer:
     """Get a single team reviewer.
 
     Args:
         team_id: ID of the team
         principal_id: ID of the principal (reviewer)
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -125,14 +124,13 @@ async def get_team_reviewer(
     stmt = select(KTeamReviewer).where(
         KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
         KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()
 
     if not reviewer:
         raise TeamReviewerNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     return reviewer
@@ -143,7 +141,6 @@ async def update_team_reviewer(
     principal_id: UUID,
     reviewer_data: TeamReviewerUpdate,
     user_id: UUID,
-    scope: str,
     db: AsyncSession,
 ) -> KTeamReviewer:
     """Update a team reviewer.
@@ -153,7 +150,6 @@ async def update_team_reviewer(
         principal_id: ID of the principal (reviewer)
         reviewer_data: Team reviewer update data
         user_id: ID of the user performing the update
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -165,14 +161,13 @@ async def update_team_reviewer(
     stmt = select(KTeamReviewer).where(
         KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
         KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()
 
     if not reviewer:
         raise TeamReviewerNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     # Update only provided fields
@@ -192,14 +187,13 @@ async def update_team_reviewer(
 
 
 async def remove_team_reviewer(
-    team_id: UUID, principal_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, principal_id: UUID, db: AsyncSession
 ) -> None:
     """Remove a reviewer from a team.
 
     Args:
         team_id: ID of the team
         principal_id: ID of the principal (reviewer)
-        scope: Scope to filter by
         db: Database session
 
     Raises:
@@ -208,14 +202,13 @@ async def remove_team_reviewer(
     stmt = select(KTeamReviewer).where(
         KTeamReviewer.team_id == team_id,  # type: ignore[arg-type]
         KTeamReviewer.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamReviewer.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     reviewer = result.scalar_one_or_none()
 
     if not reviewer:
         raise TeamReviewerNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     await db.delete(reviewer)

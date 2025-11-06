@@ -113,6 +113,12 @@ def test_scope() -> str:
 
 
 @pytest.fixture
+def test_org_id() -> UUID:
+    """Generate a test organization ID for team testing."""
+    return uuid4()
+
+
+@pytest.fixture
 def mock_token_data(test_user_id: UUID, test_scope: str) -> TokenData:
     """Create mock token data for authentication testing."""
     now = datetime.now(UTC).replace(tzinfo=None)

@@ -17,11 +17,11 @@ class TestKTeamReviewerModel:
     """Test suite for KTeamReviewer model."""
 
     @pytest.fixture
-    async def team(self, session: AsyncSession, creator_id: UUID) -> KTeam:
+    async def team(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID) -> KTeam:
         """Create a test team."""
         team = KTeam(
             name="Engineering",
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -54,12 +54,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team reviewer with only required fields."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -70,7 +71,7 @@ class TestKTeamReviewerModel:
 
         assert team_reviewer.team_id == team.id
         assert team_reviewer.principal_id == principal.id
-        assert team_reviewer.scope == "global"
+        assert team_reviewer.org_id == test_org_id
 
     @pytest.mark.asyncio
     async def test_team_reviewer_default_values(
@@ -79,12 +80,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that default values are set correctly."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -105,12 +107,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team reviewer with a role."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -129,6 +132,7 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team reviewer with metadata."""
         meta_data = {
@@ -140,7 +144,7 @@ class TestKTeamReviewerModel:
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="reviewer",
             meta=meta_data,
             created_by=creator_id,
@@ -162,12 +166,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that team_id + principal_id form a composite primary key."""
         team_reviewer1 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -182,7 +187,7 @@ class TestKTeamReviewerModel:
         team_reviewer2 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="different_role",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -194,16 +199,18 @@ class TestKTeamReviewerModel:
 
     @pytest.mark.asyncio
     async def test_principal_multiple_teams(
-        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID, test_org_id: UUID
     ):
         """Test that a principal can be a reviewer of multiple teams."""
         team1 = KTeam(
             name="Engineering",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         team2 = KTeam(
             name="Product",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -214,7 +221,7 @@ class TestKTeamReviewerModel:
         reviewer1 = KTeamReviewer(
             team_id=team1.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -223,7 +230,7 @@ class TestKTeamReviewerModel:
         reviewer2 = KTeamReviewer(
             team_id=team2.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -245,7 +252,7 @@ class TestKTeamReviewerModel:
 
     @pytest.mark.asyncio
     async def test_team_multiple_reviewers(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test that a team can have multiple reviewers."""
         principal1 = KPrincipal(
@@ -275,7 +282,7 @@ class TestKTeamReviewerModel:
         reviewer1 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal1.id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -284,7 +291,7 @@ class TestKTeamReviewerModel:
         reviewer2 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal2.id,
-            scope="global",
+            org_id=test_org_id,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -306,7 +313,7 @@ class TestKTeamReviewerModel:
 
     @pytest.mark.asyncio
     async def test_team_reviewer_query_by_role(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test querying team reviewers by role."""
         principals = []
@@ -329,7 +336,7 @@ class TestKTeamReviewerModel:
         reviewer1 = KTeamReviewer(
             team_id=team.id,
             principal_id=principals[0].id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -338,7 +345,7 @@ class TestKTeamReviewerModel:
         reviewer2 = KTeamReviewer(
             team_id=team.id,
             principal_id=principals[1].id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -347,7 +354,7 @@ class TestKTeamReviewerModel:
         reviewer3 = KTeamReviewer(
             team_id=team.id,
             principal_id=principals[2].id,
-            scope="global",
+            org_id=test_org_id,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -376,12 +383,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test updating team reviewer fields."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -407,12 +415,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test deleting a team reviewer."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -441,12 +450,13 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that deleting a team cascades to team reviewers."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -472,6 +482,7 @@ class TestKTeamReviewerModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that meta field correctly stores and retrieves JSON data."""
         meta_data = {
@@ -489,7 +500,7 @@ class TestKTeamReviewerModel:
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="lead_reviewer",
             meta=meta_data,
             created_by=creator_id,
@@ -517,11 +528,16 @@ class TestKTeamReviewerModel:
         principal: KPrincipal,
         creator_id: UUID,
     ):
-        """Test that team reviewers can have different scopes."""
+        """Test that team reviewers can have different org_ids."""
+        from uuid import uuid4
+
+        org_id_1 = uuid4()
+        org_id_2 = uuid4()
+
         reviewer1 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=org_id_1,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -530,9 +546,10 @@ class TestKTeamReviewerModel:
         session.add(reviewer1)
         await session.commit()
 
-        # Create another team and add the same principal with different scope
+        # Create another team and add the same principal with different org_id
         team2 = KTeam(
             name="Product",
+            org_id=org_id_2,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -542,7 +559,7 @@ class TestKTeamReviewerModel:
         reviewer2 = KTeamReviewer(
             team_id=team2.id,
             principal_id=principal.id,
-            scope="tenant1",
+            org_id=org_id_2,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -551,19 +568,19 @@ class TestKTeamReviewerModel:
         session.add(reviewer2)
         await session.commit()
 
-        # Verify different scopes
+        # Verify different org_ids
         result_exec = await session.execute(
             select(KTeamReviewer).where(KTeamReviewer.principal_id == principal.id)
         )
         assignments = result_exec.scalars().all()
 
         assert len(assignments) == 2
-        scopes = {r.scope for r in assignments}
-        assert scopes == {"global", "tenant1"}
+        org_ids = {r.org_id for r in assignments}
+        assert org_ids == {org_id_1, org_id_2}
 
     @pytest.mark.asyncio
     async def test_team_reviewer_count(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test counting team reviewers."""
         principals = []
@@ -587,7 +604,7 @@ class TestKTeamReviewerModel:
             reviewer = KTeamReviewer(
                 team_id=team.id,
                 principal_id=principal.id,
-                scope="global",
+                org_id=test_org_id,
                 created_by=creator_id,
                 last_modified_by=creator_id,
             )

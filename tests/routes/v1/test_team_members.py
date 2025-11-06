@@ -47,12 +47,12 @@ async def client(app_with_overrides: FastAPI) -> AsyncClient:
 
 @pytest.fixture
 async def team(
-    async_session: AsyncSession, test_scope: str, test_user_id: UUID
+    async_session: AsyncSession, test_org_id: UUID, test_user_id: UUID
 ) -> KTeam:
     """Create a test team."""
     team = KTeam(
         name="Engineering Team",
-        scope=test_scope,
+        org_id=test_org_id,
         created_by=test_user_id,
         last_modified_by=test_user_id,
     )
@@ -89,7 +89,7 @@ class TestAddTeamMember:
         client: AsyncClient,
         team: KTeam,
         principal: KPrincipal,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully adding a new team member."""
@@ -105,7 +105,6 @@ class TestAddTeamMember:
         data = response.json()
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["scope"] == test_scope
         assert data["role"] == "developer"
         assert data["meta"] == {"department": "Backend", "level": "Senior"}
         assert data["created_by"] == str(test_user_id)
@@ -119,7 +118,7 @@ class TestAddTeamMember:
         client: AsyncClient,
         team: KTeam,
         principal: KPrincipal,
-        test_scope: str,
+        test_org_id: UUID,
     ):
         """Test adding a team member with minimal required fields."""
         member_data = {"principal_id": str(principal.id)}
@@ -130,7 +129,6 @@ class TestAddTeamMember:
         data = response.json()
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["scope"] == test_scope
         assert data["role"] is None
         assert data["meta"] == {}
 
@@ -141,7 +139,7 @@ class TestAddTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test that adding a duplicate team member fails."""
@@ -149,7 +147,7 @@ class TestAddTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -181,34 +179,6 @@ class TestAddTeamMember:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_add_team_member_wrong_scope(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        principal: KPrincipal,
-        test_user_id: UUID,
-    ):
-        """Test that adding a member to a team in different scope fails."""
-        # Create team in different scope
-        other_team = KTeam(
-            name="Other Team",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(other_team)
-        await async_session.commit()
-        await async_session.refresh(other_team)
-
-        member_data = {"principal_id": str(principal.id)}
-
-        response = await client.post(
-            f"/teams/{other_team.id}/members", json=member_data
-        )
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_add_team_member_with_role(
@@ -274,7 +244,7 @@ class TestListTeamMembers:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing team members with a single member."""
@@ -282,7 +252,7 @@ class TestListTeamMembers:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="developer",
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -305,7 +275,7 @@ class TestListTeamMembers:
         client: AsyncClient,
         team: KTeam,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing multiple team members."""
@@ -333,7 +303,7 @@ class TestListTeamMembers:
             member = KTeamMember(
                 team_id=team.id,
                 principal_id=principal.id,
-                scope=test_scope,
+                org_id=test_org_id,
                 role=p_data["role"],
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
@@ -363,69 +333,6 @@ class TestListTeamMembers:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_list_team_members_scope_isolation(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        async_session: AsyncSession,
-        test_scope: str,
-        test_user_id: UUID,
-    ):
-        """Test that listing members respects scope isolation."""
-        # Create principal and add as member in correct scope
-        principal1 = KPrincipal(
-            username="user1",
-            primary_email="user1@example.com",
-            first_name="User",
-            last_name="One",
-            display_name="User One",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(principal1)
-        await async_session.commit()
-        await async_session.refresh(principal1)
-
-        member_in_scope = KTeamMember(
-            team_id=team.id,
-            principal_id=principal1.id,
-            scope=test_scope,
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(member_in_scope)
-
-        # Create another principal and add as member in different scope
-        principal2 = KPrincipal(
-            username="user2",
-            primary_email="user2@example.com",
-            first_name="User",
-            last_name="Two",
-            display_name="User Two",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(principal2)
-        await async_session.commit()
-        await async_session.refresh(principal2)
-
-        member_out_scope = KTeamMember(
-            team_id=team.id,
-            principal_id=principal2.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(member_out_scope)
-        await async_session.commit()
-
-        response = await client.get(f"/teams/{team.id}/members")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["members"]) == 1
-        assert data["members"][0]["principal_id"] == str(principal1.id)
 
 
 class TestGetTeamMember:
@@ -438,7 +345,7 @@ class TestGetTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully getting a single team member."""
@@ -446,7 +353,7 @@ class TestGetTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="developer",
             meta={"level": "senior"},
             created_by=test_user_id,
@@ -480,31 +387,6 @@ class TestGetTeamMember:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_get_team_member_wrong_scope(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        principal: KPrincipal,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that getting a member in different scope returns 404."""
-        # Add member in different scope
-        member = KTeamMember(
-            team_id=team.id,
-            principal_id=principal.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(member)
-        await async_session.commit()
-
-        response = await client.get(f"/teams/{team.id}/members/{principal.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestUpdateTeamMember:
@@ -517,7 +399,7 @@ class TestUpdateTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team member's role."""
@@ -525,7 +407,7 @@ class TestUpdateTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="developer",
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -552,7 +434,7 @@ class TestUpdateTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team member's metadata."""
@@ -560,7 +442,7 @@ class TestUpdateTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -585,7 +467,7 @@ class TestUpdateTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating both role and meta."""
@@ -593,7 +475,7 @@ class TestUpdateTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="developer",
             meta={"old": "data"},
             created_by=test_user_id,
@@ -637,7 +519,7 @@ class TestUpdateTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating with empty payload (no changes)."""
@@ -645,7 +527,7 @@ class TestUpdateTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="developer",
             meta={"key": "value"},
             created_by=test_user_id,
@@ -676,7 +558,7 @@ class TestRemoveTeamMember:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully removing a team member."""
@@ -684,7 +566,7 @@ class TestRemoveTeamMember:
         member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -723,39 +605,3 @@ class TestRemoveTeamMember:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_remove_team_member_wrong_scope(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        principal: KPrincipal,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that removing a member in different scope returns 404."""
-        # Add member in different scope
-        member = KTeamMember(
-            team_id=team.id,
-            principal_id=principal.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(member)
-        await async_session.commit()
-
-        response = await client.delete(f"/teams/{team.id}/members/{principal.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
-
-        # Verify member still exists
-        from sqlmodel import select
-
-        result = await async_session.execute(
-            select(KTeamMember).where(
-                KTeamMember.team_id == team.id,
-                KTeamMember.principal_id == principal.id,
-            )
-        )
-        assert result.scalar_one_or_none() is not None

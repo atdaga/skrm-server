@@ -17,11 +17,11 @@ class TestKTeamMemberModel:
     """Test suite for KTeamMember model."""
 
     @pytest.fixture
-    async def team(self, session: AsyncSession, creator_id: UUID) -> KTeam:
+    async def team(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID) -> KTeam:
         """Create a test team."""
         team = KTeam(
             name="Engineering",
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -54,12 +54,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team member with only required fields."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -70,7 +71,7 @@ class TestKTeamMemberModel:
 
         assert team_member.team_id == team.id
         assert team_member.principal_id == principal.id
-        assert team_member.scope == "global"
+        assert team_member.org_id == test_org_id
 
     @pytest.mark.asyncio
     async def test_team_member_default_values(
@@ -79,12 +80,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that default values are set correctly."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -105,12 +107,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team member with a role."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="admin",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -129,6 +132,7 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test creating a team member with metadata."""
         meta_data = {
@@ -140,7 +144,7 @@ class TestKTeamMemberModel:
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="developer",
             meta=meta_data,
             created_by=creator_id,
@@ -162,12 +166,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that team_id + principal_id form a composite primary key."""
         team_member1 = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -182,7 +187,7 @@ class TestKTeamMemberModel:
         team_member2 = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="different_role",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -194,16 +199,18 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_principal_multiple_teams(
-        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID
+        self, session: AsyncSession, principal: KPrincipal, creator_id: UUID, test_org_id: UUID
     ):
         """Test that a principal can be a member of multiple teams."""
         team1 = KTeam(
             name="Engineering",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         team2 = KTeam(
             name="Product",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -214,7 +221,7 @@ class TestKTeamMemberModel:
         member1 = KTeamMember(
             team_id=team1.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="developer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -223,7 +230,7 @@ class TestKTeamMemberModel:
         member2 = KTeamMember(
             team_id=team2.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="contributor",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -245,7 +252,7 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_multiple_members(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test that a team can have multiple members."""
         principal1 = KPrincipal(
@@ -275,7 +282,7 @@ class TestKTeamMemberModel:
         member1 = KTeamMember(
             team_id=team.id,
             principal_id=principal1.id,
-            scope="global",
+            org_id=test_org_id,
             role="admin",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -284,7 +291,7 @@ class TestKTeamMemberModel:
         member2 = KTeamMember(
             team_id=team.id,
             principal_id=principal2.id,
-            scope="global",
+            org_id=test_org_id,
             role="member",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -306,7 +313,7 @@ class TestKTeamMemberModel:
 
     @pytest.mark.asyncio
     async def test_team_member_query_by_role(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test querying team members by role."""
         principals = []
@@ -329,7 +336,7 @@ class TestKTeamMemberModel:
         member1 = KTeamMember(
             team_id=team.id,
             principal_id=principals[0].id,
-            scope="global",
+            org_id=test_org_id,
             role="admin",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -338,7 +345,7 @@ class TestKTeamMemberModel:
         member2 = KTeamMember(
             team_id=team.id,
             principal_id=principals[1].id,
-            scope="global",
+            org_id=test_org_id,
             role="admin",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -347,7 +354,7 @@ class TestKTeamMemberModel:
         member3 = KTeamMember(
             team_id=team.id,
             principal_id=principals[2].id,
-            scope="global",
+            org_id=test_org_id,
             role="member",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -376,12 +383,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test updating team member fields."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="member",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -407,12 +415,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test deleting a team member."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -441,12 +450,13 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that deleting a team cascades to team members."""
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -472,6 +482,7 @@ class TestKTeamMemberModel:
         team: KTeam,
         principal: KPrincipal,
         creator_id: UUID,
+        test_org_id: UUID,
     ):
         """Test that meta field correctly stores and retrieves JSON data."""
         meta_data = {
@@ -489,7 +500,7 @@ class TestKTeamMemberModel:
         team_member = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=test_org_id,
             role="developer",
             meta=meta_data,
             created_by=creator_id,
@@ -513,11 +524,16 @@ class TestKTeamMemberModel:
         principal: KPrincipal,
         creator_id: UUID,
     ):
-        """Test that team members can have different scopes."""
+        """Test that team members can have different org_ids."""
+        from uuid import uuid4
+
+        org_id_1 = uuid4()
+        org_id_2 = uuid4()
+
         member1 = KTeamMember(
             team_id=team.id,
             principal_id=principal.id,
-            scope="global",
+            org_id=org_id_1,
             role="admin",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -526,9 +542,10 @@ class TestKTeamMemberModel:
         session.add(member1)
         await session.commit()
 
-        # Create another team and add the same principal with different scope
+        # Create another team and add the same principal with different org_id
         team2 = KTeam(
             name="Product",
+            org_id=org_id_2,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -538,7 +555,7 @@ class TestKTeamMemberModel:
         member2 = KTeamMember(
             team_id=team2.id,
             principal_id=principal.id,
-            scope="tenant1",
+            org_id=org_id_2,
             role="member",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -547,19 +564,19 @@ class TestKTeamMemberModel:
         session.add(member2)
         await session.commit()
 
-        # Verify different scopes
+        # Verify different org_ids
         result_exec = await session.execute(
             select(KTeamMember).where(KTeamMember.principal_id == principal.id)
         )
         memberships = result_exec.scalars().all()
 
         assert len(memberships) == 2
-        scopes = {m.scope for m in memberships}
-        assert scopes == {"global", "tenant1"}
+        org_ids = {m.org_id for m in memberships}
+        assert org_ids == {org_id_1, org_id_2}
 
     @pytest.mark.asyncio
     async def test_team_member_count(
-        self, session: AsyncSession, team: KTeam, creator_id: UUID
+        self, session: AsyncSession, team: KTeam, creator_id: UUID, test_org_id: UUID
     ):
         """Test counting team members."""
         principals = []
@@ -583,7 +600,7 @@ class TestKTeamMemberModel:
             member = KTeamMember(
                 team_id=team.id,
                 principal_id=principal.id,
-                scope="global",
+                org_id=test_org_id,
                 created_by=creator_id,
                 last_modified_by=creator_id,
             )

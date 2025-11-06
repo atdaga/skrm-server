@@ -47,12 +47,12 @@ async def client(app_with_overrides: FastAPI) -> AsyncClient:
 
 @pytest.fixture
 async def team(
-    async_session: AsyncSession, test_scope: str, test_user_id: UUID
+    async_session: AsyncSession, test_org_id: UUID, test_user_id: UUID
 ) -> KTeam:
     """Create a test team."""
     team = KTeam(
         name="Engineering Team",
-        scope=test_scope,
+        org_id=test_org_id,
         created_by=test_user_id,
         last_modified_by=test_user_id,
     )
@@ -89,7 +89,7 @@ class TestAddTeamReviewer:
         client: AsyncClient,
         team: KTeam,
         principal: KPrincipal,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully adding a new team reviewer."""
@@ -105,7 +105,6 @@ class TestAddTeamReviewer:
         data = response.json()
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["scope"] == test_scope
         assert data["role"] == "lead_reviewer"
         assert data["meta"] == {"specialization": "security", "experience_years": 5}
         assert data["created_by"] == str(test_user_id)
@@ -119,7 +118,7 @@ class TestAddTeamReviewer:
         client: AsyncClient,
         team: KTeam,
         principal: KPrincipal,
-        test_scope: str,
+        test_org_id: UUID,
     ):
         """Test adding a team reviewer with minimal required fields."""
         reviewer_data = {"principal_id": str(principal.id)}
@@ -130,7 +129,6 @@ class TestAddTeamReviewer:
         data = response.json()
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
-        assert data["scope"] == test_scope
         assert data["role"] is None
         assert data["meta"] == {}
 
@@ -141,7 +139,7 @@ class TestAddTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test that adding a duplicate team reviewer fails."""
@@ -149,7 +147,7 @@ class TestAddTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -181,34 +179,6 @@ class TestAddTeamReviewer:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_add_team_reviewer_wrong_scope(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        principal: KPrincipal,
-        test_user_id: UUID,
-    ):
-        """Test that adding a reviewer to a team in different scope fails."""
-        # Create team in different scope
-        other_team = KTeam(
-            name="Other Team",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(other_team)
-        await async_session.commit()
-        await async_session.refresh(other_team)
-
-        reviewer_data = {"principal_id": str(principal.id)}
-
-        response = await client.post(
-            f"/teams/{other_team.id}/reviewers", json=reviewer_data
-        )
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_add_team_reviewer_with_role(
@@ -274,7 +244,7 @@ class TestListTeamReviewers:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing team reviewers with a single reviewer."""
@@ -282,7 +252,7 @@ class TestListTeamReviewers:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="lead_reviewer",
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -305,7 +275,7 @@ class TestListTeamReviewers:
         client: AsyncClient,
         team: KTeam,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing multiple team reviewers."""
@@ -345,7 +315,7 @@ class TestListTeamReviewers:
             reviewer = KTeamReviewer(
                 team_id=team.id,
                 principal_id=principal.id,
-                scope=test_scope,
+                org_id=test_org_id,
                 role=r_data["role"],
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
@@ -375,69 +345,6 @@ class TestListTeamReviewers:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_list_team_reviewers_scope_isolation(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        async_session: AsyncSession,
-        test_scope: str,
-        test_user_id: UUID,
-    ):
-        """Test that listing reviewers respects scope isolation."""
-        # Create principal and add as reviewer in correct scope
-        principal1 = KPrincipal(
-            username="reviewer1",
-            primary_email="reviewer1@example.com",
-            first_name="Reviewer",
-            last_name="One",
-            display_name="Reviewer One",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(principal1)
-        await async_session.commit()
-        await async_session.refresh(principal1)
-
-        reviewer_in_scope = KTeamReviewer(
-            team_id=team.id,
-            principal_id=principal1.id,
-            scope=test_scope,
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(reviewer_in_scope)
-
-        # Create another principal and add as reviewer in different scope
-        principal2 = KPrincipal(
-            username="reviewer2",
-            primary_email="reviewer2@example.com",
-            first_name="Reviewer",
-            last_name="Two",
-            display_name="Reviewer Two",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(principal2)
-        await async_session.commit()
-        await async_session.refresh(principal2)
-
-        reviewer_out_scope = KTeamReviewer(
-            team_id=team.id,
-            principal_id=principal2.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(reviewer_out_scope)
-        await async_session.commit()
-
-        response = await client.get(f"/teams/{team.id}/reviewers")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["reviewers"]) == 1
-        assert data["reviewers"][0]["principal_id"] == str(principal1.id)
 
 
 class TestGetTeamReviewer:
@@ -450,7 +357,7 @@ class TestGetTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully getting a single team reviewer."""
@@ -458,7 +365,7 @@ class TestGetTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="lead_reviewer",
             meta={"specialization": "security"},
             created_by=test_user_id,
@@ -492,31 +399,6 @@ class TestGetTeamReviewer:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_get_team_reviewer_wrong_scope(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        principal: KPrincipal,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that getting a reviewer in different scope returns 404."""
-        # Add reviewer in different scope
-        reviewer = KTeamReviewer(
-            team_id=team.id,
-            principal_id=principal.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(reviewer)
-        await async_session.commit()
-
-        response = await client.get(f"/teams/{team.id}/reviewers/{principal.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestUpdateTeamReviewer:
@@ -529,7 +411,7 @@ class TestUpdateTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team reviewer's role."""
@@ -537,7 +419,7 @@ class TestUpdateTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="reviewer",
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -564,7 +446,7 @@ class TestUpdateTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team reviewer's metadata."""
@@ -572,7 +454,7 @@ class TestUpdateTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -597,7 +479,7 @@ class TestUpdateTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating both role and meta."""
@@ -605,7 +487,7 @@ class TestUpdateTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="reviewer",
             meta={"old": "data"},
             created_by=test_user_id,
@@ -649,7 +531,7 @@ class TestUpdateTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating with empty payload (no changes)."""
@@ -657,7 +539,7 @@ class TestUpdateTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             role="lead_reviewer",
             meta={"key": "value"},
             created_by=test_user_id,
@@ -688,7 +570,7 @@ class TestRemoveTeamReviewer:
         team: KTeam,
         principal: KPrincipal,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully removing a team reviewer."""
@@ -696,7 +578,7 @@ class TestRemoveTeamReviewer:
         reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -735,39 +617,3 @@ class TestRemoveTeamReviewer:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_remove_team_reviewer_wrong_scope(
-        self,
-        client: AsyncClient,
-        team: KTeam,
-        principal: KPrincipal,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that removing a reviewer in different scope returns 404."""
-        # Add reviewer in different scope
-        reviewer = KTeamReviewer(
-            team_id=team.id,
-            principal_id=principal.id,
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(reviewer)
-        await async_session.commit()
-
-        response = await client.delete(f"/teams/{team.id}/reviewers/{principal.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
-
-        # Verify reviewer still exists
-        from sqlmodel import select
-
-        result = await async_session.execute(
-            select(KTeamReviewer).where(
-                KTeamReviewer.team_id == team.id,
-                KTeamReviewer.principal_id == principal.id,
-            )
-        )
-        assert result.scalar_one_or_none() is not None

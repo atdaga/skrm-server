@@ -10,8 +10,15 @@ from app.core.exceptions.domain_exceptions import (
     InvalidCredentialsException,
     InvalidTokenException,
     InvalidUserIdException,
+    OrganizationAlreadyExistsException,
+    OrganizationNotFoundException,
+    OrganizationUpdateConflictException,
     TeamAlreadyExistsException,
+    TeamMemberAlreadyExistsException,
+    TeamMemberNotFoundException,
     TeamNotFoundException,
+    TeamReviewerAlreadyExistsException,
+    TeamReviewerNotFoundException,
     TeamUpdateConflictException,
     TokenNotFoundException,
     UserNotFoundException,
@@ -236,3 +243,200 @@ class TestExceptionRaising:
         # Test TokenNotFoundException
         with pytest.raises(DomainException):
             raise TokenNotFoundException()
+
+
+class TestOrganizationExceptions:
+    """Test suite for organization-related exceptions."""
+
+    def test_organization_not_found_exception_with_scope(self):
+        """Test OrganizationNotFoundException with scope."""
+        org_id = uuid4()
+        exception = OrganizationNotFoundException(org_id=org_id, scope="test-scope")
+
+        assert exception.org_id == org_id
+        assert exception.scope == "test-scope"
+        assert str(org_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "organization"
+        assert exception.entity_id == org_id
+
+    def test_organization_not_found_exception_without_scope(self):
+        """Test OrganizationNotFoundException without scope."""
+        org_id = uuid4()
+        exception = OrganizationNotFoundException(org_id=org_id)
+
+        assert exception.org_id == org_id
+        assert exception.scope is None
+        assert str(org_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_organization_already_exists_exception_with_scope(self):
+        """Test OrganizationAlreadyExistsException with scope."""
+        exception = OrganizationAlreadyExistsException(
+            identifier="test-org",
+            identifier_type="name",
+            scope="test-scope"
+        )
+
+        assert exception.identifier == "test-org"
+        assert exception.identifier_type == "name"
+        assert exception.scope == "test-scope"
+        assert "test-org" in exception.message
+        assert "name" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "organization"
+
+    def test_organization_already_exists_exception_without_scope(self):
+        """Test OrganizationAlreadyExistsException without scope."""
+        exception = OrganizationAlreadyExistsException(
+            identifier="test-alias",
+            identifier_type="alias"
+        )
+
+        assert exception.identifier == "test-alias"
+        assert exception.identifier_type == "alias"
+        assert exception.scope is None
+        assert "test-alias" in exception.message
+        assert "in scope" not in exception.message
+
+    def test_organization_update_conflict_exception_with_scope(self):
+        """Test OrganizationUpdateConflictException with scope."""
+        org_id = uuid4()
+        exception = OrganizationUpdateConflictException(
+            org_id=org_id,
+            identifier="conflict-name",
+            identifier_type="name",
+            scope="test-scope"
+        )
+
+        assert exception.org_id == org_id
+        assert exception.identifier == "conflict-name"
+        assert exception.identifier_type == "name"
+        assert exception.scope == "test-scope"
+        assert str(org_id) in exception.message
+        assert "conflict-name" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "organization"
+
+    def test_organization_update_conflict_exception_without_scope(self):
+        """Test OrganizationUpdateConflictException without scope."""
+        org_id = uuid4()
+        exception = OrganizationUpdateConflictException(
+            org_id=org_id,
+            identifier="conflict-alias",
+            identifier_type="alias"
+        )
+
+        assert exception.org_id == org_id
+        assert exception.identifier == "conflict-alias"
+        assert exception.identifier_type == "alias"
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+
+class TestTeamMemberExceptions:
+    """Test suite for team member-related exceptions."""
+
+    def test_team_member_not_found_exception_with_scope(self):
+        """Test TeamMemberNotFoundException with scope."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamMemberNotFoundException(
+            team_id=team_id,
+            principal_id=principal_id,
+            scope="test-scope"
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(team_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "team_member"
+
+    def test_team_member_not_found_exception_without_scope(self):
+        """Test TeamMemberNotFoundException without scope."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamMemberNotFoundException(
+            team_id=team_id,
+            principal_id=principal_id
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_team_member_already_exists_exception(self):
+        """Test TeamMemberAlreadyExistsException."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamMemberAlreadyExistsException(
+            team_id=team_id,
+            principal_id=principal_id,
+            scope="test-scope"
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(team_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "team_member"
+
+
+class TestTeamReviewerExceptions:
+    """Test suite for team reviewer-related exceptions."""
+
+    def test_team_reviewer_not_found_exception_with_scope(self):
+        """Test TeamReviewerNotFoundException with scope."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamReviewerNotFoundException(
+            team_id=team_id,
+            principal_id=principal_id,
+            scope="test-scope"
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(team_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "team_reviewer"
+
+    def test_team_reviewer_not_found_exception_without_scope(self):
+        """Test TeamReviewerNotFoundException without scope."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamReviewerNotFoundException(
+            team_id=team_id,
+            principal_id=principal_id
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_team_reviewer_already_exists_exception(self):
+        """Test TeamReviewerAlreadyExistsException."""
+        team_id = uuid4()
+        principal_id = uuid4()
+        exception = TeamReviewerAlreadyExistsException(
+            team_id=team_id,
+            principal_id=principal_id,
+            scope="test-scope"
+        )
+
+        assert exception.team_id == team_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(team_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "team_reviewer"

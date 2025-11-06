@@ -66,6 +66,50 @@ class TeamUpdateConflictException(DomainException):
 
 
 # ============================================================================
+# Organization-related exceptions
+# ============================================================================
+
+
+class OrganizationNotFoundException(DomainException):
+    """Raised when an organization cannot be found."""
+
+    def __init__(self, org_id: UUID, scope: str | None = None):
+        message = f"Organization with id '{org_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="organization", entity_id=org_id)
+        self.org_id = org_id
+        self.scope = scope
+
+
+class OrganizationAlreadyExistsException(DomainException):
+    """Raised when attempting to create an organization that already exists."""
+
+    def __init__(self, identifier: str, identifier_type: str, scope: str | None = None):
+        message = f"Organization with {identifier_type} '{identifier}' already exists"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="organization", entity_id=identifier)
+        self.identifier = identifier
+        self.identifier_type = identifier_type
+        self.scope = scope
+
+
+class OrganizationUpdateConflictException(DomainException):
+    """Raised when updating an organization causes a naming conflict."""
+
+    def __init__(self, org_id: UUID, identifier: str, identifier_type: str, scope: str | None = None):
+        message = f"Cannot update organization '{org_id}': {identifier_type} '{identifier}' already exists"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="organization", entity_id=org_id)
+        self.org_id = org_id
+        self.identifier = identifier
+        self.identifier_type = identifier_type
+        self.scope = scope
+
+
+# ============================================================================
 # User/Principal-related exceptions
 # ============================================================================
 

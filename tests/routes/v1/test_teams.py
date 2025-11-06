@@ -52,8 +52,9 @@ class TestCreateTeam:
     async def test_create_team_success(
         self,
         client: AsyncClient,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
+        test_scope: str,
     ):
         """Test successfully creating a new team."""
         team_data = {
@@ -61,12 +62,11 @@ class TestCreateTeam:
             "meta": {"department": "Engineering", "location": "SF"},
         }
 
-        response = await client.post("/teams", json=team_data)
+        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
 
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Engineering Team"
-        assert data["scope"] == test_scope
         assert data["meta"] == {"department": "Engineering", "location": "SF"}
         assert "id" in data
         assert UUID(data["id"])  # Validates it's a proper UUID
@@ -79,17 +79,17 @@ class TestCreateTeam:
     async def test_create_team_minimal_data(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
         test_scope: str,
     ):
         """Test creating a team with minimal required fields."""
         team_data = {"name": "Minimal Team"}
 
-        response = await client.post("/teams", json=team_data)
+        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
 
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Minimal Team"
-        assert data["scope"] == test_scope
         assert data["meta"] == {}
 
     @pytest.mark.asyncio
@@ -97,14 +97,14 @@ class TestCreateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test that creating a team with duplicate name in same scope fails."""
         # Create first team directly in database
         team = KTeam(
             name="Duplicate Team",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -114,7 +114,7 @@ class TestCreateTeam:
         # Try to create another team with same name
         team_data = {"name": "Duplicate Team", "meta": {}}
 
-        response = await client.post("/teams", json=team_data)
+        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
@@ -123,11 +123,12 @@ class TestCreateTeam:
     async def test_create_team_with_empty_meta(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test creating a team with explicitly empty meta."""
         team_data = {"name": "Empty Meta Team", "meta": {}}
 
-        response = await client.post("/teams", json=team_data)
+        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -137,6 +138,7 @@ class TestCreateTeam:
     async def test_create_team_with_complex_meta(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test creating a team with complex nested metadata."""
         team_data = {
@@ -149,7 +151,7 @@ class TestCreateTeam:
             },
         }
 
-        response = await client.post("/teams", json=team_data)
+        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
 
         assert response.status_code == 201
         data = response.json()
@@ -163,9 +165,10 @@ class TestListTeams:
     async def test_list_teams_empty(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test listing teams when none exist."""
-        response = await client.get("/teams")
+        response = await client.get(f"/teams?org_id={test_org_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -176,14 +179,14 @@ class TestListTeams:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing teams with a single team."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"key": "value"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -192,7 +195,7 @@ class TestListTeams:
         await async_session.commit()
         await async_session.refresh(team)
 
-        response = await client.get("/teams")
+        response = await client.get(f"/teams?org_id={test_org_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -205,7 +208,7 @@ class TestListTeams:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test listing multiple teams."""
@@ -219,7 +222,7 @@ class TestListTeams:
         for team_data in teams_data:
             team = KTeam(
                 name=team_data["name"],
-                scope=test_scope,
+                org_id=test_org_id,
                 meta=team_data["meta"],
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
@@ -228,7 +231,7 @@ class TestListTeams:
 
         await async_session.commit()
 
-        response = await client.get("/teams")
+        response = await client.get(f"/teams?org_id={test_org_id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -236,41 +239,6 @@ class TestListTeams:
         team_names = {team["name"] for team in data["teams"]}
         assert team_names == {"Team Alpha", "Team Beta", "Team Gamma"}
 
-    @pytest.mark.asyncio
-    async def test_list_teams_scope_isolation(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        test_scope: str,
-        test_user_id: UUID,
-    ):
-        """Test that listing teams only returns teams in the user's scope."""
-        # Create team in user's scope
-        team_in_scope = KTeam(
-            name="Team In Scope",
-            scope=test_scope,
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(team_in_scope)
-
-        # Create team in different scope
-        team_out_scope = KTeam(
-            name="Team Out Of Scope",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(team_out_scope)
-
-        await async_session.commit()
-
-        response = await client.get("/teams")
-
-        assert response.status_code == 200
-        data = response.json()
-        assert len(data["teams"]) == 1
-        assert data["teams"][0]["name"] == "Team In Scope"
 
 
 class TestGetTeam:
@@ -281,14 +249,15 @@ class TestGetTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
+        test_scope: str,
     ):
         """Test successfully getting a single team by ID."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"department": "Engineering"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -297,51 +266,28 @@ class TestGetTeam:
         await async_session.commit()
         await async_session.refresh(team)
 
-        response = await client.get(f"/teams/{team.id}")
+        response = await client.get(f"/teams/{team.id}?org_id={test_org_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(team.id)
         assert data["name"] == "Test Team"
-        assert data["scope"] == test_scope
         assert data["meta"] == {"department": "Engineering"}
 
     @pytest.mark.asyncio
     async def test_get_team_not_found(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test getting a team that doesn't exist."""
         non_existent_id = uuid4()
 
-        response = await client.get(f"/teams/{non_existent_id}")
+        response = await client.get(f"/teams/{non_existent_id}?org_id={test_org_id}")
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_get_team_wrong_scope(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that getting a team in a different scope returns 404."""
-        # Create team in different scope
-        team = KTeam(
-            name="Other Scope Team",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(team)
-        await async_session.commit()
-        await async_session.refresh(team)
-
-        response = await client.get(f"/teams/{team.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_get_team_invalid_uuid(
@@ -362,14 +308,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team's name."""
         # Create a team
         team = KTeam(
             name="Old Name",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -379,7 +325,7 @@ class TestUpdateTeam:
 
         update_data = {"name": "New Name"}
 
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
+        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -391,14 +337,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating a team's metadata."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -409,7 +355,7 @@ class TestUpdateTeam:
 
         update_data = {"meta": {"new": "data", "updated": True}}
 
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
+        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -421,14 +367,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating both name and meta."""
         # Create a team
         team = KTeam(
             name="Old Name",
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -439,7 +385,7 @@ class TestUpdateTeam:
 
         update_data = {"name": "New Name", "meta": {"new": "data"}}
 
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
+        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -450,61 +396,37 @@ class TestUpdateTeam:
     async def test_update_team_not_found(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test updating a team that doesn't exist."""
         non_existent_id = uuid4()
         update_data = {"name": "New Name"}
 
-        response = await client.patch(f"/teams/{non_existent_id}", json=update_data)
+        response = await client.patch(f"/teams/{non_existent_id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_update_team_wrong_scope(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that updating a team in a different scope returns 404."""
-        # Create team in different scope
-        team = KTeam(
-            name="Other Scope Team",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(team)
-        await async_session.commit()
-        await async_session.refresh(team)
-
-        update_data = {"name": "New Name"}
-
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_update_team_duplicate_name(
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test that updating to a duplicate name fails."""
         # Create two teams
         team1 = KTeam(
             name="Team One",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
         team2 = KTeam(
             name="Team Two",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -516,7 +438,7 @@ class TestUpdateTeam:
         # Try to rename team2 to team1's name
         update_data = {"name": "Team One"}
 
-        response = await client.patch(f"/teams/{team2.id}", json=update_data)
+        response = await client.patch(f"/teams/{team2.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
@@ -526,14 +448,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test updating with empty payload (no changes)."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            scope=test_scope,
+            org_id=test_org_id,
             meta={"key": "value"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -544,7 +466,7 @@ class TestUpdateTeam:
 
         update_data = {}
 
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
+        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -556,14 +478,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test that audit fields are updated correctly."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -573,7 +495,7 @@ class TestUpdateTeam:
 
         update_data = {"name": "Updated Team"}
 
-        response = await client.patch(f"/teams/{team.id}", json=update_data)
+        response = await client.patch(f"/teams/{team.id}?org_id={test_org_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -590,14 +512,14 @@ class TestDeleteTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_scope: str,
+        test_org_id: UUID,
         test_user_id: UUID,
     ):
         """Test successfully deleting a team."""
         # Create a team
         team = KTeam(
             name="Team To Delete",
-            scope=test_scope,
+            org_id=test_org_id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -606,7 +528,7 @@ class TestDeleteTeam:
         await async_session.refresh(team)
         team_id = team.id
 
-        response = await client.delete(f"/teams/{team_id}")
+        response = await client.delete(f"/teams/{team_id}?org_id={test_org_id}")
 
         assert response.status_code == 204
         assert response.content == b""  # No content in response
@@ -619,42 +541,16 @@ class TestDeleteTeam:
     async def test_delete_team_not_found(
         self,
         client: AsyncClient,
+        test_org_id: UUID,
     ):
         """Test deleting a team that doesn't exist."""
         non_existent_id = uuid4()
 
-        response = await client.delete(f"/teams/{non_existent_id}")
+        response = await client.delete(f"/teams/{non_existent_id}?org_id={test_org_id}")
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
-    async def test_delete_team_wrong_scope(
-        self,
-        client: AsyncClient,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that deleting a team in a different scope returns 404."""
-        # Create team in different scope
-        team = KTeam(
-            name="Other Scope Team",
-            scope="other-tenant",
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(team)
-        await async_session.commit()
-        await async_session.refresh(team)
-
-        response = await client.delete(f"/teams/{team.id}")
-
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
-
-        # Verify team still exists
-        result = await async_session.get(KTeam, team.id)
-        assert result is not None
 
     @pytest.mark.asyncio
     async def test_delete_team_invalid_uuid(

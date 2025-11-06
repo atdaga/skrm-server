@@ -24,7 +24,7 @@ class TeamMember(BaseModel):
 
     team_id: UUID
     principal_id: UUID
-    scope: str
+    org_id: UUID
     role: str | None
     meta: dict
 

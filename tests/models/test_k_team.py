@@ -16,10 +16,11 @@ class TestKTeamModel:
 
     @pytest.mark.asyncio
     async def test_create_team_with_required_fields(
-        self, session: AsyncSession, creator_id: UUID
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test creating a team with only required fields."""
         team = KTeam(
+            org_id=test_org_id,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -34,9 +35,10 @@ class TestKTeamModel:
         assert team.name == "Engineering"
 
     @pytest.mark.asyncio
-    async def test_team_default_values(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_default_values(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test that default values are set correctly."""
         team = KTeam(
+            org_id=test_org_id,
             name="Marketing",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -46,18 +48,18 @@ class TestKTeamModel:
         await session.commit()
         await session.refresh(team)
 
-        assert team.scope == "global"
+        assert team.org_id == test_org_id
         assert team.meta == {}
         assert isinstance(team.created, datetime)
         assert isinstance(team.last_modified, datetime)
 
     @pytest.mark.asyncio
     async def test_team_with_custom_scope(
-        self, session: AsyncSession, creator_id: UUID
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
-        """Test creating a team with a custom scope."""
+        """Test creating a team with a custom org_id."""
         team = KTeam(
-            scope="tenant1",
+            org_id=test_org_id,
             name="Sales",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -67,11 +69,11 @@ class TestKTeamModel:
         await session.commit()
         await session.refresh(team)
 
-        assert team.scope == "tenant1"
+        assert team.org_id == test_org_id
         assert team.name == "Sales"
 
     @pytest.mark.asyncio
-    async def test_team_with_meta_data(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_with_meta_data(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test creating a team with metadata."""
         meta_data = {
             "department": "Engineering",
@@ -80,6 +82,7 @@ class TestKTeamModel:
         }
 
         team = KTeam(
+            org_id=test_org_id,
             name="Backend Team",
             meta=meta_data,
             created_by=creator_id,
@@ -97,11 +100,11 @@ class TestKTeamModel:
 
     @pytest.mark.asyncio
     async def test_team_unique_constraint(
-        self, session: AsyncSession, creator_id: UUID
+        self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
-        """Test that scope+name combination must be unique."""
+        """Test that org_id+name combination must be unique."""
         team1 = KTeam(
-            scope="global",
+            org_id=test_org_id,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -110,9 +113,9 @@ class TestKTeamModel:
         session.add(team1)
         await session.commit()
 
-        # Try to create another team with same scope+name
+        # Try to create another team with same org_id+name
         team2 = KTeam(
-            scope="global",
+            org_id=test_org_id,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -126,16 +129,21 @@ class TestKTeamModel:
     async def test_team_same_name_different_scope(
         self, session: AsyncSession, creator_id: UUID
     ):
-        """Test that same team name can exist in different scopes."""
+        """Test that same team name can exist in different org_ids."""
+        from uuid import uuid4
+
+        org_id_1 = uuid4()
+        org_id_2 = uuid4()
+
         team1 = KTeam(
-            scope="tenant1",
+            org_id=org_id_1,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team2 = KTeam(
-            scope="tenant2",
+            org_id=org_id_2,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -151,9 +159,10 @@ class TestKTeamModel:
         assert len(teams) == 2
 
     @pytest.mark.asyncio
-    async def test_team_query(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_query(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test querying teams from database."""
         team = KTeam(
+            org_id=test_org_id,
             name="Product Team",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -173,23 +182,28 @@ class TestKTeamModel:
 
     @pytest.mark.asyncio
     async def test_team_query_by_scope(self, session: AsyncSession, creator_id: UUID):
-        """Test querying teams by scope."""
+        """Test querying teams by org_id."""
+        from uuid import uuid4
+
+        org_id_1 = uuid4()
+        org_id_2 = uuid4()
+
         team1 = KTeam(
-            scope="tenant1",
+            org_id=org_id_1,
             name="Team A",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team2 = KTeam(
-            scope="tenant1",
+            org_id=org_id_1,
             name="Team B",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team3 = KTeam(
-            scope="tenant2",
+            org_id=org_id_2,
             name="Team C",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -200,9 +214,9 @@ class TestKTeamModel:
         session.add(team3)
         await session.commit()
 
-        # Query teams in tenant1
+        # Query teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.scope == "tenant1")
+            select(KTeam).where(KTeam.org_id == org_id_1)
         )
         results = result_exec.scalars().all()
 
@@ -211,9 +225,10 @@ class TestKTeamModel:
         assert team_names == {"Team A", "Team B"}
 
     @pytest.mark.asyncio
-    async def test_team_update(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_update(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test updating team fields."""
         team = KTeam(
+            org_id=test_org_id,
             name="Old Name",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -234,9 +249,10 @@ class TestKTeamModel:
         assert team.meta == {"updated": True}
 
     @pytest.mark.asyncio
-    async def test_team_delete(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_delete(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test deleting a team."""
         team = KTeam(
+            org_id=test_org_id,
             name="To Delete",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -255,7 +271,7 @@ class TestKTeamModel:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_team_meta_json_field(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_meta_json_field(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test that meta field correctly stores and retrieves complex JSON data."""
         meta_data = {
             "description": "A team for backend development",
@@ -271,6 +287,7 @@ class TestKTeamModel:
         }
 
         team = KTeam(
+            org_id=test_org_id,
             name="Complex Meta Team",
             meta=meta_data,
             created_by=creator_id,
@@ -290,10 +307,12 @@ class TestKTeamModel:
     @pytest.mark.asyncio
     async def test_team_list_all(self, session: AsyncSession, creator_id: UUID):
         """Test listing all teams."""
+        from uuid import uuid4
+
         teams_data = [
-            {"name": "Team 1", "scope": "global"},
-            {"name": "Team 2", "scope": "tenant1"},
-            {"name": "Team 3", "scope": "tenant2"},
+            {"name": "Team 1", "org_id": uuid4()},
+            {"name": "Team 2", "org_id": uuid4()},
+            {"name": "Team 3", "org_id": uuid4()},
         ]
 
         for team_data in teams_data:
@@ -313,12 +332,17 @@ class TestKTeamModel:
 
     @pytest.mark.asyncio
     async def test_team_count_by_scope(self, session: AsyncSession, creator_id: UUID):
-        """Test counting teams by scope."""
-        # Create teams in different scopes
+        """Test counting teams by org_id."""
+        from uuid import uuid4
+
+        org_id_1 = uuid4()
+        org_id_2 = uuid4()
+
+        # Create teams in different org_ids
         for i in range(3):
             team = KTeam(
-                scope="tenant1",
-                name=f"Team {i}",
+                org_id=org_id_1,
+                name=f"Org1 Team {i}",
                 created_by=creator_id,
                 last_modified_by=creator_id,
             )
@@ -326,8 +350,8 @@ class TestKTeamModel:
 
         for i in range(2):
             team = KTeam(
-                scope="tenant2",
-                name=f"Team {i}",
+                org_id=org_id_2,
+                name=f"Org2 Team {i}",
                 created_by=creator_id,
                 last_modified_by=creator_id,
             )
@@ -335,24 +359,25 @@ class TestKTeamModel:
 
         await session.commit()
 
-        # Count teams in tenant1
+        # Count teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.scope == "tenant1")
+            select(KTeam).where(KTeam.org_id == org_id_1)
         )
-        tenant1_teams = result_exec.scalars().all()
-        assert len(tenant1_teams) == 3
+        org1_teams = result_exec.scalars().all()
+        assert len(org1_teams) == 3
 
-        # Count teams in tenant2
+        # Count teams in org_id_2
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.scope == "tenant2")
+            select(KTeam).where(KTeam.org_id == org_id_2)
         )
-        tenant2_teams = result_exec.scalars().all()
-        assert len(tenant2_teams) == 2
+        org2_teams = result_exec.scalars().all()
+        assert len(org2_teams) == 2
 
     @pytest.mark.asyncio
-    async def test_team_empty_meta(self, session: AsyncSession, creator_id: UUID):
+    async def test_team_empty_meta(self, session: AsyncSession, creator_id: UUID, test_org_id: UUID):
         """Test that teams can have empty meta dictionaries."""
         team = KTeam(
+            org_id=test_org_id,
             name="Empty Meta Team",
             meta={},
             created_by=creator_id,

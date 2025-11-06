@@ -22,7 +22,7 @@ class Team(BaseModel):
     """Schema for team response."""
 
     id: UUID
-    scope: str
+    org_id: UUID
     name: str
     meta: dict
 

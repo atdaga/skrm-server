@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
@@ -23,6 +23,7 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 @router.post("", response_model=TeamDetail, status_code=status.HTTP_201_CREATED)
 async def create_team(
     team_data: TeamCreate,
+    org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
@@ -33,7 +34,7 @@ async def create_team(
         team = await teams_logic.create_team(
             team_data=team_data,
             user_id=user_id,
-            scope=token_data.scope,
+            org_id=org_id,
             db=db,
         )
         return TeamDetail.model_validate(team)
@@ -46,17 +47,19 @@ async def create_team(
 
 @router.get("", response_model=TeamList)
 async def list_teams(
+    org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamList:
-    """List all teams in the current user's scope."""
-    teams = await teams_logic.list_teams(scope=token_data.scope, db=db)
+    """List all teams in the given organization."""
+    teams = await teams_logic.list_teams(org_id=org_id, db=db)
     return TeamList(teams=[TeamDetail.model_validate(team) for team in teams])
 
 
 @router.get("/{team_id}", response_model=TeamDetail)
 async def get_team(
     team_id: UUID,
+    org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
@@ -64,7 +67,7 @@ async def get_team(
     try:
         team = await teams_logic.get_team(
             team_id=team_id,
-            scope=token_data.scope,
+            org_id=org_id,
             db=db,
         )
         return TeamDetail.model_validate(team)
@@ -79,6 +82,7 @@ async def get_team(
 async def update_team(
     team_id: UUID,
     team_data: TeamUpdate,
+    org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
@@ -90,7 +94,7 @@ async def update_team(
             team_id=team_id,
             team_data=team_data,
             user_id=user_id,
-            scope=token_data.scope,
+            org_id=org_id,
             db=db,
         )
         return TeamDetail.model_validate(team)
@@ -109,6 +113,7 @@ async def update_team(
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_team(
     team_id: UUID,
+    org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
@@ -116,7 +121,7 @@ async def delete_team(
     try:
         await teams_logic.delete_team(
             team_id=team_id,
-            scope=token_data.scope,
+            org_id=org_id,
             db=db,
         )
     except TeamNotFoundException as e:

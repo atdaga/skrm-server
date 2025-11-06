@@ -20,7 +20,6 @@ async def add_team_member(
     team_id: UUID,
     member_data: TeamMemberCreate,
     user_id: UUID,
-    scope: str,
     db: AsyncSession,
 ) -> KTeamMember:
     """Add a new member to a team.
@@ -29,7 +28,6 @@ async def add_team_member(
         team_id: ID of the team
         member_data: Team member creation data
         user_id: ID of the user adding the member
-        scope: Scope for the team member
         db: Database session
 
     Returns:
@@ -39,19 +37,22 @@ async def add_team_member(
         TeamNotFoundException: If the team is not found
         TeamMemberAlreadyExistsException: If the member already exists in the team
     """
-    # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
+    # Verify team exists and get its org_id
+    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
     if not team:
-        raise TeamNotFoundException(team_id=team_id, scope=scope)
+        raise TeamNotFoundException(team_id=team_id, scope=None)
+
+    # Store org_id to avoid lazy loading issues
+    org_id = team.org_id
 
     # Create new team member with audit fields
     new_member = KTeamMember(
         team_id=team_id,
         principal_id=member_data.principal_id,
-        scope=scope,
+        org_id=org_id,
         role=member_data.role,
         meta=member_data.meta,
         created_by=user_id,
@@ -66,20 +67,19 @@ async def add_team_member(
     except IntegrityError as e:
         await db.rollback()
         raise TeamMemberAlreadyExistsException(
-            team_id=team_id, principal_id=member_data.principal_id, scope=scope
+            team_id=team_id, principal_id=member_data.principal_id, scope=str(org_id)
         ) from e
 
     return new_member
 
 
 async def list_team_members(
-    team_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, db: AsyncSession
 ) -> list[KTeamMember]:
     """List all members of a team.
 
     Args:
         team_id: ID of the team
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -88,17 +88,17 @@ async def list_team_members(
     Raises:
         TeamNotFoundException: If the team is not found
     """
-    # Verify team exists in scope
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.scope == scope)  # type: ignore[arg-type]
+    # Verify team exists and get its org_id
+    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
     if not team:
-        raise TeamNotFoundException(team_id=team_id, scope=scope)
+        raise TeamNotFoundException(team_id=team_id, scope=None)
 
-    # Get all members for this team in the scope
+    # Get all members for this team
     stmt = select(KTeamMember).where(  # type: ignore[assignment]
-        KTeamMember.team_id == team_id, KTeamMember.scope == scope  # type: ignore[arg-type]
+        KTeamMember.team_id == team_id  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     members = result.scalars().all()
@@ -106,14 +106,13 @@ async def list_team_members(
 
 
 async def get_team_member(
-    team_id: UUID, principal_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, principal_id: UUID, db: AsyncSession
 ) -> KTeamMember:
     """Get a single team member.
 
     Args:
         team_id: ID of the team
         principal_id: ID of the principal (member)
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -125,14 +124,13 @@ async def get_team_member(
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
 
     if not member:
         raise TeamMemberNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     return member
@@ -143,7 +141,6 @@ async def update_team_member(
     principal_id: UUID,
     member_data: TeamMemberUpdate,
     user_id: UUID,
-    scope: str,
     db: AsyncSession,
 ) -> KTeamMember:
     """Update a team member.
@@ -153,7 +150,6 @@ async def update_team_member(
         principal_id: ID of the principal (member)
         member_data: Team member update data
         user_id: ID of the user performing the update
-        scope: Scope to filter by
         db: Database session
 
     Returns:
@@ -165,14 +161,13 @@ async def update_team_member(
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
 
     if not member:
         raise TeamMemberNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     # Update only provided fields
@@ -192,14 +187,13 @@ async def update_team_member(
 
 
 async def remove_team_member(
-    team_id: UUID, principal_id: UUID, scope: str, db: AsyncSession
+    team_id: UUID, principal_id: UUID, db: AsyncSession
 ) -> None:
     """Remove a member from a team.
 
     Args:
         team_id: ID of the team
         principal_id: ID of the principal (member)
-        scope: Scope to filter by
         db: Database session
 
     Raises:
@@ -208,14 +202,13 @@ async def remove_team_member(
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
-        KTeamMember.scope == scope,  # type: ignore[arg-type]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
 
     if not member:
         raise TeamMemberNotFoundException(
-            team_id=team_id, principal_id=principal_id, scope=scope
+            team_id=team_id, principal_id=principal_id, scope=None
         )
 
     await db.delete(member)

@@ -40,7 +40,7 @@ async def add_team_reviewer(
             team_id=team_id,
             reviewer_data=reviewer_data,
             user_id=user_id,
-            scope=token_data.scope,
+            
             db=db,
         )
         return TeamReviewerDetail.model_validate(reviewer)
@@ -65,7 +65,7 @@ async def list_team_reviewers(
     """List all reviewers of a team."""
     try:
         reviewers = await team_reviewers_logic.list_team_reviewers(
-            team_id=team_id, scope=token_data.scope, db=db
+            team_id=team_id,  db=db
         )
         return TeamReviewerList(
             reviewers=[
@@ -91,7 +91,7 @@ async def get_team_reviewer(
         reviewer = await team_reviewers_logic.get_team_reviewer(
             team_id=team_id,
             principal_id=principal_id,
-            scope=token_data.scope,
+            
             db=db,
         )
         return TeamReviewerDetail.model_validate(reviewer)
@@ -119,7 +119,7 @@ async def update_team_reviewer(
             principal_id=principal_id,
             reviewer_data=reviewer_data,
             user_id=user_id,
-            scope=token_data.scope,
+            
             db=db,
         )
         return TeamReviewerDetail.model_validate(reviewer)
@@ -142,7 +142,7 @@ async def remove_team_reviewer(
         await team_reviewers_logic.remove_team_reviewer(
             team_id=team_id,
             principal_id=principal_id,
-            scope=token_data.scope,
+            
             db=db,
         )
     except TeamReviewerNotFoundException as e:
