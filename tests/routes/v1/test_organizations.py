@@ -3,46 +3,19 @@
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KOrganization
-from app.routes.deps import get_current_token
+from app.models import KOrganization, KOrganizationPrincipal
 from app.routes.v1.organizations import router
-from app.schemas.user import TokenData
+from tests.conftest import add_user_to_organization
 
 
 @pytest.fixture
-def app_with_overrides(
-    async_session: AsyncSession, mock_token_data: TokenData
-) -> FastAPI:
-    """Create a FastAPI app with dependency overrides for testing."""
-    app = FastAPI()
-    app.include_router(router)
-
-    # Override dependencies
-    async def override_get_db():
-        yield async_session
-
-    async def override_get_current_token():
-        return mock_token_data
-
-    from app.core.db.database import get_db
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_token] = override_get_current_token
-
-    return app
-
-
-@pytest.fixture
-async def client(app_with_overrides: FastAPI) -> AsyncClient:
-    """Create an async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
-    ) as ac:
-        yield ac
+def app_with_overrides(app_with_overrides):
+    """Create a FastAPI app with organization router included."""
+    app_with_overrides.include_router(router)
+    return app_with_overrides
 
 
 class TestCreateOrganization:
@@ -269,30 +242,17 @@ class TestListOrganizations:
     async def test_list_organizations_single(
         self,
         client: AsyncClient,
-        async_session: AsyncSession,
-        test_user_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test listing organizations with a single organization."""
-        # Create an organization
-        org = KOrganization(
-            name="Test Org",
-            alias="test_org",
-            meta={"key": "value"},
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(org)
-        await async_session.commit()
-        await async_session.refresh(org)
-
         response = await client.get("/organizations")
 
         assert response.status_code == 200
         data = response.json()
         assert len(data["organizations"]) == 1
-        assert data["organizations"][0]["name"] == "Test Org"
+        assert data["organizations"][0]["name"] == "Test Organization"
         assert data["organizations"][0]["alias"] == "test_org"
-        assert data["organizations"][0]["id"] == str(org.id)
+        assert data["organizations"][0]["id"] == str(test_organization.id)
 
     @pytest.mark.asyncio
     async def test_list_organizations_multiple(
@@ -337,29 +297,16 @@ class TestGetOrganization:
     async def test_get_organization_success(
         self,
         client: AsyncClient,
-        async_session: AsyncSession,
-        test_user_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test successfully retrieving an organization."""
-        # Create organization
-        org = KOrganization(
-            name="Get Test Org",
-            alias="get_test_org",
-            meta={"test": "data"},
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        async_session.add(org)
-        await async_session.commit()
-        await async_session.refresh(org)
-
-        response = await client.get(f"/organizations/{org.id}")
+        response = await client.get(f"/organizations/{test_organization.id}")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == str(org.id)
-        assert data["name"] == "Get Test Org"
-        assert data["alias"] == "get_test_org"
+        assert data["id"] == str(test_organization.id)
+        assert data["name"] == "Test Organization"
+        assert data["alias"] == "test_org"
         assert data["meta"] == {"test": "data"}
 
     @pytest.mark.asyncio
@@ -371,8 +318,10 @@ class TestGetOrganization:
         fake_id = uuid4()
         response = await client.get(f"/organizations/{fake_id}")
 
-        assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
+        # This will return 403 (forbidden) because the user is not a member of a non-existent org
+        # The membership check happens before the existence check
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
 
 
 class TestUpdateOrganization:
@@ -396,6 +345,9 @@ class TestUpdateOrganization:
         async_session.add(org)
         await async_session.commit()
         await async_session.refresh(org)
+
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
 
         # Update name
         update_data = {"name": "New Name"}
@@ -424,6 +376,9 @@ class TestUpdateOrganization:
         async_session.add(org)
         await async_session.commit()
         await async_session.refresh(org)
+
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
 
         # Update alias
         update_data = {"alias": "new_alias"}
@@ -454,6 +409,9 @@ class TestUpdateOrganization:
         await async_session.commit()
         await async_session.refresh(org)
 
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
+
         # Update meta
         update_data = {"meta": {"new": "data", "updated": True}}
         response = await client.patch(f"/organizations/{org.id}", json=update_data)
@@ -482,6 +440,9 @@ class TestUpdateOrganization:
         await async_session.commit()
         await async_session.refresh(org)
 
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
+
         # Update all fields
         update_data = {
             "name": "New Name",
@@ -506,7 +467,8 @@ class TestUpdateOrganization:
         update_data = {"name": "New Name"}
         response = await client.patch(f"/organizations/{fake_id}", json=update_data)
 
-        assert response.status_code == 404
+        # Returns 403 because user is not a member of non-existent org
+        assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_update_organization_duplicate_name(
@@ -533,6 +495,9 @@ class TestUpdateOrganization:
         async_session.add(org2)
         await async_session.commit()
         await async_session.refresh(org2)
+
+        # Add test user as organization principal for org2
+        await add_user_to_organization(async_session, org2.id, test_user_id)
 
         # Try to update org2 to have the same name as org1
         update_data = {"name": "Org 1"}
@@ -566,6 +531,9 @@ class TestUpdateOrganization:
         await async_session.commit()
         await async_session.refresh(org2)
 
+        # Add test user as organization principal for org2
+        await add_user_to_organization(async_session, org2.id, test_user_id)
+
         # Try to update org2 to have the same alias as org1
         update_data = {"alias": "org_1"}
         response = await client.patch(f"/organizations/{org2.id}", json=update_data)
@@ -590,6 +558,9 @@ class TestUpdateOrganization:
         async_session.add(org)
         await async_session.commit()
         await async_session.refresh(org)
+
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
 
         # Update with None alias (should be allowed - no change)
         update_data = {"alias": None}
@@ -751,14 +722,17 @@ class TestDeleteOrganization:
 
         org_id = org.id
 
+        # Add test user as organization principal
+        await add_user_to_organization(async_session, org.id, test_user_id)
+
         # Delete organization
         response = await client.delete(f"/organizations/{org_id}")
 
         assert response.status_code == 204
 
-        # Verify it's deleted
+        # Verify it's deleted (returns 403 since org no longer exists and user is not a member)
         get_response = await client.get(f"/organizations/{org_id}")
-        assert get_response.status_code == 404
+        assert get_response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_delete_organization_not_found(
@@ -769,4 +743,130 @@ class TestDeleteOrganization:
         fake_id = uuid4()
         response = await client.delete(f"/organizations/{fake_id}")
 
+        # Returns 403 because user is not a member of non-existent org
+        assert response.status_code == 403
+
+
+class TestUnauthorizedOrganizationAccess:
+    """Test suite for unauthorized organization access scenarios."""
+
+    @pytest.mark.asyncio
+    async def test_get_organization_unauthorized(
+        self,
+        client: AsyncClient,
+        test_organization_without_membership: KOrganization,
+    ):
+        """Test getting an organization the user is not a member of."""
+        response = await client.get(
+            f"/organizations/{test_organization_without_membership.id}"
+        )
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_organization_unauthorized(
+        self,
+        client: AsyncClient,
+        test_organization_without_membership: KOrganization,
+    ):
+        """Test updating an organization the user is not a member of."""
+        update_data = {"name": "New Name"}
+        response = await client.patch(
+            f"/organizations/{test_organization_without_membership.id}",
+            json=update_data,
+        )
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_organization_unauthorized(
+        self,
+        client: AsyncClient,
+        test_organization_without_membership: KOrganization,
+    ):
+        """Test deleting an organization the user is not a member of."""
+        response = await client.delete(
+            f"/organizations/{test_organization_without_membership.id}"
+        )
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+
+class TestOrganizationDataInconsistency:
+    """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
+
+    @pytest.mark.asyncio
+    async def test_get_organization_with_membership_but_no_org(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test getting an organization when user is a member but org doesn't exist."""
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        fake_org_id = uuid4()
+        org_principal = KOrganizationPrincipal(
+            org_id=fake_org_id,
+            principal_id=test_user_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+
+        response = await client.get(f"/organizations/{fake_org_id}")
+
         assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_organization_with_membership_but_no_org(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test updating an organization when user is a member but org doesn't exist."""
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        fake_org_id = uuid4()
+        org_principal = KOrganizationPrincipal(
+            org_id=fake_org_id,
+            principal_id=test_user_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+
+        update_data = {"name": "New Name"}
+        response = await client.patch(f"/organizations/{fake_org_id}", json=update_data)
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_organization_with_membership_but_no_org(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test deleting an organization when user is a member but org doesn't exist."""
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        fake_org_id = uuid4()
+        org_principal = KOrganizationPrincipal(
+            org_id=fake_org_id,
+            principal_id=test_user_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+
+        response = await client.delete(f"/organizations/{fake_org_id}")
+
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()

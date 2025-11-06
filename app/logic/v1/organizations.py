@@ -14,6 +14,7 @@ from ...core.exceptions.domain_exceptions import (
 )
 from ...models import KOrganization
 from ...schemas.organization import OrganizationCreate, OrganizationUpdate
+from ..deps import verify_organization_membership
 
 
 async def create_organization(
@@ -83,12 +84,15 @@ async def list_organizations(scope: str, db: AsyncSession) -> list[KOrganization
     return list(organizations)
 
 
-async def get_organization(org_id: UUID, scope: str, db: AsyncSession) -> KOrganization:
+async def get_organization(
+    org_id: UUID, scope: str, user_id: UUID, db: AsyncSession
+) -> KOrganization:
     """Get a single organization by ID.
 
     Args:
         org_id: ID of the organization to retrieve
         scope: Scope for multi-tenancy (currently unused for organizations)
+        user_id: ID of the user making the request
         db: Database session
 
     Returns:
@@ -96,7 +100,11 @@ async def get_organization(org_id: UUID, scope: str, db: AsyncSession) -> KOrgan
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
@@ -128,8 +136,12 @@ async def update_organization(
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationUpdateConflictException: If updating causes a name or alias conflict
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
@@ -173,17 +185,24 @@ async def update_organization(
     return org
 
 
-async def delete_organization(org_id: UUID, scope: str, db: AsyncSession) -> None:
+async def delete_organization(
+    org_id: UUID, scope: str, user_id: UUID, db: AsyncSession
+) -> None:
     """Delete an organization.
 
     Args:
         org_id: ID of the organization to delete
         scope: Scope for multi-tenancy (currently unused for organizations)
+        user_id: ID of the user making the request
         db: Database session
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()

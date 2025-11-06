@@ -11,6 +11,7 @@ from ...core.exceptions.domain_exceptions import (
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationUpdateConflictException,
+    UnauthorizedOrganizationAccessException,
 )
 from ...logic.v1 import organizations as organizations_logic
 from ...schemas.organization import (
@@ -70,16 +71,24 @@ async def get_organization(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
     """Get a single organization by ID."""
+    user_id = UUID(token_data.sub)
+
     try:
         org = await organizations_logic.get_organization(
             org_id=org_id,
             scope=token_data.scope,
+            user_id=user_id,
             db=db,
         )
         return OrganizationDetail.model_validate(org)
     except OrganizationNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e
 
@@ -113,6 +122,11 @@ async def update_organization(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -122,14 +136,22 @@ async def delete_organization(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete an organization."""
+    user_id = UUID(token_data.sub)
+
     try:
         await organizations_logic.delete_organization(
             org_id=org_id,
             scope=token_data.scope,
+            user_id=user_id,
             db=db,
         )
     except OrganizationNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e

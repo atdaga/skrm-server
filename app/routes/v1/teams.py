@@ -11,6 +11,7 @@ from ...core.exceptions.domain_exceptions import (
     TeamAlreadyExistsException,
     TeamNotFoundException,
     TeamUpdateConflictException,
+    UnauthorizedOrganizationAccessException,
 )
 from ...logic.v1 import teams as teams_logic
 from ...schemas.team import TeamCreate, TeamDetail, TeamList, TeamUpdate
@@ -43,6 +44,11 @@ async def create_team(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.get("", response_model=TeamList)
@@ -52,8 +58,16 @@ async def list_teams(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamList:
     """List all teams in the given organization."""
-    teams = await teams_logic.list_teams(org_id=org_id, db=db)
-    return TeamList(teams=[TeamDetail.model_validate(team) for team in teams])
+    user_id = UUID(token_data.sub)
+
+    try:
+        teams = await teams_logic.list_teams(org_id=org_id, user_id=user_id, db=db)
+        return TeamList(teams=[TeamDetail.model_validate(team) for team in teams])
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.get("/{team_id}", response_model=TeamDetail)
@@ -64,16 +78,24 @@ async def get_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> TeamDetail:
     """Get a single team by ID."""
+    user_id = UUID(token_data.sub)
+
     try:
         team = await teams_logic.get_team(
             team_id=team_id,
             org_id=org_id,
+            user_id=user_id,
             db=db,
         )
         return TeamDetail.model_validate(team)
     except TeamNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e
 
@@ -108,6 +130,11 @@ async def update_team(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -118,14 +145,22 @@ async def delete_team(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Delete a team (cascades to team members)."""
+    user_id = UUID(token_data.sub)
+
     try:
         await teams_logic.delete_team(
             team_id=team_id,
             org_id=org_id,
+            user_id=user_id,
             db=db,
         )
     except TeamNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e

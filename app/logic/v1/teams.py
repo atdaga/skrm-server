@@ -14,6 +14,7 @@ from ...core.exceptions.domain_exceptions import (
 )
 from ...models import KTeam
 from ...schemas.team import TeamCreate, TeamUpdate
+from ..deps import verify_organization_membership
 
 
 async def create_team(
@@ -34,8 +35,12 @@ async def create_team(
         The created team model
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamAlreadyExistsException: If a team with the same name already exists in the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     # Create new team with audit fields
     new_team = KTeam(
         name=team_data.name,
@@ -57,36 +62,50 @@ async def create_team(
     return new_team
 
 
-async def list_teams(org_id: UUID, db: AsyncSession) -> list[KTeam]:
+async def list_teams(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTeam]:
     """List all teams in the given organization.
 
     Args:
         org_id: Organization ID to filter teams by
+        user_id: ID of the user making the request
         db: Database session
 
     Returns:
         List of team models
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KTeam).where(KTeam.org_id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     teams = result.scalars().all()
     return list(teams)
 
 
-async def get_team(team_id: UUID, org_id: UUID, db: AsyncSession) -> KTeam:
+async def get_team(
+    team_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+) -> KTeam:
     """Get a single team by ID.
 
     Args:
         team_id: ID of the team to retrieve
         org_id: Organization ID to filter by
+        user_id: ID of the user making the request
         db: Database session
 
     Returns:
         The team model
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamNotFoundException: If the team is not found in the given organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
@@ -117,9 +136,13 @@ async def update_team(
         The updated team model
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamNotFoundException: If the team is not found
         TeamUpdateConflictException: If updating causes a name conflict
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
@@ -151,17 +174,24 @@ async def update_team(
     return team
 
 
-async def delete_team(team_id: UUID, org_id: UUID, db: AsyncSession) -> None:
+async def delete_team(
+    team_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+) -> None:
     """Delete a team.
 
     Args:
         team_id: ID of the team to delete
         org_id: Organization ID to filter by
+        user_id: ID of the user making the request
         db: Database session
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamNotFoundException: If the team is not found
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()

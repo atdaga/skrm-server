@@ -12,6 +12,8 @@ from app.core.exceptions.domain_exceptions import (
     InvalidUserIdException,
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
+    OrganizationPrincipalAlreadyExistsException,
+    OrganizationPrincipalNotFoundException,
     OrganizationUpdateConflictException,
     TeamAlreadyExistsException,
     TeamMemberAlreadyExistsException,
@@ -21,6 +23,7 @@ from app.core.exceptions.domain_exceptions import (
     TeamReviewerNotFoundException,
     TeamUpdateConflictException,
     TokenNotFoundException,
+    UnauthorizedOrganizationAccessException,
     UserNotFoundException,
 )
 
@@ -425,3 +428,67 @@ class TestTeamReviewerExceptions:
         assert str(principal_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "team_reviewer"
+
+
+class TestOrganizationPrincipalExceptions:
+    """Test suite for organization principal-related exceptions."""
+
+    def test_organization_principal_not_found_exception_with_scope(self):
+        """Test OrganizationPrincipalNotFoundException with scope."""
+        org_id = uuid4()
+        principal_id = uuid4()
+        exception = OrganizationPrincipalNotFoundException(
+            org_id=org_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.org_id == org_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(org_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "organization_principal"
+
+    def test_organization_principal_not_found_exception_without_scope(self):
+        """Test OrganizationPrincipalNotFoundException without scope."""
+        org_id = uuid4()
+        principal_id = uuid4()
+        exception = OrganizationPrincipalNotFoundException(
+            org_id=org_id, principal_id=principal_id
+        )
+
+        assert exception.org_id == org_id
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_organization_principal_already_exists_exception(self):
+        """Test OrganizationPrincipalAlreadyExistsException."""
+        org_id = uuid4()
+        principal_id = uuid4()
+        exception = OrganizationPrincipalAlreadyExistsException(
+            org_id=org_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.org_id == org_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(org_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "organization_principal"
+
+    def test_unauthorized_organization_access_exception(self):
+        """Test UnauthorizedOrganizationAccessException."""
+        org_id = uuid4()
+        user_id = uuid4()
+        exception = UnauthorizedOrganizationAccessException(
+            org_id=org_id, user_id=user_id
+        )
+
+        assert exception.org_id == org_id
+        assert exception.user_id == user_id
+        assert str(org_id) in exception.message
+        assert str(user_id) in exception.message
+        assert "not authorized" in exception.message.lower()
+        assert exception.entity_type == "organization"

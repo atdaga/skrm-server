@@ -17,6 +17,7 @@ from ...schemas.organization_principal import (
     OrganizationPrincipalCreate,
     OrganizationPrincipalUpdate,
 )
+from ..deps import verify_organization_membership
 
 
 async def add_organization_principal(
@@ -38,8 +39,12 @@ async def add_organization_principal(
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationPrincipalAlreadyExistsException: If the principal already exists in the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     # Verify organization exists
     stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
@@ -73,12 +78,13 @@ async def add_organization_principal(
 
 
 async def list_organization_principals(
-    org_id: UUID, db: AsyncSession
+    org_id: UUID, user_id: UUID, db: AsyncSession
 ) -> list[KOrganizationPrincipal]:
     """List all principals of an organization.
 
     Args:
         org_id: ID of the organization
+        user_id: ID of the user making the request
         db: Database session
 
     Returns:
@@ -86,7 +92,11 @@ async def list_organization_principals(
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     # Verify organization exists
     stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
     result = await db.execute(stmt)
@@ -105,21 +115,26 @@ async def list_organization_principals(
 
 
 async def get_organization_principal(
-    org_id: UUID, principal_id: UUID, db: AsyncSession
+    org_id: UUID, principal_id: UUID, user_id: UUID, db: AsyncSession
 ) -> KOrganizationPrincipal:
     """Get a single organization principal.
 
     Args:
         org_id: ID of the organization
         principal_id: ID of the principal
+        user_id: ID of the user making the request
         db: Database session
 
     Returns:
         The organization principal model
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
         KOrganizationPrincipal.principal_id == principal_id,  # type: ignore[arg-type]
@@ -155,8 +170,12 @@ async def update_organization_principal(
         The updated organization principal model
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
         KOrganizationPrincipal.principal_id == principal_id,  # type: ignore[arg-type]
@@ -186,18 +205,23 @@ async def update_organization_principal(
 
 
 async def remove_organization_principal(
-    org_id: UUID, principal_id: UUID, db: AsyncSession
+    org_id: UUID, principal_id: UUID, user_id: UUID, db: AsyncSession
 ) -> None:
     """Remove a principal from an organization.
 
     Args:
         org_id: ID of the organization
         principal_id: ID of the principal
+        user_id: ID of the user making the request
         db: Database session
 
     Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
         KOrganizationPrincipal.principal_id == principal_id,  # type: ignore[arg-type]

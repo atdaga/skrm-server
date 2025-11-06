@@ -132,3 +132,150 @@ def mock_token_data(test_user_id: UUID, test_scope: str) -> TokenData:
         exp=now,
         ss=now,
     )
+
+
+# Helper function to add organization membership
+async def add_user_to_organization(
+    session: AsyncSession, org_id: UUID, user_id: UUID
+) -> None:
+    """Helper function to add a user as a principal of an organization.
+
+    Args:
+        session: Database session
+        org_id: Organization ID
+        user_id: User/Principal ID to add to organization
+    """
+    from app.models import KOrganizationPrincipal
+
+    org_principal = KOrganizationPrincipal(
+        org_id=org_id,
+        principal_id=user_id,
+        created_by=user_id,
+        last_modified_by=user_id,
+    )
+    session.add(org_principal)
+    await session.commit()
+
+
+# Common test data fixtures
+
+
+@pytest.fixture
+async def test_organization(async_session: AsyncSession, test_user_id: UUID):
+    """Create a test organization with the test user as a member.
+
+    This is the standard organization fixture where the test user IS a member.
+    Use this for testing normal authorized operations.
+    """
+    from app.models import KOrganization
+
+    org = KOrganization(
+        name="Test Organization",
+        alias="test_org",
+        meta={"test": "data"},
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(org)
+    await async_session.commit()
+    await async_session.refresh(org)
+
+    # Add test user as organization member
+    await add_user_to_organization(async_session, org.id, test_user_id)
+
+    return org
+
+
+@pytest.fixture
+async def test_organization_without_membership(
+    async_session: AsyncSession, test_user_id: UUID
+):
+    """Create a test organization WITHOUT adding the test user as a member.
+
+    Use this for testing unauthorized access scenarios where the user
+    is NOT a member of the organization.
+    """
+    from app.models import KOrganization
+
+    org = KOrganization(
+        name="Unauthorized Organization",
+        alias="unauth_org",
+        meta={},
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(org)
+    await async_session.commit()
+    await async_session.refresh(org)
+
+    return org
+
+
+@pytest.fixture
+async def test_principal(async_session: AsyncSession, test_user_id: UUID):
+    """Create a test principal (user) for testing.
+
+    This creates a separate principal (not the test_user_id) that can be
+    added to organizations, teams, etc.
+    """
+    from app.models import KPrincipal
+
+    principal = KPrincipal(
+        username="testprincipal",
+        primary_email="principal@example.com",
+        first_name="Test",
+        last_name="Principal",
+        display_name="Test Principal",
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(principal)
+    await async_session.commit()
+    await async_session.refresh(principal)
+
+    return principal
+
+
+# FastAPI test client fixtures
+
+
+@pytest.fixture
+def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData):
+    """Create a FastAPI app with dependency overrides for testing.
+
+    This fixture is meant to be used with parametrization or by including
+    the router in the test file. By default, it creates an app with no routes.
+    """
+    from fastapi import FastAPI
+
+    from app.core.db.database import get_db
+    from app.routes.deps import get_current_token
+
+    app = FastAPI()
+
+    # Override dependencies
+    async def override_get_db():
+        yield async_session
+
+    async def override_get_current_token():
+        return mock_token_data
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_token] = override_get_current_token
+
+    return app
+
+
+@pytest.fixture
+async def client(app_with_overrides):
+    """Create an async HTTP client for testing.
+
+    This fixture depends on app_with_overrides, which should have routes
+    included before creating the client.
+    """
+    from httpx import ASGITransport, AsyncClient
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
+    ) as ac:
+        yield ac

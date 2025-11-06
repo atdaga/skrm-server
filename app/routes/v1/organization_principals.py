@@ -11,6 +11,7 @@ from ...core.exceptions.domain_exceptions import (
     OrganizationNotFoundException,
     OrganizationPrincipalAlreadyExistsException,
     OrganizationPrincipalNotFoundException,
+    UnauthorizedOrganizationAccessException,
 )
 from ...logic.v1 import organization_principals as organization_principals_logic
 from ...schemas.organization_principal import (
@@ -57,6 +58,11 @@ async def add_organization_principal(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.get("", response_model=OrganizationPrincipalList)
@@ -66,9 +72,11 @@ async def list_organization_principals(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalList:
     """List all principals of an organization."""
+    user_id = UUID(token_data.sub)
+
     try:
         principals = await organization_principals_logic.list_organization_principals(
-            org_id=org_id, db=db
+            org_id=org_id, user_id=user_id, db=db
         )
         return OrganizationPrincipalList(
             principals=[
@@ -81,6 +89,11 @@ async def list_organization_principals(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.get("/{principal_id}", response_model=OrganizationPrincipalDetail)
@@ -91,16 +104,24 @@ async def get_organization_principal(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalDetail:
     """Get a single organization principal."""
+    user_id = UUID(token_data.sub)
+
     try:
         principal = await organization_principals_logic.get_organization_principal(
             org_id=org_id,
             principal_id=principal_id,
+            user_id=user_id,
             db=db,
         )
         return OrganizationPrincipalDetail.model_validate(principal)
     except OrganizationPrincipalNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e
 
@@ -130,6 +151,11 @@ async def update_organization_principal(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
 
 
 @router.delete("/{principal_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -140,14 +166,22 @@ async def remove_organization_principal(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
     """Remove a principal from an organization."""
+    user_id = UUID(token_data.sub)
+
     try:
         await organization_principals_logic.remove_organization_principal(
             org_id=org_id,
             principal_id=principal_id,
+            user_id=user_id,
             db=db,
         )
     except OrganizationPrincipalNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+    except UnauthorizedOrganizationAccessException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e

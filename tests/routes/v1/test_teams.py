@@ -7,10 +7,11 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KTeam
+from app.models import KOrganization, KTeam
 from app.routes.deps import get_current_token
 from app.routes.v1.teams import router
 from app.schemas.user import TokenData
+from tests.conftest import add_user_to_organization
 
 
 @pytest.fixture
@@ -45,6 +46,27 @@ async def client(app_with_overrides: FastAPI) -> AsyncClient:
         yield ac
 
 
+@pytest.fixture
+async def test_organization(
+    async_session: AsyncSession, test_user_id: UUID
+) -> KOrganization:
+    """Create a test organization with the test user as a member."""
+    organization = KOrganization(
+        name="Test Organization",
+        alias="test_org",
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(organization)
+    await async_session.commit()
+    await async_session.refresh(organization)
+
+    # Add test user as organization principal
+    await add_user_to_organization(async_session, organization.id, test_user_id)
+
+    return organization
+
+
 class TestCreateTeam:
     """Test suite for POST /teams endpoint."""
 
@@ -52,7 +74,7 @@ class TestCreateTeam:
     async def test_create_team_success(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
         test_scope: str,
     ):
@@ -62,7 +84,9 @@ class TestCreateTeam:
             "meta": {"department": "Engineering", "location": "SF"},
         }
 
-        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
+        response = await client.post(
+            f"/teams?org_id={test_organization.id}", json=team_data
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -79,13 +103,15 @@ class TestCreateTeam:
     async def test_create_team_minimal_data(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_scope: str,
     ):
         """Test creating a team with minimal required fields."""
         team_data = {"name": "Minimal Team"}
 
-        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
+        response = await client.post(
+            f"/teams?org_id={test_organization.id}", json=team_data
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -97,14 +123,14 @@ class TestCreateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test that creating a team with duplicate name in same scope fails."""
         # Create first team directly in database
         team = KTeam(
             name="Duplicate Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -114,7 +140,9 @@ class TestCreateTeam:
         # Try to create another team with same name
         team_data = {"name": "Duplicate Team", "meta": {}}
 
-        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
+        response = await client.post(
+            f"/teams?org_id={test_organization.id}", json=team_data
+        )
 
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
@@ -123,12 +151,14 @@ class TestCreateTeam:
     async def test_create_team_with_empty_meta(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test creating a team with explicitly empty meta."""
         team_data = {"name": "Empty Meta Team", "meta": {}}
 
-        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
+        response = await client.post(
+            f"/teams?org_id={test_organization.id}", json=team_data
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -138,7 +168,7 @@ class TestCreateTeam:
     async def test_create_team_with_complex_meta(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test creating a team with complex nested metadata."""
         team_data = {
@@ -151,7 +181,9 @@ class TestCreateTeam:
             },
         }
 
-        response = await client.post(f"/teams?org_id={test_org_id}", json=team_data)
+        response = await client.post(
+            f"/teams?org_id={test_organization.id}", json=team_data
+        )
 
         assert response.status_code == 201
         data = response.json()
@@ -165,10 +197,10 @@ class TestListTeams:
     async def test_list_teams_empty(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test listing teams when none exist."""
-        response = await client.get(f"/teams?org_id={test_org_id}")
+        response = await client.get(f"/teams?org_id={test_organization.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -179,14 +211,14 @@ class TestListTeams:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test listing teams with a single team."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             meta={"key": "value"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -195,7 +227,7 @@ class TestListTeams:
         await async_session.commit()
         await async_session.refresh(team)
 
-        response = await client.get(f"/teams?org_id={test_org_id}")
+        response = await client.get(f"/teams?org_id={test_organization.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -208,7 +240,7 @@ class TestListTeams:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test listing multiple teams."""
@@ -222,7 +254,7 @@ class TestListTeams:
         for team_data in teams_data:
             team = KTeam(
                 name=team_data["name"],
-                org_id=test_org_id,
+                org_id=test_organization.id,
                 meta=team_data["meta"],
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
@@ -231,7 +263,7 @@ class TestListTeams:
 
         await async_session.commit()
 
-        response = await client.get(f"/teams?org_id={test_org_id}")
+        response = await client.get(f"/teams?org_id={test_organization.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -248,7 +280,7 @@ class TestGetTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
         test_scope: str,
     ):
@@ -256,7 +288,7 @@ class TestGetTeam:
         # Create a team
         team = KTeam(
             name="Test Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             meta={"department": "Engineering"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -265,7 +297,7 @@ class TestGetTeam:
         await async_session.commit()
         await async_session.refresh(team)
 
-        response = await client.get(f"/teams/{team.id}?org_id={test_org_id}")
+        response = await client.get(f"/teams/{team.id}?org_id={test_organization.id}")
 
         assert response.status_code == 200
         data = response.json()
@@ -277,12 +309,14 @@ class TestGetTeam:
     async def test_get_team_not_found(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test getting a team that doesn't exist."""
         non_existent_id = uuid4()
 
-        response = await client.get(f"/teams/{non_existent_id}?org_id={test_org_id}")
+        response = await client.get(
+            f"/teams/{non_existent_id}?org_id={test_organization.id}"
+        )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
@@ -306,14 +340,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test updating a team's name."""
         # Create a team
         team = KTeam(
             name="Old Name",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -324,7 +358,7 @@ class TestUpdateTeam:
         update_data = {"name": "New Name"}
 
         response = await client.patch(
-            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -337,14 +371,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test updating a team's metadata."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -356,7 +390,7 @@ class TestUpdateTeam:
         update_data = {"meta": {"new": "data", "updated": True}}
 
         response = await client.patch(
-            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -369,14 +403,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test updating both name and meta."""
         # Create a team
         team = KTeam(
             name="Old Name",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             meta={"old": "data"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -388,7 +422,7 @@ class TestUpdateTeam:
         update_data = {"name": "New Name", "meta": {"new": "data"}}
 
         response = await client.patch(
-            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -400,14 +434,14 @@ class TestUpdateTeam:
     async def test_update_team_not_found(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test updating a team that doesn't exist."""
         non_existent_id = uuid4()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
-            f"/teams/{non_existent_id}?org_id={test_org_id}", json=update_data
+            f"/teams/{non_existent_id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 404
@@ -418,20 +452,20 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test that updating to a duplicate name fails."""
         # Create two teams
         team1 = KTeam(
             name="Team One",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
         team2 = KTeam(
             name="Team Two",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -444,7 +478,7 @@ class TestUpdateTeam:
         update_data = {"name": "Team One"}
 
         response = await client.patch(
-            f"/teams/{team2.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team2.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 409
@@ -455,14 +489,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test updating with empty payload (no changes)."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             meta={"key": "value"},
             created_by=test_user_id,
             last_modified_by=test_user_id,
@@ -474,7 +508,7 @@ class TestUpdateTeam:
         update_data = {}
 
         response = await client.patch(
-            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -487,14 +521,14 @@ class TestUpdateTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test that audit fields are updated correctly."""
         # Create a team
         team = KTeam(
             name="Test Team",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -505,7 +539,7 @@ class TestUpdateTeam:
         update_data = {"name": "Updated Team"}
 
         response = await client.patch(
-            f"/teams/{team.id}?org_id={test_org_id}", json=update_data
+            f"/teams/{team.id}?org_id={test_organization.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -523,14 +557,14 @@ class TestDeleteTeam:
         self,
         client: AsyncClient,
         async_session: AsyncSession,
-        test_org_id: UUID,
+        test_organization: KOrganization,
         test_user_id: UUID,
     ):
         """Test successfully deleting a team."""
         # Create a team
         team = KTeam(
             name="Team To Delete",
-            org_id=test_org_id,
+            org_id=test_organization.id,
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
@@ -539,7 +573,9 @@ class TestDeleteTeam:
         await async_session.refresh(team)
         team_id = team.id
 
-        response = await client.delete(f"/teams/{team_id}?org_id={test_org_id}")
+        response = await client.delete(
+            f"/teams/{team_id}?org_id={test_organization.id}"
+        )
 
         assert response.status_code == 204
         assert response.content == b""  # No content in response
@@ -552,12 +588,14 @@ class TestDeleteTeam:
     async def test_delete_team_not_found(
         self,
         client: AsyncClient,
-        test_org_id: UUID,
+        test_organization: KOrganization,
     ):
         """Test deleting a team that doesn't exist."""
         non_existent_id = uuid4()
 
-        response = await client.delete(f"/teams/{non_existent_id}?org_id={test_org_id}")
+        response = await client.delete(
+            f"/teams/{non_existent_id}?org_id={test_organization.id}"
+        )
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
@@ -571,3 +609,164 @@ class TestDeleteTeam:
         response = await client.delete("/teams/not-a-uuid")
 
         assert response.status_code == 422  # Validation error
+
+
+class TestUnauthorizedAccess:
+    """Test suite for unauthorized access scenarios."""
+
+    @pytest.mark.asyncio
+    async def test_create_team_unauthorized(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test creating a team in an organization user is not a member of."""
+        # Create an organization WITHOUT adding test user as member
+        org = KOrganization(
+            name="Unauthorized Org",
+            alias="unauth_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        team_data = {"name": "Unauthorized Team"}
+        response = await client.post(f"/teams?org_id={org.id}", json=team_data)
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_list_teams_unauthorized(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test listing teams in an organization user is not a member of."""
+        # Create an organization WITHOUT adding test user as member
+        org = KOrganization(
+            name="Unauthorized Org",
+            alias="unauth_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        response = await client.get(f"/teams?org_id={org.id}")
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_get_team_unauthorized(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test getting a team in an organization user is not a member of."""
+        # Create an organization WITHOUT adding test user as member
+        org = KOrganization(
+            name="Unauthorized Org",
+            alias="unauth_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Create a team in that org
+        team = KTeam(
+            name="Team",
+            org_id=org.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(team)
+        await async_session.commit()
+        await async_session.refresh(team)
+
+        response = await client.get(f"/teams/{team.id}?org_id={org.id}")
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_team_unauthorized(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test updating a team in an organization user is not a member of."""
+        # Create an organization WITHOUT adding test user as member
+        org = KOrganization(
+            name="Unauthorized Org",
+            alias="unauth_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Create a team in that org
+        team = KTeam(
+            name="Team",
+            org_id=org.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(team)
+        await async_session.commit()
+        await async_session.refresh(team)
+
+        update_data = {"name": "Updated Name"}
+        response = await client.patch(
+            f"/teams/{team.id}?org_id={org.id}", json=update_data
+        )
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_team_unauthorized(
+        self,
+        client: AsyncClient,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test deleting a team in an organization user is not a member of."""
+        # Create an organization WITHOUT adding test user as member
+        org = KOrganization(
+            name="Unauthorized Org",
+            alias="unauth_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Create a team in that org
+        team = KTeam(
+            name="Team",
+            org_id=org.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(team)
+        await async_session.commit()
+        await async_session.refresh(team)
+
+        response = await client.delete(f"/teams/{team.id}?org_id={org.id}")
+
+        assert response.status_code == 403
+        assert "not authorized" in response.json()["detail"].lower()

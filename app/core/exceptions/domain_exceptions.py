@@ -285,3 +285,15 @@ class OrganizationPrincipalAlreadyExistsException(DomainException):
         self.org_id = org_id
         self.principal_id = principal_id
         self.scope = scope
+
+
+class UnauthorizedOrganizationAccessException(DomainException):
+    """Raised when a user attempts to access an organization they don't belong to."""
+
+    def __init__(self, org_id: UUID, user_id: UUID):
+        message = (
+            f"User '{user_id}' is not authorized to access organization '{org_id}'"
+        )
+        super().__init__(message, entity_type="organization", entity_id=org_id)
+        self.org_id = org_id
+        self.user_id = user_id

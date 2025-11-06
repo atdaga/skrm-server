@@ -11,9 +11,10 @@ from ..core.exceptions.domain_exceptions import (
     InsufficientPrivilegesException,
     InvalidTokenException,
     InvalidUserIdException,
+    UnauthorizedOrganizationAccessException,
     UserNotFoundException,
 )
-from ..models import KPrincipal
+from ..models import KOrganizationPrincipal, KPrincipal
 from ..schemas.user import TokenData, UserDetail
 
 
@@ -118,3 +119,27 @@ def check_superuser_privileges(user: UserDetail) -> None:
             required_privilege="superuser",
             user_id=user.id,
         )
+
+
+async def verify_organization_membership(
+    org_id: UUID, user_id: UUID, db: AsyncSession
+) -> None:
+    """Verify that a user is a member of an organization.
+
+    Args:
+        org_id: Organization ID to check membership for
+        user_id: User ID to verify
+        db: Database session
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+    """
+    stmt = select(KOrganizationPrincipal).where(
+        KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
+        KOrganizationPrincipal.principal_id == user_id,  # type: ignore[arg-type]
+    )
+    result = await db.execute(stmt)
+    membership = result.scalar_one_or_none()
+
+    if not membership:
+        raise UnauthorizedOrganizationAccessException(org_id=org_id, user_id=user_id)
