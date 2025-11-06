@@ -66,6 +66,73 @@ class TeamUpdateConflictException(DomainException):
 
 
 # ============================================================================
+# Project-related exceptions
+# ============================================================================
+
+
+class ProjectNotFoundException(DomainException):
+    """Raised when a project cannot be found."""
+
+    def __init__(self, project_id: UUID, scope: str | None = None):
+        message = f"Project with id '{project_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="project", entity_id=project_id)
+        self.project_id = project_id
+        self.scope = scope
+
+
+class ProjectAlreadyExistsException(DomainException):
+    """Raised when attempting to create a project that already exists."""
+
+    def __init__(self, name: str, scope: str):
+        message = f"Project with name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="project", entity_id=name)
+        self.name = name
+        self.scope = scope
+
+
+class ProjectUpdateConflictException(DomainException):
+    """Raised when updating a project causes a naming conflict."""
+
+    def __init__(self, project_id: UUID, name: str, scope: str):
+        message = f"Cannot update project '{project_id}': name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="project", entity_id=project_id)
+        self.project_id = project_id
+        self.name = name
+        self.scope = scope
+
+
+# ============================================================================
+# Project Team-related exceptions
+# ============================================================================
+
+
+class ProjectTeamNotFoundException(DomainException):
+    """Raised when a project team cannot be found."""
+
+    def __init__(self, project_id: UUID, team_id: UUID, scope: str | None = None):
+        message = f"Project team with project_id '{project_id}' and team_id '{team_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="project_team", entity_id=team_id)
+        self.project_id = project_id
+        self.team_id = team_id
+        self.scope = scope
+
+
+class ProjectTeamAlreadyExistsException(DomainException):
+    """Raised when attempting to add a project team that already exists."""
+
+    def __init__(self, project_id: UUID, team_id: UUID, scope: str):
+        message = f"Project team with project_id '{project_id}' and team_id '{team_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="project_team", entity_id=team_id)
+        self.project_id = project_id
+        self.team_id = team_id
+        self.scope = scope
+
+
+# ============================================================================
 # Organization-related exceptions
 # ============================================================================
 

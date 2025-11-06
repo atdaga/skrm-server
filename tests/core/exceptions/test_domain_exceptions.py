@@ -15,6 +15,11 @@ from app.core.exceptions.domain_exceptions import (
     OrganizationPrincipalAlreadyExistsException,
     OrganizationPrincipalNotFoundException,
     OrganizationUpdateConflictException,
+    ProjectAlreadyExistsException,
+    ProjectNotFoundException,
+    ProjectTeamAlreadyExistsException,
+    ProjectTeamNotFoundException,
+    ProjectUpdateConflictException,
     TeamAlreadyExistsException,
     TeamMemberAlreadyExistsException,
     TeamMemberNotFoundException,
@@ -233,6 +238,26 @@ class TestExceptionRaising:
         with pytest.raises(TokenNotFoundException):
             raise TokenNotFoundException()
 
+    def test_raise_project_not_found(self):
+        """Test raising ProjectNotFoundException."""
+        project_id = uuid4()
+        with pytest.raises(ProjectNotFoundException) as exc_info:
+            raise ProjectNotFoundException(project_id=project_id, scope="test")
+
+        assert exc_info.value.project_id == project_id
+
+    def test_raise_project_team_not_found(self):
+        """Test raising ProjectTeamNotFoundException."""
+        project_id = uuid4()
+        team_id = uuid4()
+        with pytest.raises(ProjectTeamNotFoundException) as exc_info:
+            raise ProjectTeamNotFoundException(
+                project_id=project_id, team_id=team_id, scope="test"
+            )
+
+        assert exc_info.value.project_id == project_id
+        assert exc_info.value.team_id == team_id
+
     def test_catch_as_domain_exception(self):
         """Test that all domain exceptions can be caught as DomainException."""
         # Test TeamNotFoundException
@@ -246,6 +271,14 @@ class TestExceptionRaising:
         # Test TokenNotFoundException
         with pytest.raises(DomainException):
             raise TokenNotFoundException()
+
+        # Test ProjectNotFoundException
+        with pytest.raises(DomainException):
+            raise ProjectNotFoundException(project_id=uuid4())
+
+        # Test ProjectTeamNotFoundException
+        with pytest.raises(DomainException):
+            raise ProjectTeamNotFoundException(project_id=uuid4(), team_id=uuid4())
 
 
 class TestOrganizationExceptions:
@@ -492,3 +525,103 @@ class TestOrganizationPrincipalExceptions:
         assert str(user_id) in exception.message
         assert "not authorized" in exception.message.lower()
         assert exception.entity_type == "organization"
+
+
+class TestProjectExceptions:
+    """Test suite for project-related exceptions."""
+
+    def test_project_not_found_exception_with_scope(self):
+        """Test ProjectNotFoundException with scope."""
+        project_id = uuid4()
+        exception = ProjectNotFoundException(project_id=project_id, scope="test-scope")
+
+        assert exception.project_id == project_id
+        assert exception.scope == "test-scope"
+        assert str(project_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "project"
+        assert exception.entity_id == project_id
+
+    def test_project_not_found_exception_without_scope(self):
+        """Test ProjectNotFoundException without scope."""
+        project_id = uuid4()
+        exception = ProjectNotFoundException(project_id=project_id)
+
+        assert exception.project_id == project_id
+        assert exception.scope is None
+        assert str(project_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_project_already_exists_exception(self):
+        """Test ProjectAlreadyExistsException."""
+        exception = ProjectAlreadyExistsException(
+            name="TestProject", scope="test-scope"
+        )
+
+        assert exception.name == "TestProject"
+        assert exception.scope == "test-scope"
+        assert "TestProject" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "project"
+
+    def test_project_update_conflict_exception(self):
+        """Test ProjectUpdateConflictException."""
+        project_id = uuid4()
+        exception = ProjectUpdateConflictException(
+            project_id=project_id, name="ConflictName", scope="test-scope"
+        )
+
+        assert exception.project_id == project_id
+        assert exception.name == "ConflictName"
+        assert exception.scope == "test-scope"
+        assert str(project_id) in exception.message
+        assert "ConflictName" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "project"
+
+
+class TestProjectTeamExceptions:
+    """Test suite for project team-related exceptions."""
+
+    def test_project_team_not_found_exception_with_scope(self):
+        """Test ProjectTeamNotFoundException with scope."""
+        project_id = uuid4()
+        team_id = uuid4()
+        exception = ProjectTeamNotFoundException(
+            project_id=project_id, team_id=team_id, scope="test-scope"
+        )
+
+        assert exception.project_id == project_id
+        assert exception.team_id == team_id
+        assert exception.scope == "test-scope"
+        assert str(project_id) in exception.message
+        assert str(team_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "project_team"
+
+    def test_project_team_not_found_exception_without_scope(self):
+        """Test ProjectTeamNotFoundException without scope."""
+        project_id = uuid4()
+        team_id = uuid4()
+        exception = ProjectTeamNotFoundException(project_id=project_id, team_id=team_id)
+
+        assert exception.project_id == project_id
+        assert exception.team_id == team_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_project_team_already_exists_exception(self):
+        """Test ProjectTeamAlreadyExistsException."""
+        project_id = uuid4()
+        team_id = uuid4()
+        exception = ProjectTeamAlreadyExistsException(
+            project_id=project_id, team_id=team_id, scope="test-scope"
+        )
+
+        assert exception.project_id == project_id
+        assert exception.team_id == team_id
+        assert exception.scope == "test-scope"
+        assert str(project_id) in exception.message
+        assert str(team_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "project_team"
