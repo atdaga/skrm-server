@@ -367,6 +367,44 @@ class UnauthorizedOrganizationAccessException(DomainException):
 
 
 # ============================================================================
+# Doc-related exceptions
+# ============================================================================
+
+
+class DocNotFoundException(DomainException):
+    """Raised when a doc cannot be found."""
+
+    def __init__(self, doc_id: UUID, scope: str | None = None):
+        message = f"Doc with id '{doc_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="doc", entity_id=doc_id)
+        self.doc_id = doc_id
+        self.scope = scope
+
+
+class DocAlreadyExistsException(DomainException):
+    """Raised when attempting to create a doc that already exists."""
+
+    def __init__(self, name: str, scope: str):
+        message = f"Doc with name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="doc", entity_id=name)
+        self.name = name
+        self.scope = scope
+
+
+class DocUpdateConflictException(DomainException):
+    """Raised when updating a doc causes a naming conflict."""
+
+    def __init__(self, doc_id: UUID, name: str, scope: str):
+        message = f"Cannot update doc '{doc_id}': name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="doc", entity_id=doc_id)
+        self.doc_id = doc_id
+        self.name = name
+        self.scope = scope
+
+
+# ============================================================================
 # Deployment Environment-related exceptions
 # ============================================================================
 
