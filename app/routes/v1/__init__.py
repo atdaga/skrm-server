@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from . import (
+    deployment_envs,
     organization_principals,
     organizations,
     project_teams,
@@ -25,5 +26,6 @@ router.include_router(team_members.router)
 router.include_router(team_reviewers.router)
 router.include_router(projects.router)
 router.include_router(project_teams.router)
+router.include_router(deployment_envs.router)
 
 __all__ = ["router"]

@@ -1,5 +1,6 @@
 """Database models for the application."""
 
+from .k_deployment_env import KDeploymentEnv
 from .k_fido2_credential import KFido2Credential
 from .k_organization import KOrganization
 from .k_organization_principal import KOrganizationPrincipal
@@ -12,6 +13,7 @@ from .k_team_member import KTeamMember
 from .k_team_reviewer import KTeamReviewer
 
 __all__ = [
+    "KDeploymentEnv",
     "KFido2Credential",
     "KOrganization",
     "KOrganizationPrincipal",

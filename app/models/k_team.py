@@ -16,7 +16,7 @@ class KTeam(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    org_id: UUID
+    org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     name: str = Field(..., max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)

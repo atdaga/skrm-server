@@ -364,3 +364,45 @@ class UnauthorizedOrganizationAccessException(DomainException):
         super().__init__(message, entity_type="organization", entity_id=org_id)
         self.org_id = org_id
         self.user_id = user_id
+
+
+# ============================================================================
+# Deployment Environment-related exceptions
+# ============================================================================
+
+
+class DeploymentEnvNotFoundException(DomainException):
+    """Raised when a deployment environment cannot be found."""
+
+    def __init__(self, deployment_env_id: UUID, scope: str | None = None):
+        message = f"Deployment environment with id '{deployment_env_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(
+            message, entity_type="deployment_env", entity_id=deployment_env_id
+        )
+        self.deployment_env_id = deployment_env_id
+        self.scope = scope
+
+
+class DeploymentEnvAlreadyExistsException(DomainException):
+    """Raised when attempting to create a deployment environment that already exists."""
+
+    def __init__(self, name: str, scope: str):
+        message = f"Deployment environment with name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="deployment_env", entity_id=name)
+        self.name = name
+        self.scope = scope
+
+
+class DeploymentEnvUpdateConflictException(DomainException):
+    """Raised when updating a deployment environment causes a naming conflict."""
+
+    def __init__(self, deployment_env_id: UUID, name: str, scope: str):
+        message = f"Cannot update deployment environment '{deployment_env_id}': name '{name}' already exists in scope '{scope}'"
+        super().__init__(
+            message, entity_type="deployment_env", entity_id=deployment_env_id
+        )
+        self.deployment_env_id = deployment_env_id
+        self.name = name
+        self.scope = scope

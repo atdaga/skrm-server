@@ -17,7 +17,7 @@ class KTeamReviewer(SQLModel, table=True):
         sa_column=Column(ForeignKey("k_team.id", ondelete="CASCADE"), primary_key=True)
     )
     principal_id: UUID = Field(foreign_key="k_principal.id", primary_key=True)
-    org_id: UUID
+    org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     role: str | None = Field(default=None, max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
