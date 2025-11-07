@@ -27,7 +27,8 @@ class KOrganization(SQLModel, table=True):
 
     # Relationships
     organization_principals: list["KOrganizationPrincipal"] = Relationship(
-        back_populates="organization", cascade_delete=True
+        back_populates="organization",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
 
 

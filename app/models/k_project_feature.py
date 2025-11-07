@@ -6,20 +6,18 @@ from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from .k_principal import KPrincipal
-    from .k_team import KTeam
+    from .k_project import KProject
+    from .k_feature import KFeature
 
 
-class KTeamMember(SQLModel, table=True):
-    __tablename__ = "k_team_member"
+class KProjectFeature(SQLModel, table=True):
+    __tablename__ = "k_project_feature"
 
-    team_id: UUID = Field(
-        sa_column=Column(ForeignKey("k_team.id", ondelete="CASCADE"), primary_key=True)
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True)
     )
-    principal_id: UUID = Field(
-        sa_column=Column(
-            ForeignKey("k_principal.id", ondelete="CASCADE"), primary_key=True
-        )
+    feature_id: UUID = Field(
+        sa_column=Column(ForeignKey("k_feature.id", ondelete="CASCADE"), primary_key=True)
     )
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     role: str | None = Field(default=None, max_length=255)
@@ -30,13 +28,14 @@ class KTeamMember(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
-    team: "KTeam" = Relationship(
-        back_populates="team_members", sa_relationship_kwargs={"passive_deletes": True}
+    project: "KProject" = Relationship(
+        back_populates="project_features",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
-    principal: "KPrincipal" = Relationship(
-        back_populates="team_memberships",
+    feature: "KFeature" = Relationship(
+        back_populates="feature_projects",
         sa_relationship_kwargs={"passive_deletes": True},
     )
 
 
-__all__ = ["KTeamMember"]
+__all__ = ["KProjectFeature"]

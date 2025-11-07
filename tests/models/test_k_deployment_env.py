@@ -112,7 +112,18 @@ class TestKDeploymentEnvModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test that deployment environment names can be the same across different organizations."""
-        other_org_id = UUID("22222222-2222-2222-2222-222222222222")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         deployment_env1 = KDeploymentEnv(
             org_id=test_org_id,
@@ -122,7 +133,7 @@ class TestKDeploymentEnvModel:
         )
 
         deployment_env2 = KDeploymentEnv(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="Production",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -172,7 +183,18 @@ class TestKDeploymentEnvModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test querying deployment environments by organization ID."""
-        other_org_id = UUID("44444444-4444-4444-4444-444444444444")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org_query",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         # Create deployment environments in different organizations
         deployment_env1 = KDeploymentEnv(
@@ -190,7 +212,7 @@ class TestKDeploymentEnvModel:
         )
 
         deployment_env3 = KDeploymentEnv(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="Dev",
             created_by=creator_id,
             last_modified_by=creator_id,

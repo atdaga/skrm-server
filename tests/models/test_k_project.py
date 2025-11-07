@@ -132,7 +132,18 @@ class TestKProjectModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test that project names can be the same across different organizations."""
-        other_org_id = UUID("22222222-2222-2222-2222-222222222222")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         project1 = KProject(
             org_id=test_org_id,
@@ -142,7 +153,7 @@ class TestKProjectModel:
         )
 
         project2 = KProject(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="DevOps",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -192,7 +203,18 @@ class TestKProjectModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test querying projects by organization ID."""
-        other_org_id = UUID("44444444-4444-4444-4444-444444444444")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org_query",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         # Create projects in different organizations
         project1 = KProject(
@@ -210,7 +232,7 @@ class TestKProjectModel:
         )
 
         project3 = KProject(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="Project Gamma",
             created_by=creator_id,
             last_modified_by=creator_id,

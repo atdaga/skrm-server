@@ -28,10 +28,40 @@ from app.models.k_principal import KPrincipal
 
 
 @pytest.fixture
-def test_user(creator_id):
+async def test_user(async_session, creator_id):
     """Create a test user for FIDO2 operations."""
     user_id = uuid4()
-    return KPrincipal(
+
+    # Create a creator principal if needed
+    creator_principal = KPrincipal(
+        id=creator_id,
+        scope="global",
+        username="creator",
+        primary_email="creator@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        human=True,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Creator",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Creator User",
+        default_locale="en",
+        system_role="system_user",
+        meta={},
+        created=datetime.now(),
+        created_by=creator_id,
+        last_modified=datetime.now(),
+        last_modified_by=creator_id,
+    )
+    async_session.add(creator_principal)
+    await async_session.commit()
+
+    user = KPrincipal(
         id=user_id,
         scope="global",
         username="testuser",
@@ -56,10 +86,14 @@ def test_user(creator_id):
         last_modified=datetime.now(),
         last_modified_by=creator_id,
     )
+    async_session.add(user)
+    await async_session.commit()
+    await async_session.refresh(user)
+    return user
 
 
 @pytest.fixture
-def mock_credential():
+def mock_credential(creator_id):
     """Create a mock FIDO2 credential."""
     user_id = uuid4()
     return KFido2Credential(
@@ -74,9 +108,9 @@ def mock_credential():
         nickname="Test Key",
         last_used=None,
         created=datetime.now(),
-        created_by=user_id,
+        created_by=creator_id,
         last_modified=datetime.now(),
-        last_modified_by=user_id,
+        last_modified_by=creator_id,
     )
 
 
@@ -86,10 +120,6 @@ class TestBeginFido2Registration:
     @pytest.mark.asyncio
     async def test_begin_registration_success(self, async_session, test_user):
         """Test successful registration initiation."""
-        # Add user to database
-        async_session.add(test_user)
-        await async_session.commit()
-
         with patch("app.logic.auth.get_fido2_server") as mock_server:
             # Mock the server response
             mock_server_instance = MagicMock()
@@ -135,9 +165,8 @@ class TestBeginFido2Registration:
         self, async_session, test_user, mock_credential
     ):
         """Test that existing credentials are excluded from registration."""
-        # Add user and credential
+        # Add credential
         mock_credential.principal_id = test_user.id
-        async_session.add(test_user)
         async_session.add(mock_credential)
         await async_session.commit()
 
@@ -176,9 +205,6 @@ class TestCompleteFido2Registration:
         self, async_session, test_user
     ):
         """Test registration fails with invalid session."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         attestation_response = {
             "response": {
                 "clientDataJSON": base64.urlsafe_b64encode(b"{}").decode(),
@@ -199,9 +225,6 @@ class TestCompleteFido2Registration:
     async def test_complete_registration_success(self, async_session, test_user):
         """Test successful registration completion."""
         from app.core.fido2_server import store_challenge
-
-        async_session.add(test_user)
-        await async_session.commit()
 
         session_id = "test_session"
         challenge = secrets.token_bytes(32)
@@ -262,7 +285,6 @@ class TestBeginFido2Authentication:
     ):
         """Test authentication initiation with username."""
         mock_credential.principal_id = test_user.id
-        async_session.add(test_user)
         async_session.add(mock_credential)
         await async_session.commit()
 
@@ -353,9 +375,6 @@ class TestPerformPasswordlessLogin:
     @pytest.mark.asyncio
     async def test_passwordless_login_success(self, async_session, test_user):
         """Test successful passwordless login."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         with patch(
             "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
         ) as mock_complete, patch(
@@ -383,9 +402,6 @@ class TestPerform2faLogin:
     @pytest.mark.asyncio
     async def test_2fa_login_success(self, async_session, test_user):
         """Test successful 2FA login."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         with patch(
             "app.logic.auth.authenticate_user", new_callable=AsyncMock
         ) as mock_auth, patch(
@@ -461,9 +477,6 @@ class TestListUserCredentials:
     @pytest.mark.asyncio
     async def test_list_empty_credentials(self, async_session, test_user):
         """Test listing credentials when user has none."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         credentials = await list_user_credentials(test_user.id, async_session)
 
         assert credentials == []
@@ -473,9 +486,6 @@ class TestListUserCredentials:
         self, async_session, test_user, creator_id
     ):
         """Test listing multiple credentials."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         # Create multiple credentials
         for i in range(3):
             credential = KFido2Credential(
@@ -510,7 +520,6 @@ class TestUpdateCredentialNickname:
     ):
         """Test successful nickname update."""
         mock_credential.principal_id = test_user.id
-        async_session.add(test_user)
         async_session.add(mock_credential)
         await async_session.commit()
 
@@ -524,9 +533,6 @@ class TestUpdateCredentialNickname:
     @pytest.mark.asyncio
     async def test_update_nickname_not_found(self, async_session, test_user):
         """Test update fails when credential not found."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         with pytest.raises(InvalidCredentialsException):
             await update_credential_nickname(
                 test_user.id, uuid4(), "New Nickname", async_session
@@ -561,9 +567,10 @@ class TestUpdateCredentialNickname:
             last_modified_by=creator_id,
         )
 
-        mock_credential.principal_id = other_user_id
-        async_session.add(test_user)
         async_session.add(other_user)
+        await async_session.commit()
+
+        mock_credential.principal_id = other_user_id
         async_session.add(mock_credential)
         await async_session.commit()
 
@@ -582,7 +589,6 @@ class TestDeleteCredential:
     ):
         """Test successful credential deletion."""
         mock_credential.principal_id = test_user.id
-        async_session.add(test_user)
         async_session.add(mock_credential)
         await async_session.commit()
 
@@ -600,9 +606,6 @@ class TestDeleteCredential:
     @pytest.mark.asyncio
     async def test_delete_credential_not_found(self, async_session, test_user):
         """Test delete fails when credential not found."""
-        async_session.add(test_user)
-        await async_session.commit()
-
         with pytest.raises(InvalidCredentialsException):
             await delete_credential(test_user.id, uuid4(), async_session)
 
@@ -635,9 +638,10 @@ class TestDeleteCredential:
             last_modified_by=creator_id,
         )
 
-        mock_credential.principal_id = other_user_id
-        async_session.add(test_user)
         async_session.add(other_user)
+        await async_session.commit()
+
+        mock_credential.principal_id = other_user_id
         async_session.add(mock_credential)
         await async_session.commit()
 

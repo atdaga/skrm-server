@@ -134,20 +134,35 @@ class TestKTeamModel:
         self, session: AsyncSession, creator_id: UUID
     ):
         """Test that same team name can exist in different org_ids."""
-        from uuid import uuid4
+        from app.models import KOrganization
 
-        org_id_1 = uuid4()
-        org_id_2 = uuid4()
+        # Create two organizations
+        org1 = KOrganization(
+            name="Organization 1",
+            alias="org1",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        org2 = KOrganization(
+            name="Organization 2",
+            alias="org2",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add_all([org1, org2])
+        await session.commit()
+        await session.refresh(org1)
+        await session.refresh(org2)
 
         team1 = KTeam(
-            org_id=org_id_1,
+            org_id=org1.id,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team2 = KTeam(
-            org_id=org_id_2,
+            org_id=org2.id,
             name="Engineering",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -189,27 +204,42 @@ class TestKTeamModel:
     @pytest.mark.asyncio
     async def test_team_query_by_scope(self, session: AsyncSession, creator_id: UUID):
         """Test querying teams by org_id."""
-        from uuid import uuid4
+        from app.models import KOrganization
 
-        org_id_1 = uuid4()
-        org_id_2 = uuid4()
+        # Create two organizations
+        org1 = KOrganization(
+            name="Organization 1",
+            alias="org1_query",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        org2 = KOrganization(
+            name="Organization 2",
+            alias="org2_query",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add_all([org1, org2])
+        await session.commit()
+        await session.refresh(org1)
+        await session.refresh(org2)
 
         team1 = KTeam(
-            org_id=org_id_1,
+            org_id=org1.id,
             name="Team A",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team2 = KTeam(
-            org_id=org_id_1,
+            org_id=org1.id,
             name="Team B",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
 
         team3 = KTeam(
-            org_id=org_id_2,
+            org_id=org2.id,
             name="Team C",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -222,7 +252,7 @@ class TestKTeamModel:
 
         # Query teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org_id_1)
+            select(KTeam).where(KTeam.org_id == org1.id)
         )
         results = result_exec.scalars().all()
 
@@ -319,12 +349,27 @@ class TestKTeamModel:
     @pytest.mark.asyncio
     async def test_team_list_all(self, session: AsyncSession, creator_id: UUID):
         """Test listing all teams."""
-        from uuid import uuid4
+        from app.models import KOrganization
+
+        # Create three organizations
+        orgs = []
+        for i in range(3):
+            org = KOrganization(
+                name=f"Organization {i+1}",
+                alias=f"org{i+1}_list",
+                created_by=creator_id,
+                last_modified_by=creator_id,
+            )
+            orgs.append(org)
+            session.add(org)
+        await session.commit()
+        for org in orgs:
+            await session.refresh(org)
 
         teams_data = [
-            {"name": "Team 1", "org_id": uuid4()},
-            {"name": "Team 2", "org_id": uuid4()},
-            {"name": "Team 3", "org_id": uuid4()},
+            {"name": "Team 1", "org_id": orgs[0].id},
+            {"name": "Team 2", "org_id": orgs[1].id},
+            {"name": "Team 3", "org_id": orgs[2].id},
         ]
 
         for team_data in teams_data:
@@ -345,15 +390,30 @@ class TestKTeamModel:
     @pytest.mark.asyncio
     async def test_team_count_by_scope(self, session: AsyncSession, creator_id: UUID):
         """Test counting teams by org_id."""
-        from uuid import uuid4
+        from app.models import KOrganization
 
-        org_id_1 = uuid4()
-        org_id_2 = uuid4()
+        # Create two organizations
+        org1 = KOrganization(
+            name="Organization 1",
+            alias="org1_count",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        org2 = KOrganization(
+            name="Organization 2",
+            alias="org2_count",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add_all([org1, org2])
+        await session.commit()
+        await session.refresh(org1)
+        await session.refresh(org2)
 
         # Create teams in different org_ids
         for i in range(3):
             team = KTeam(
-                org_id=org_id_1,
+                org_id=org1.id,
                 name=f"Org1 Team {i}",
                 created_by=creator_id,
                 last_modified_by=creator_id,
@@ -362,7 +422,7 @@ class TestKTeamModel:
 
         for i in range(2):
             team = KTeam(
-                org_id=org_id_2,
+                org_id=org2.id,
                 name=f"Org2 Team {i}",
                 created_by=creator_id,
                 last_modified_by=creator_id,
@@ -373,14 +433,14 @@ class TestKTeamModel:
 
         # Count teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org_id_1)
+            select(KTeam).where(KTeam.org_id == org1.id)
         )
         org1_teams = result_exec.scalars().all()
         assert len(org1_teams) == 3
 
         # Count teams in org_id_2
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org_id_2)
+            select(KTeam).where(KTeam.org_id == org2.id)
         )
         org2_teams = result_exec.scalars().all()
         assert len(org2_teams) == 2

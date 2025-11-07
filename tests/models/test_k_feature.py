@@ -144,7 +144,18 @@ class TestKFeatureModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test that feature names can be the same across different organizations."""
-        other_org_id = UUID("22222222-2222-2222-2222-222222222222")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         feature1 = KFeature(
             org_id=test_org_id,
@@ -155,7 +166,7 @@ class TestKFeatureModel:
         )
 
         feature2 = KFeature(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="Payment Gateway",
             feature_type=FeatureType.PRODUCT,
             created_by=creator_id,
@@ -257,7 +268,18 @@ class TestKFeatureModel:
         self, session: AsyncSession, creator_id: UUID, test_org_id: UUID
     ):
         """Test querying features by organization ID."""
-        other_org_id = UUID("44444444-4444-4444-4444-444444444444")
+        from app.models import KOrganization
+
+        # Create a second organization
+        other_org = KOrganization(
+            name="Other Organization",
+            alias="other_org_query",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add(other_org)
+        await session.commit()
+        await session.refresh(other_org)
 
         # Create features in different organizations
         feature1 = KFeature(
@@ -277,7 +299,7 @@ class TestKFeatureModel:
         )
 
         feature3 = KFeature(
-            org_id=other_org_id,
+            org_id=other_org.id,
             name="Feature 3",
             feature_type=FeatureType.PRODUCT,
             created_by=creator_id,

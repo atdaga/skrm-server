@@ -434,7 +434,7 @@ class TestKOrganizationPrincipalModel:
         principal: KPrincipal,
         creator_id: UUID,
     ):
-        """Test that deleting an organization cascades to organization principals."""
+        """Test that deleting an organization cascades to organization principals but not the principal."""
         org_principal = KOrganizationPrincipal(
             org_id=organization.id,
             principal_id=principal.id,
@@ -457,6 +457,46 @@ class TestKOrganizationPrincipalModel:
         )
         result = result_exec.scalar_one_or_none()
         assert result is None
+
+        # Verify principal still exists
+        await session.refresh(principal)
+        assert principal.id == principal.id
+
+    @pytest.mark.asyncio
+    async def test_cascade_delete_principal(
+        self,
+        session: AsyncSession,
+        organization: KOrganization,
+        principal: KPrincipal,
+        creator_id: UUID,
+    ):
+        """Test that deleting a principal cascades to organization principals but not the organization."""
+        org_principal = KOrganizationPrincipal(
+            org_id=organization.id,
+            principal_id=principal.id,
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+
+        session.add(org_principal)
+        await session.commit()
+
+        # Delete the principal
+        await session.delete(principal)
+        await session.commit()
+
+        # Verify organization principal is also deleted
+        result_exec = await session.execute(
+            select(KOrganizationPrincipal).where(
+                KOrganizationPrincipal.principal_id == principal.id
+            )
+        )
+        result = result_exec.scalar_one_or_none()
+        assert result is None
+
+        # Verify organization still exists
+        await session.refresh(organization)
+        assert organization.id == organization.id
 
     @pytest.mark.asyncio
     async def test_organization_principal_meta_json_field(

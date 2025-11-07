@@ -72,6 +72,21 @@ class TestCreateOrganization:
         test_user_id: UUID,
     ):
         """Test that creating an organization with duplicate name fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create first organization
         org = KOrganization(
             name="Duplicate Org",
@@ -98,6 +113,21 @@ class TestCreateOrganization:
         test_user_id: UUID,
     ):
         """Test that creating an organization with duplicate alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create first organization
         org = KOrganization(
             name="First Org",
@@ -262,6 +292,21 @@ class TestListOrganizations:
         test_user_id: UUID,
     ):
         """Test listing multiple organizations."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create multiple organizations
         orgs_data = [
             {"name": "Org Alpha", "alias": "org_alpha", "meta": {"priority": 1}},
@@ -335,6 +380,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization name."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Old Name",
@@ -366,6 +426,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization alias."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -397,6 +472,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization metadata."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -428,6 +518,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating all organization fields."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Old Name",
@@ -478,6 +583,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization to a duplicate name fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create two organizations
         org1 = KOrganization(
             name="Org 1",
@@ -513,6 +633,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization to a duplicate alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create two organizations
         org1 = KOrganization(
             name="Org 1",
@@ -548,6 +683,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with None alias is allowed (no change)."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -578,6 +728,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with empty alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -603,6 +768,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with special characters in alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -628,6 +808,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with uppercase alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -653,6 +848,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with mixed case alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -680,6 +890,21 @@ class TestUpdateOrganization:
         test_user_id: UUID,
     ):
         """Test updating organization with invalid alias fails."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="Test Org",
@@ -709,6 +934,21 @@ class TestDeleteOrganization:
         test_user_id: UUID,
     ):
         """Test successfully deleting an organization."""
+        # Create principal first
+        from app.models import KPrincipal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
         # Create organization
         org = KOrganization(
             name="To Delete",
@@ -806,15 +1046,49 @@ class TestOrganizationDataInconsistency:
         test_user_id: UUID,
     ):
         """Test getting an organization when user is a member but org doesn't exist."""
-        # Create a fake org_id and add user as member WITHOUT creating the org
-        fake_org_id = uuid4()
-        org_principal = KOrganizationPrincipal(
-            org_id=fake_org_id,
-            principal_id=test_user_id,
+        # Create principal first
+        from app.models import KPrincipal
+        from sqlalchemy import text
+        from datetime import datetime
+
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(org_principal)
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        # Use raw SQL to bypass foreign key constraint
+        fake_org_id = uuid4()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = OFF")
+        )
+        await async_session.execute(
+            text(
+                "INSERT INTO k_organization_principal "
+                "(org_id, principal_id, role, meta, created, created_by, last_modified, last_modified_by) "
+                "VALUES (:org_id, :principal_id, NULL, '{}', :created, :created_by, :last_modified, :last_modified_by)"
+            ),
+            {
+                "org_id": str(fake_org_id).replace("-", ""),
+                "principal_id": str(test_user_id).replace("-", ""),
+                "created": datetime.now(),
+                "created_by": str(test_user_id).replace("-", ""),
+                "last_modified": datetime.now(),
+                "last_modified_by": str(test_user_id).replace("-", ""),
+            }
+        )
+        await async_session.commit()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = ON")
+        )
         await async_session.commit()
 
         response = await client.get(f"/organizations/{fake_org_id}")
@@ -830,15 +1104,49 @@ class TestOrganizationDataInconsistency:
         test_user_id: UUID,
     ):
         """Test updating an organization when user is a member but org doesn't exist."""
-        # Create a fake org_id and add user as member WITHOUT creating the org
-        fake_org_id = uuid4()
-        org_principal = KOrganizationPrincipal(
-            org_id=fake_org_id,
-            principal_id=test_user_id,
+        # Create principal first
+        from app.models import KPrincipal
+        from sqlalchemy import text
+        from datetime import datetime
+
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(org_principal)
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        # Use raw SQL to bypass foreign key constraint
+        fake_org_id = uuid4()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = OFF")
+        )
+        await async_session.execute(
+            text(
+                "INSERT INTO k_organization_principal "
+                "(org_id, principal_id, role, meta, created, created_by, last_modified, last_modified_by) "
+                "VALUES (:org_id, :principal_id, NULL, '{}', :created, :created_by, :last_modified, :last_modified_by)"
+            ),
+            {
+                "org_id": str(fake_org_id).replace("-", ""),
+                "principal_id": str(test_user_id).replace("-", ""),
+                "created": datetime.now(),
+                "created_by": str(test_user_id).replace("-", ""),
+                "last_modified": datetime.now(),
+                "last_modified_by": str(test_user_id).replace("-", ""),
+            }
+        )
+        await async_session.commit()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = ON")
+        )
         await async_session.commit()
 
         update_data = {"name": "New Name"}
@@ -855,15 +1163,49 @@ class TestOrganizationDataInconsistency:
         test_user_id: UUID,
     ):
         """Test deleting an organization when user is a member but org doesn't exist."""
-        # Create a fake org_id and add user as member WITHOUT creating the org
-        fake_org_id = uuid4()
-        org_principal = KOrganizationPrincipal(
-            org_id=fake_org_id,
-            principal_id=test_user_id,
+        # Create principal first
+        from app.models import KPrincipal
+        from sqlalchemy import text
+        from datetime import datetime
+
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
-        async_session.add(org_principal)
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create a fake org_id and add user as member WITHOUT creating the org
+        # Use raw SQL to bypass foreign key constraint
+        fake_org_id = uuid4()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = OFF")
+        )
+        await async_session.execute(
+            text(
+                "INSERT INTO k_organization_principal "
+                "(org_id, principal_id, role, meta, created, created_by, last_modified, last_modified_by) "
+                "VALUES (:org_id, :principal_id, NULL, '{}', :created, :created_by, :last_modified, :last_modified_by)"
+            ),
+            {
+                "org_id": str(fake_org_id).replace("-", ""),
+                "principal_id": str(test_user_id).replace("-", ""),
+                "created": datetime.now(),
+                "created_by": str(test_user_id).replace("-", ""),
+                "last_modified": datetime.now(),
+                "last_modified_by": str(test_user_id).replace("-", ""),
+            }
+        )
+        await async_session.commit()
+        await async_session.execute(
+            text("PRAGMA foreign_keys = ON")
+        )
         await async_session.commit()
 
         response = await client.delete(f"/organizations/{fake_org_id}")

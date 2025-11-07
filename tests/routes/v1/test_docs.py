@@ -51,6 +51,22 @@ async def test_organization(
     async_session: AsyncSession, test_user_id: UUID
 ) -> KOrganization:
     """Create a test organization with the test user as a member."""
+    from app.models import KPrincipal
+
+    # Create a principal for the test user
+    principal = KPrincipal(
+        id=test_user_id,
+        username="testuser",
+        primary_email="test@example.com",
+        first_name="Test",
+        last_name="User",
+        display_name="Test User",
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(principal)
+    await async_session.commit()
+
     organization = KOrganization(
         name="Test Organization",
         alias="test_org",
@@ -61,7 +77,7 @@ async def test_organization(
     await async_session.commit()
     await async_session.refresh(organization)
 
-    # Add test user as organization principal
+    # Add user to organization
     await add_user_to_organization(async_session, organization.id, test_user_id)
 
     return organization

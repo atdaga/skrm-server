@@ -18,7 +18,11 @@ class KOrganizationPrincipal(SQLModel, table=True):
             ForeignKey("k_organization.id", ondelete="CASCADE"), primary_key=True
         )
     )
-    principal_id: UUID = Field(foreign_key="k_principal.id", primary_key=True)
+    principal_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey("k_principal.id", ondelete="CASCADE"), primary_key=True
+        )
+    )
     role: str | None = Field(default=None, max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
@@ -28,9 +32,13 @@ class KOrganizationPrincipal(SQLModel, table=True):
 
     # Relationships
     organization: "KOrganization" = Relationship(
-        back_populates="organization_principals"
+        back_populates="organization_principals",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
-    principal: "KPrincipal" = Relationship(back_populates="organization_memberships")
+    principal: "KPrincipal" = Relationship(
+        back_populates="organization_memberships",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 __all__ = ["KOrganizationPrincipal"]

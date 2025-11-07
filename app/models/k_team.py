@@ -26,13 +26,16 @@ class KTeam(SQLModel, table=True):
 
     # Relationships
     team_members: list["KTeamMember"] = Relationship(
-        back_populates="team", cascade_delete=True
+        back_populates="team",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
     team_reviewers: list["KTeamReviewer"] = Relationship(
-        back_populates="team", cascade_delete=True
+        back_populates="team",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
     project_teams: list["KProjectTeam"] = Relationship(
-        back_populates="team", cascade_delete=True
+        back_populates="team",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
 
 

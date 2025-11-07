@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 class KProjectTeam(SQLModel, table=True):
     __tablename__ = "k_project_team"
 
-    project_id: UUID = Field(foreign_key="k_project.id", primary_key=True)
+    project_id: UUID = Field(
+        sa_column=Column(ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True)
+    )
     team_id: UUID = Field(
         sa_column=Column(ForeignKey("k_team.id", ondelete="CASCADE"), primary_key=True)
     )
@@ -26,8 +28,12 @@ class KProjectTeam(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
-    project: "KProject" = Relationship(back_populates="project_teams")
-    team: "KTeam" = Relationship(back_populates="project_teams")
+    project: "KProject" = Relationship(
+        back_populates="project_teams", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    team: "KTeam" = Relationship(
+        back_populates="project_teams", sa_relationship_kwargs={"passive_deletes": True}
+    )
 
 
 __all__ = ["KProjectTeam"]

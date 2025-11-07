@@ -41,11 +41,16 @@ class KPrincipal(SQLModel, table=True):
 
     # Relationships
     organization_memberships: list["KOrganizationPrincipal"] = Relationship(
-        back_populates="principal"
+        back_populates="principal",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
-    team_memberships: list["KTeamMember"] = Relationship(back_populates="principal")
+    team_memberships: list["KTeamMember"] = Relationship(
+        back_populates="principal",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
     team_reviewer_assignments: list["KTeamReviewer"] = Relationship(
-        back_populates="principal"
+        back_populates="principal",
+        sa_relationship_kwargs={"passive_deletes": True},
     )
 
 

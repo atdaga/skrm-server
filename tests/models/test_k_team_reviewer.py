@@ -458,7 +458,7 @@ class TestKTeamReviewerModel:
         creator_id: UUID,
         test_org_id: UUID,
     ):
-        """Test that deleting a team cascades to team reviewers."""
+        """Test that deleting a team cascades to team reviewers but not the principal."""
         team_reviewer = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
@@ -480,6 +480,46 @@ class TestKTeamReviewerModel:
         )
         result = result_exec.scalar_one_or_none()
         assert result is None
+
+        # Verify principal still exists
+        await session.refresh(principal)
+        assert principal.id == principal.id
+
+    @pytest.mark.asyncio
+    async def test_cascade_delete_principal(
+        self,
+        session: AsyncSession,
+        team: KTeam,
+        principal: KPrincipal,
+        creator_id: UUID,
+        test_org_id: UUID,
+    ):
+        """Test that deleting a principal cascades to team reviewers but not the team."""
+        team_reviewer = KTeamReviewer(
+            team_id=team.id,
+            principal_id=principal.id,
+            org_id=test_org_id,
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+
+        session.add(team_reviewer)
+        await session.commit()
+
+        # Delete the principal
+        await session.delete(principal)
+        await session.commit()
+
+        # Verify team reviewer is also deleted
+        result_exec = await session.execute(
+            select(KTeamReviewer).where(KTeamReviewer.principal_id == principal.id)
+        )
+        result = result_exec.scalar_one_or_none()
+        assert result is None
+
+        # Verify team still exists
+        await session.refresh(team)
+        assert team.id == team.id
 
     @pytest.mark.asyncio
     async def test_team_reviewer_meta_json_field(
@@ -535,15 +575,30 @@ class TestKTeamReviewerModel:
         creator_id: UUID,
     ):
         """Test that team reviewers can have different org_ids."""
-        from uuid import uuid4
+        from app.models import KOrganization
 
-        org_id_1 = uuid4()
-        org_id_2 = uuid4()
+        # Create two organizations
+        org1 = KOrganization(
+            name="Organization 1",
+            alias="org1_reviewer_scope",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        org2 = KOrganization(
+            name="Organization 2",
+            alias="org2_reviewer_scope",
+            created_by=creator_id,
+            last_modified_by=creator_id,
+        )
+        session.add_all([org1, org2])
+        await session.commit()
+        await session.refresh(org1)
+        await session.refresh(org2)
 
         reviewer1 = KTeamReviewer(
             team_id=team.id,
             principal_id=principal.id,
-            org_id=org_id_1,
+            org_id=org1.id,
             role="lead_reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -555,7 +610,7 @@ class TestKTeamReviewerModel:
         # Create another team and add the same principal with different org_id
         team2 = KTeam(
             name="Product",
-            org_id=org_id_2,
+            org_id=org2.id,
             created_by=creator_id,
             last_modified_by=creator_id,
         )
@@ -565,7 +620,7 @@ class TestKTeamReviewerModel:
         reviewer2 = KTeamReviewer(
             team_id=team2.id,
             principal_id=principal.id,
-            org_id=org_id_2,
+            org_id=org2.id,
             role="reviewer",
             created_by=creator_id,
             last_modified_by=creator_id,
@@ -582,7 +637,7 @@ class TestKTeamReviewerModel:
 
         assert len(assignments) == 2
         org_ids = {r.org_id for r in assignments}
-        assert org_ids == {org_id_1, org_id_2}
+        assert org_ids == {org1.id, org2.id}
 
     @pytest.mark.asyncio
     async def test_team_reviewer_count(

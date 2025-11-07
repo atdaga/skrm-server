@@ -3,7 +3,11 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Text, UniqueConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .k_project_feature import KProjectFeature
 
 
 class FeatureType(str, Enum):
@@ -43,6 +47,12 @@ class KFeature(SQLModel, table=True):
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
     last_modified_by: UUID
+
+    # Relationships
+    feature_projects: list["KProjectFeature"] = Relationship(
+        back_populates="feature",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 __all__ = ["KFeature", "FeatureType", "ReviewResult"]

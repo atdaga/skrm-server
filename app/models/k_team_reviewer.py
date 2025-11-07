@@ -16,7 +16,11 @@ class KTeamReviewer(SQLModel, table=True):
     team_id: UUID = Field(
         sa_column=Column(ForeignKey("k_team.id", ondelete="CASCADE"), primary_key=True)
     )
-    principal_id: UUID = Field(foreign_key="k_principal.id", primary_key=True)
+    principal_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey("k_principal.id", ondelete="CASCADE"), primary_key=True
+        )
+    )
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     role: str | None = Field(default=None, max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
@@ -26,8 +30,14 @@ class KTeamReviewer(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
-    team: "KTeam" = Relationship(back_populates="team_reviewers")
-    principal: "KPrincipal" = Relationship(back_populates="team_reviewer_assignments")
+    team: "KTeam" = Relationship(
+        back_populates="team_reviewers",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    principal: "KPrincipal" = Relationship(
+        back_populates="team_reviewer_assignments",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 __all__ = ["KTeamReviewer"]

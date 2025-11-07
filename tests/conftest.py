@@ -52,11 +52,20 @@ def pytest_sessionfinish(session, exitstatus):
 @pytest.fixture
 async def async_engine():
     """Create an async in-memory SQLite engine for testing."""
+    from sqlalchemy import event
+
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+
+    # Enable foreign key support in SQLite
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -113,9 +122,21 @@ def test_scope() -> str:
 
 
 @pytest.fixture
-def test_org_id() -> UUID:
-    """Generate a test organization ID for team testing."""
-    return uuid4()
+async def test_org_id(async_session: AsyncSession, test_user_id: UUID) -> UUID:
+    """Create a test organization and return its ID."""
+    from app.models import KOrganization
+
+    org = KOrganization(
+        name="Test Organization",
+        alias="test_org",
+        meta={},
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(org)
+    await async_session.commit()
+    await async_session.refresh(org)
+    return org.id
 
 
 @pytest.fixture
@@ -167,7 +188,21 @@ async def test_organization(async_session: AsyncSession, test_user_id: UUID):
     This is the standard organization fixture where the test user IS a member.
     Use this for testing normal authorized operations.
     """
-    from app.models import KOrganization
+    from app.models import KOrganization, KPrincipal
+
+    # Create a principal for the test user
+    principal = KPrincipal(
+        id=test_user_id,
+        username="testuser",
+        primary_email="test@example.com",
+        first_name="Test",
+        last_name="User",
+        display_name="Test User",
+        created_by=test_user_id,
+        last_modified_by=test_user_id,
+    )
+    async_session.add(principal)
+    await async_session.commit()
 
     org = KOrganization(
         name="Test Organization",
@@ -195,7 +230,29 @@ async def test_organization_without_membership(
     Use this for testing unauthorized access scenarios where the user
     is NOT a member of the organization.
     """
-    from app.models import KOrganization
+    from app.models import KOrganization, KPrincipal
+
+    # Create a principal for the test user if it doesn't exist
+    from sqlmodel import select
+
+    result = await async_session.execute(
+        select(KPrincipal).where(KPrincipal.id == test_user_id)
+    )
+    existing_principal = result.scalar_one_or_none()
+
+    if not existing_principal:
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
 
     org = KOrganization(
         name="Unauthorized Organization",
@@ -219,6 +276,27 @@ async def test_principal(async_session: AsyncSession, test_user_id: UUID):
     added to organizations, teams, etc.
     """
     from app.models import KPrincipal
+    from sqlmodel import select
+
+    # Create or get the test_user principal first (for created_by/last_modified_by)
+    result = await async_session.execute(
+        select(KPrincipal).where(KPrincipal.id == test_user_id)
+    )
+    test_user_principal = result.scalar_one_or_none()
+
+    if not test_user_principal:
+        test_user_principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="testuser@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(test_user_principal)
+        await async_session.commit()
 
     principal = KPrincipal(
         username="testprincipal",

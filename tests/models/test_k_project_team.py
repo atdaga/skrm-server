@@ -6,6 +6,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.models import KProject, KProjectTeam, KTeam
 
@@ -239,7 +240,7 @@ class TestKProjectTeamModel:
         creator_id: UUID,
         test_org_id: UUID,
     ):
-        """Test that deleting a project cascades to project teams."""
+        """Test that deleting a project cascades to project teams but not the team."""
         project_team = KProjectTeam(
             project_id=project.id,
             team_id=team.id,
@@ -250,15 +251,21 @@ class TestKProjectTeamModel:
 
         session.add(project_team)
         await session.commit()
-        await session.refresh(project_team)
 
         # Delete the project
         await session.delete(project)
         await session.commit()
 
-        # Try to get the project team
-        await session.refresh(team)  # Team should still exist
-        # Project team should be deleted (no way to refresh it)
+        # Verify project team is deleted
+        result_exec = await session.execute(
+            select(KProjectTeam).where(KProjectTeam.project_id == project.id)
+        )
+        result = result_exec.scalar_one_or_none()
+        assert result is None
+
+        # Verify team still exists
+        await session.refresh(team)
+        assert team.id == team.id
 
     @pytest.mark.asyncio
     async def test_project_team_cascade_delete_from_team(
@@ -269,7 +276,7 @@ class TestKProjectTeamModel:
         creator_id: UUID,
         test_org_id: UUID,
     ):
-        """Test that deleting a team cascades to project teams."""
+        """Test that deleting a team cascades to project teams but not the project."""
         project_team = KProjectTeam(
             project_id=project.id,
             team_id=team.id,
@@ -280,12 +287,18 @@ class TestKProjectTeamModel:
 
         session.add(project_team)
         await session.commit()
-        await session.refresh(project_team)
 
         # Delete the team
         await session.delete(team)
         await session.commit()
 
-        # Try to get the project team
-        await session.refresh(project)  # Project should still exist
-        # Project team should be deleted (no way to refresh it)
+        # Verify project team is deleted
+        result_exec = await session.execute(
+            select(KProjectTeam).where(KProjectTeam.team_id == team.id)
+        )
+        result = result_exec.scalar_one_or_none()
+        assert result is None
+
+        # Verify project still exists
+        await session.refresh(project)
+        assert project.id == project.id
