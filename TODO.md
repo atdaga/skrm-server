@@ -1,7 +1,5 @@
 # TODO
 
-* For this particular application, use the "deleted" field for domain entities (not relationships).
-
 * contextvars middleware:
 ```
 from contextvars import ContextVar

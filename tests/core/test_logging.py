@@ -1,9 +1,16 @@
 """Unit tests for logging configuration."""
 
 import logging
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
+from uuid import uuid7
 
-from app.core.logging import add_log_level, get_logger, setup_logging
+from app.core.logging import (
+    add_log_level,
+    add_request_context,
+    get_logger,
+    setup_logging,
+)
 
 
 class TestAddLogLevel:
@@ -83,6 +90,168 @@ class TestAddLogLevel:
             event_dict = {}
             result = add_log_level(None, method_name, event_dict)
             assert result["level"] == expected_level
+
+
+class TestAddRequestContext:
+    """Test suite for add_request_context function."""
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_all_values_present(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test add_request_context when all context values are present."""
+        request_id = uuid7()
+        principal_id = str(uuid7())
+        request_time = datetime.now(UTC).replace(tzinfo=None)
+
+        mock_get_request_id.return_value = request_id
+        mock_get_principal_id.return_value = principal_id
+        mock_get_request_time.return_value = request_time
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        assert result["request_id"] == str(request_id)
+        assert result["principal_id"] == principal_id
+        assert result["request_time"] == request_time.isoformat()
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_all_values_none(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test add_request_context when all context values are None."""
+        mock_get_request_id.return_value = None
+        mock_get_principal_id.return_value = None
+        mock_get_request_time.return_value = None
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        # No context keys should be added
+        assert "request_id" not in result
+        assert "principal_id" not in result
+        assert "request_time" not in result
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_only_request_id(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test add_request_context when only request_id is present."""
+        request_id = uuid7()
+        mock_get_request_id.return_value = request_id
+        mock_get_principal_id.return_value = None
+        mock_get_request_time.return_value = None
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        assert result["request_id"] == str(request_id)
+        assert "principal_id" not in result
+        assert "request_time" not in result
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_only_principal_id(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test add_request_context when only principal_id is present."""
+        principal_id = str(uuid7())
+        mock_get_request_id.return_value = None
+        mock_get_principal_id.return_value = principal_id
+        mock_get_request_time.return_value = None
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        assert "request_id" not in result
+        assert result["principal_id"] == principal_id
+        assert "request_time" not in result
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_only_request_time(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test add_request_context when only request_time is present."""
+        request_time = datetime.now(UTC).replace(tzinfo=None)
+        mock_get_request_id.return_value = None
+        mock_get_principal_id.return_value = None
+        mock_get_request_time.return_value = request_time
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        assert "request_id" not in result
+        assert "principal_id" not in result
+        assert result["request_time"] == request_time.isoformat()
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_preserves_existing_keys(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test that add_request_context preserves existing keys in event dict."""
+        request_id = uuid7()
+        principal_id = str(uuid7())
+
+        mock_get_request_id.return_value = request_id
+        mock_get_principal_id.return_value = principal_id
+        mock_get_request_time.return_value = None
+
+        event_dict = {"message": "test message", "extra_data": "value"}
+        result = add_request_context(None, "info", event_dict)
+
+        # Should preserve existing keys
+        assert result["message"] == "test message"
+        assert result["extra_data"] == "value"
+        # And add new context keys
+        assert result["request_id"] == str(request_id)
+        assert result["principal_id"] == principal_id
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_modifies_in_place(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test that add_request_context modifies the dict in place."""
+        mock_get_request_id.return_value = uuid7()
+        mock_get_principal_id.return_value = None
+        mock_get_request_time.return_value = None
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        # Should return the same dict object
+        assert result is event_dict
+
+    @patch("app.core.logging.get_request_id")
+    @patch("app.core.logging.get_principal_id")
+    @patch("app.core.logging.get_request_time")
+    def test_add_request_context_request_time_isoformat(
+        self, mock_get_request_time, mock_get_principal_id, mock_get_request_id
+    ):
+        """Test that request_time is converted to ISO format string."""
+        request_time = datetime(2025, 11, 8, 12, 30, 45, 123456)
+        mock_get_request_id.return_value = None
+        mock_get_principal_id.return_value = None
+        mock_get_request_time.return_value = request_time
+
+        event_dict = {}
+        result = add_request_context(None, "info", event_dict)
+
+        # Should be ISO formatted string
+        assert result["request_time"] == "2025-11-08T12:30:45.123456"
+        assert isinstance(result["request_time"], str)
 
 
 class TestSetupLogging:

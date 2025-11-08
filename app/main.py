@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from .config import settings
 from .core.db.database import cleanup_database, create_all_tables, initialize_database
 from .core.logging import get_logger, setup_logging
+from .core.middleware import RequestContextMiddleware
 from .routes import auth, health, v1
 
 # Setup logging first
@@ -66,6 +67,9 @@ app = FastAPI(
     debug=settings.debug,
     lifespan=lifespan,
 )
+
+# Add middleware
+app.add_middleware(RequestContextMiddleware)
 
 # Include routers
 app.include_router(health.router)
