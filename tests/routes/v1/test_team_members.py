@@ -1,6 +1,6 @@
 """Unit tests for team member management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -124,7 +124,7 @@ class TestAddTeamMember:
         principal: KPrincipal,
     ):
         """Test adding a member to a non-existent team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
         member_data = {"principal_id": str(principal.id)}
 
         response = await client.post(
@@ -280,7 +280,7 @@ class TestListTeamMembers:
         client: AsyncClient,
     ):
         """Test listing members of a non-existent team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
 
         response = await client.get(f"/teams/{non_existent_team_id}/members")
 
@@ -331,7 +331,7 @@ class TestGetTeamMember:
         team: KTeam,
     ):
         """Test getting a team member that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.get(
             f"/teams/{team.id}/members/{non_existent_principal_id}"
@@ -454,7 +454,7 @@ class TestUpdateTeamMember:
         team: KTeam,
     ):
         """Test updating a team member that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
         update_data = {"role": "lead"}
 
         response = await client.patch(
@@ -548,7 +548,7 @@ class TestRemoveTeamMember:
         team: KTeam,
     ):
         """Test removing a team member that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.delete(
             f"/teams/{team.id}/members/{non_existent_principal_id}"

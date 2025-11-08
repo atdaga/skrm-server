@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 from fastapi import HTTPException
@@ -27,11 +27,11 @@ class TestGetCurrentToken:
         """Test successful token extraction and validation."""
         now = datetime.now(UTC).replace(tzinfo=None)
         test_payload = {
-            "sub": str(uuid4()),
+            "sub": str(uuid7()),
             "scope": "test-scope",
             "iss": "test-issuer",
             "aud": "test-audience",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now,
             "exp": now,
             "ss": now,
@@ -90,7 +90,7 @@ class TestGetCurrentUser:
     @pytest.fixture
     def mock_principal(self, creator_id):
         """Create a mock principal."""
-        user_id = uuid4()
+        user_id = uuid7()
         return KPrincipal(
             id=user_id,
             scope="global",
@@ -164,7 +164,7 @@ class TestGetCurrentUser:
         """Test that non-existent user raises UnauthorizedException."""
         from app.core.exceptions.domain_exceptions import UserNotFoundException
 
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         with patch(
             "app.logic.deps.get_user_from_token", new_callable=AsyncMock
@@ -300,7 +300,7 @@ class TestGetCurrentSuperuser:
     @pytest.fixture
     def regular_user(self, creator_id):
         """Create a regular user without superuser privileges."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         return UserDetail(
             id=user_id,
@@ -330,7 +330,7 @@ class TestGetCurrentSuperuser:
     @pytest.fixture
     def superuser(self, creator_id):
         """Create a superuser with elevated privileges."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         return UserDetail(
             id=user_id,
@@ -379,7 +379,7 @@ class TestGetCurrentSuperuser:
     @pytest.mark.asyncio
     async def test_get_current_superuser_missing_flag(self, creator_id):
         """Test that user without superuser flag in meta is denied."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
             id=user_id,
@@ -414,7 +414,7 @@ class TestGetCurrentSuperuser:
     @pytest.mark.asyncio
     async def test_get_current_superuser_false_flag(self, creator_id):
         """Test that user with is_superuser=False is denied."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
             id=user_id,

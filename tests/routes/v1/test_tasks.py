@@ -1,6 +1,6 @@
 """Unit tests for task management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -132,7 +132,7 @@ class TestCreateTask:
         self, client: AsyncClient, test_team: KTeam
     ):
         """Test that creating a task in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
         task_data = {
             "team_id": str(test_team.id),
         }
@@ -203,7 +203,7 @@ class TestListTasks:
     @pytest.mark.asyncio
     async def test_list_tasks_unauthorized_org(self, client: AsyncClient):
         """Test that listing tasks in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
 
         response = await client.get(f"/tasks?org_id={unauthorized_org_id}")
         assert response.status_code == 403
@@ -247,7 +247,7 @@ class TestGetTask:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test getting a non-existent task."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/tasks/{non_existent_id}?org_id={test_organization.id}"
@@ -285,7 +285,7 @@ class TestGetTask:
         await async_session.refresh(task)
 
         # Try to access with unauthorized org
-        wrong_org_id = uuid4()
+        wrong_org_id = uuid7()
         response = await client.get(f"/tasks/{task.id}?org_id={wrong_org_id}")
         assert response.status_code == 403
 
@@ -443,7 +443,7 @@ class TestUpdateTask:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test updating a non-existent task."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"summary": "New summary"}
 
         response = await client.patch(
@@ -533,7 +533,7 @@ class TestDeleteTask:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test deleting a non-existent task."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/tasks/{non_existent_id}?org_id={test_organization.id}"

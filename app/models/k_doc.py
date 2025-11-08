@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
@@ -14,7 +14,7 @@ class KDoc(SQLModel, table=True):
     __tablename__ = "k_doc"
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=255)

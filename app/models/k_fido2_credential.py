@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, LargeBinary
 from sqlmodel import Field, SQLModel
@@ -8,7 +8,7 @@ from sqlmodel import Field, SQLModel
 class KFido2Credential(SQLModel, table=True):
     __tablename__ = "k_fido2_credential"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
     principal_id: UUID = Field(foreign_key="k_principal.id", index=True)
     credential_id: bytes = Field(
         sa_type=LargeBinary, unique=True, index=True

@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, Text
 from sqlmodel import Field, Relationship, SQLModel
@@ -33,7 +33,7 @@ class TaskStatus(str, Enum):
 class KTask(SQLModel, table=True):
     __tablename__ = "k_task"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     summary: str | None = Field(default=None, sa_type=Text)
     description: str | None = Field(default=None, sa_type=Text)

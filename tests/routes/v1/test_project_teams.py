@@ -1,6 +1,6 @@
 """Unit tests for project team management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -133,7 +133,7 @@ class TestAddProjectTeam:
         team: KTeam,
     ):
         """Test that adding a team to a non-existent project fails."""
-        non_existent_project_id = uuid4()
+        non_existent_project_id = uuid7()
         team_data = {"team_id": str(team.id)}
 
         response = await client.post(
@@ -221,7 +221,7 @@ class TestListProjectTeams:
         client: AsyncClient,
     ):
         """Test listing teams for a non-existent project."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(f"/projects/{non_existent_id}/teams")
         assert response.status_code == 404
@@ -270,7 +270,7 @@ class TestGetProjectTeam:
         project: KProject,
     ):
         """Test getting a non-existent project team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
 
         response = await client.get(
             f"/projects/{project.id}/teams/{non_existent_team_id}"
@@ -363,7 +363,7 @@ class TestUpdateProjectTeam:
         project: KProject,
     ):
         """Test updating a non-existent project team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
         update_data = {"role": "new_role"}
 
         response = await client.patch(
@@ -414,7 +414,7 @@ class TestRemoveProjectTeam:
         project: KProject,
     ):
         """Test removing a non-existent project team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
 
         response = await client.delete(
             f"/projects/{project.id}/teams/{non_existent_team_id}"

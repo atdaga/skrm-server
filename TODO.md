@@ -35,8 +35,6 @@ engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
 
 * Chain exception on usage by default.
 
-* Once python 14 is out (Oct?), use uuid7 (instead of uuid4).
-
 * Use `ExceptionGroup`s for multiple concurrent exceptions.
 
 * CORS Middleware (and other middleware needed for security or logging or context)

@@ -1,6 +1,6 @@
 """Unit tests for feature management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -144,7 +144,7 @@ class TestCreateFeature:
     @pytest.mark.asyncio
     async def test_create_feature_unauthorized_org(self, client: AsyncClient):
         """Test that creating a feature in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
         feature_data = {"name": "Test Feature", "feature_type": "Product"}
 
         response = await client.post(
@@ -210,7 +210,7 @@ class TestListFeatures:
     @pytest.mark.asyncio
     async def test_list_features_unauthorized_org(self, client: AsyncClient):
         """Test that listing features in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
 
         response = await client.get(f"/features?org_id={unauthorized_org_id}")
         assert response.status_code == 403
@@ -255,7 +255,7 @@ class TestGetFeature:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test getting a non-existent feature."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/features/{non_existent_id}?org_id={test_organization.id}"
@@ -292,7 +292,7 @@ class TestGetFeature:
         await async_session.refresh(feature)
 
         # Try to access with unauthorized org
-        wrong_org_id = uuid4()
+        wrong_org_id = uuid7()
         response = await client.get(f"/features/{feature.id}?org_id={wrong_org_id}")
         assert response.status_code == 403
 
@@ -452,7 +452,7 @@ class TestUpdateFeature:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test updating a non-existent feature."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
@@ -576,7 +576,7 @@ class TestDeleteFeature:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test deleting a non-existent feature."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/features/{non_existent_id}?org_id={test_organization.id}"

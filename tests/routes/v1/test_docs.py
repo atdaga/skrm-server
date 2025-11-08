@@ -1,6 +1,6 @@
 """Unit tests for doc management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -103,7 +103,7 @@ class TestCreateDoc:
         self, client: AsyncClient, test_user_id: UUID
     ):
         """Test that creating a doc in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
         doc_data = {"name": "Test Doc", "content": "Test content"}
 
         response = await client.post(
@@ -170,7 +170,7 @@ class TestListDocs:
     @pytest.mark.asyncio
     async def test_list_docs_unauthorized_org(self, client: AsyncClient):
         """Test that listing docs in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
 
         response = await client.get(f"/documents?org_id={unauthorized_org_id}")
         assert response.status_code == 403
@@ -218,7 +218,7 @@ class TestGetDoc:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test getting a non-existent doc."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/documents/{non_existent_id}?org_id={test_organization.id}"
@@ -255,7 +255,7 @@ class TestGetDoc:
         await async_session.refresh(doc)
 
         # Try to access with unauthorized org
-        wrong_org_id = uuid4()
+        wrong_org_id = uuid7()
         response = await client.get(f"/documents/{doc.id}?org_id={wrong_org_id}")
         assert response.status_code == 403
 
@@ -342,7 +342,7 @@ class TestUpdateDoc:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test updating a non-existent doc."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
@@ -464,7 +464,7 @@ class TestDeleteDoc:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test deleting a non-existent doc."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/documents/{non_existent_id}?org_id={test_organization.id}"

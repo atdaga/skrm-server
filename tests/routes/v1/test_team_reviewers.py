@@ -1,6 +1,6 @@
 """Unit tests for team reviewer management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -142,7 +142,7 @@ class TestAddTeamReviewer:
         principal: KPrincipal,
     ):
         """Test adding a reviewer to a non-existent team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
         reviewer_data = {"principal_id": str(principal.id)}
 
         response = await client.post(
@@ -310,7 +310,7 @@ class TestListTeamReviewers:
         client: AsyncClient,
     ):
         """Test listing reviewers of a non-existent team."""
-        non_existent_team_id = uuid4()
+        non_existent_team_id = uuid7()
 
         response = await client.get(f"/teams/{non_existent_team_id}/reviewers")
 
@@ -361,7 +361,7 @@ class TestGetTeamReviewer:
         team: KTeam,
     ):
         """Test getting a team reviewer that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.get(
             f"/teams/{team.id}/reviewers/{non_existent_principal_id}"
@@ -484,7 +484,7 @@ class TestUpdateTeamReviewer:
         team: KTeam,
     ):
         """Test updating a team reviewer that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
         update_data = {"role": "lead_reviewer"}
 
         response = await client.patch(
@@ -578,7 +578,7 @@ class TestRemoveTeamReviewer:
         team: KTeam,
     ):
         """Test removing a team reviewer that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.delete(
             f"/teams/{team.id}/reviewers/{non_existent_principal_id}"

@@ -1,6 +1,6 @@
 """Unit tests for task owner management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -167,7 +167,7 @@ class TestAddTaskOwner:
         principal: KPrincipal,
     ):
         """Test that adding an owner to a non-existent task fails."""
-        non_existent_task_id = uuid4()
+        non_existent_task_id = uuid7()
         owner_data = {"principal_id": str(principal.id)}
 
         response = await client.post(
@@ -182,7 +182,7 @@ class TestAddTaskOwner:
         task: KTask,
     ):
         """Test that adding a non-existent principal fails."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
         owner_data = {"principal_id": str(non_existent_principal_id)}
 
         response = await client.post(f"/tasks/{task.id}/owners", json=owner_data)
@@ -290,7 +290,7 @@ class TestListTaskOwners:
         client: AsyncClient,
     ):
         """Test listing owners for a non-existent task."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(f"/tasks/{non_existent_id}/owners")
         assert response.status_code == 404
@@ -339,7 +339,7 @@ class TestGetTaskOwner:
         task: KTask,
     ):
         """Test getting a non-existent task owner."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.get(
             f"/tasks/{task.id}/owners/{non_existent_principal_id}"
@@ -432,7 +432,7 @@ class TestUpdateTaskOwner:
         task: KTask,
     ):
         """Test updating a non-existent task owner."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
         update_data = {"role": "new_role"}
 
         response = await client.patch(
@@ -483,7 +483,7 @@ class TestRemoveTaskOwner:
         task: KTask,
     ):
         """Test removing a non-existent task owner."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.delete(
             f"/tasks/{task.id}/owners/{non_existent_principal_id}"

@@ -1,7 +1,7 @@
 """Unit tests for user endpoints."""
 
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from fastapi import FastAPI
@@ -122,7 +122,7 @@ class TestGetCurrentUserInfo:
         """Test getting current user with minimal data (null optional fields)."""
         # Create a minimal user detail
         minimal_user = UserDetail(
-            id=uuid4(),
+            id=uuid7(),
             scope="test-scope",
             username="minimaluser",
             primary_email="minimal@example.com",
@@ -141,9 +141,9 @@ class TestGetCurrentUserInfo:
             system_role="user",
             meta={},
             created=datetime.now(),
-            created_by=uuid4(),
+            created_by=uuid7(),
             last_modified=datetime.now(),
-            last_modified_by=uuid4(),
+            last_modified_by=uuid7(),
         )
 
         # Create app with minimal user override
@@ -174,7 +174,7 @@ class TestGetCurrentUserInfo:
     async def test_get_current_user_with_complex_meta(self):
         """Test getting current user with complex nested metadata."""
         complex_user = UserDetail(
-            id=uuid4(),
+            id=uuid7(),
             scope="test-scope",
             username="complexuser",
             primary_email="complex@example.com",
@@ -202,9 +202,9 @@ class TestGetCurrentUserInfo:
                 "employee_id": 12345,
             },
             created=datetime.now(),
-            created_by=uuid4(),
+            created_by=uuid7(),
             last_modified=datetime.now(),
-            last_modified_by=uuid4(),
+            last_modified_by=uuid7(),
         )
 
         # Create app with complex user override
@@ -237,7 +237,7 @@ class TestGetCurrentUserInfo:
 
         for role in roles:
             role_user = UserDetail(
-                id=uuid4(),
+                id=uuid7(),
                 scope="test-scope",
                 username=f"{role}user",
                 primary_email=f"{role}@example.com",
@@ -256,9 +256,9 @@ class TestGetCurrentUserInfo:
                 system_role=role,
                 meta={"role": role},
                 created=datetime.now(),
-                created_by=uuid4(),
+                created_by=uuid7(),
                 last_modified=datetime.now(),
-                last_modified_by=uuid4(),
+                last_modified_by=uuid7(),
             )
 
             # Create app with role-specific user override
@@ -286,7 +286,7 @@ class TestGetCurrentUserInfo:
         # Note: In a real scenario, a disabled user shouldn't be able to authenticate,
         # but if they somehow do, the endpoint should still return their info
         disabled_user = UserDetail(
-            id=uuid4(),
+            id=uuid7(),
             scope="test-scope",
             username="disableduser",
             primary_email="disabled@example.com",
@@ -305,9 +305,9 @@ class TestGetCurrentUserInfo:
             system_role="user",
             meta={},
             created=datetime.now(),
-            created_by=uuid4(),
+            created_by=uuid7(),
             last_modified=datetime.now(),
-            last_modified_by=uuid4(),
+            last_modified_by=uuid7(),
         )
 
         # Create app with disabled user override
@@ -341,7 +341,7 @@ class TestGetCurrentUserInfo:
 
         for tz in time_zones:
             tz_user = UserDetail(
-                id=uuid4(),
+                id=uuid7(),
                 scope="test-scope",
                 username="tzuser",
                 primary_email="tz@example.com",
@@ -360,9 +360,9 @@ class TestGetCurrentUserInfo:
                 system_role="user",
                 meta={},
                 created=datetime.now(),
-                created_by=uuid4(),
+                created_by=uuid7(),
                 last_modified=datetime.now(),
-                last_modified_by=uuid4(),
+                last_modified_by=uuid7(),
             )
 
             # Create app with tz user override

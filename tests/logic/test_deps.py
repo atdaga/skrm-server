@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,11 +33,11 @@ class TestGetTokenData:
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
         test_payload = {
-            "sub": str(uuid4()),
+            "sub": str(uuid7()),
             "scope": "test-scope",
             "iss": "test-issuer",
             "aud": "test-audience",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,  # 30 minutes later
             "ss": now_ts,  # session start
@@ -94,7 +94,7 @@ class TestGetUserById:
     @pytest.fixture
     def mock_principal(self, creator_id):
         """Create a mock principal."""
-        user_id = uuid4()
+        user_id = uuid7()
         return KPrincipal(
             id=user_id,
             scope="global",
@@ -126,7 +126,7 @@ class TestGetUserById:
     @pytest.mark.asyncio
     async def test_get_user_by_id_not_found(self, async_session: AsyncSession):
         """Test that non-existent user raises UserNotFoundException."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         with pytest.raises(UserNotFoundException) as exc_info:
             await get_user_by_id(non_existent_id, async_session)
@@ -141,7 +141,7 @@ class TestGetUserFromToken:
     @pytest.fixture
     def mock_principal(self, creator_id):
         """Create a mock principal."""
-        user_id = uuid4()
+        user_id = uuid7()
         return KPrincipal(
             id=user_id,
             scope="global",
@@ -233,7 +233,7 @@ class TestGetUserFromToken:
         self, async_session: AsyncSession
     ):
         """Test that non-existent user raises UserNotFoundException."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         test_payload = {"sub": str(non_existent_id), "scope": "global", "iss": "test"}
 
         with patch(
@@ -251,7 +251,7 @@ class TestCheckSuperuserPrivileges:
     @pytest.fixture
     def regular_user(self, creator_id):
         """Create a regular user without superuser privileges."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         return UserDetail(
             id=user_id,
@@ -281,7 +281,7 @@ class TestCheckSuperuserPrivileges:
     @pytest.fixture
     def superuser(self, creator_id):
         """Create a superuser with elevated privileges."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         return UserDetail(
             id=user_id,
@@ -323,7 +323,7 @@ class TestCheckSuperuserPrivileges:
 
     def test_check_superuser_privileges_false_flag(self, creator_id):
         """Test that user with is_superuser=False fails check."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
             id=user_id,
@@ -355,7 +355,7 @@ class TestCheckSuperuserPrivileges:
 
     def test_check_superuser_privileges_empty_meta(self, creator_id):
         """Test that user with empty meta fails check."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
             id=user_id,
@@ -387,7 +387,7 @@ class TestCheckSuperuserPrivileges:
 
     def test_check_superuser_privileges_missing_flag(self, creator_id):
         """Test that user without is_superuser flag in meta fails check."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
             id=user_id,

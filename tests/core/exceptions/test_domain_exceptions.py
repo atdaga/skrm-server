@@ -1,6 +1,6 @@
 """Unit tests for domain exception classes."""
 
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 
@@ -81,7 +81,7 @@ class TestTeamExceptions:
 
     def test_team_not_found_exception(self):
         """Test TeamNotFoundException with team ID and scope."""
-        team_id = uuid4()
+        team_id = uuid7()
         exception = TeamNotFoundException(team_id=team_id, scope="test-scope")
 
         assert exception.team_id == team_id
@@ -93,7 +93,7 @@ class TestTeamExceptions:
 
     def test_team_not_found_exception_without_scope(self):
         """Test TeamNotFoundException without scope."""
-        team_id = uuid4()
+        team_id = uuid7()
         exception = TeamNotFoundException(team_id=team_id)
 
         assert exception.team_id == team_id
@@ -112,7 +112,7 @@ class TestTeamExceptions:
 
     def test_team_update_conflict_exception(self):
         """Test TeamUpdateConflictException."""
-        team_id = uuid4()
+        team_id = uuid7()
         exception = TeamUpdateConflictException(
             team_id=team_id, name="ConflictName", scope="test-scope"
         )
@@ -129,7 +129,7 @@ class TestUserExceptions:
 
     def test_user_not_found_with_user_id(self):
         """Test UserNotFoundException with user_id parameter."""
-        user_id = uuid4()
+        user_id = uuid7()
         exception = UserNotFoundException(user_id=user_id)
 
         assert exception.user_id == user_id
@@ -187,7 +187,7 @@ class TestAuthorizationExceptions:
 
     def test_insufficient_privileges_with_all_params(self):
         """Test InsufficientPrivilegesException with all parameters."""
-        user_id = uuid4()
+        user_id = uuid7()
         exception = InsufficientPrivilegesException(
             required_privilege="superuser", user_id=user_id
         )
@@ -233,7 +233,7 @@ class TestExceptionRaising:
 
     def test_raise_team_not_found(self):
         """Test raising TeamNotFoundException."""
-        team_id = uuid4()
+        team_id = uuid7()
         with pytest.raises(TeamNotFoundException) as exc_info:
             raise TeamNotFoundException(team_id=team_id, scope="test")
 
@@ -260,7 +260,7 @@ class TestExceptionRaising:
 
     def test_raise_project_not_found(self):
         """Test raising ProjectNotFoundException."""
-        project_id = uuid4()
+        project_id = uuid7()
         with pytest.raises(ProjectNotFoundException) as exc_info:
             raise ProjectNotFoundException(project_id=project_id, scope="test")
 
@@ -268,8 +268,8 @@ class TestExceptionRaising:
 
     def test_raise_project_team_not_found(self):
         """Test raising ProjectTeamNotFoundException."""
-        project_id = uuid4()
-        team_id = uuid4()
+        project_id = uuid7()
+        team_id = uuid7()
         with pytest.raises(ProjectTeamNotFoundException) as exc_info:
             raise ProjectTeamNotFoundException(
                 project_id=project_id, team_id=team_id, scope="test"
@@ -282,7 +282,7 @@ class TestExceptionRaising:
         """Test that all domain exceptions can be caught as DomainException."""
         # Test TeamNotFoundException
         with pytest.raises(DomainException):
-            raise TeamNotFoundException(team_id=uuid4())
+            raise TeamNotFoundException(team_id=uuid7())
 
         # Test UserNotFoundException
         with pytest.raises(DomainException):
@@ -294,11 +294,11 @@ class TestExceptionRaising:
 
         # Test ProjectNotFoundException
         with pytest.raises(DomainException):
-            raise ProjectNotFoundException(project_id=uuid4())
+            raise ProjectNotFoundException(project_id=uuid7())
 
         # Test ProjectTeamNotFoundException
         with pytest.raises(DomainException):
-            raise ProjectTeamNotFoundException(project_id=uuid4(), team_id=uuid4())
+            raise ProjectTeamNotFoundException(project_id=uuid7(), team_id=uuid7())
 
 
 class TestOrganizationExceptions:
@@ -306,7 +306,7 @@ class TestOrganizationExceptions:
 
     def test_organization_not_found_exception_with_scope(self):
         """Test OrganizationNotFoundException with scope."""
-        org_id = uuid4()
+        org_id = uuid7()
         exception = OrganizationNotFoundException(org_id=org_id, scope="test-scope")
 
         assert exception.org_id == org_id
@@ -318,7 +318,7 @@ class TestOrganizationExceptions:
 
     def test_organization_not_found_exception_without_scope(self):
         """Test OrganizationNotFoundException without scope."""
-        org_id = uuid4()
+        org_id = uuid7()
         exception = OrganizationNotFoundException(org_id=org_id)
 
         assert exception.org_id == org_id
@@ -354,7 +354,7 @@ class TestOrganizationExceptions:
 
     def test_organization_update_conflict_exception_with_scope(self):
         """Test OrganizationUpdateConflictException with scope."""
-        org_id = uuid4()
+        org_id = uuid7()
         exception = OrganizationUpdateConflictException(
             org_id=org_id,
             identifier="conflict-name",
@@ -373,7 +373,7 @@ class TestOrganizationExceptions:
 
     def test_organization_update_conflict_exception_without_scope(self):
         """Test OrganizationUpdateConflictException without scope."""
-        org_id = uuid4()
+        org_id = uuid7()
         exception = OrganizationUpdateConflictException(
             org_id=org_id, identifier="conflict-alias", identifier_type="alias"
         )
@@ -390,8 +390,8 @@ class TestTeamMemberExceptions:
 
     def test_team_member_not_found_exception_with_scope(self):
         """Test TeamMemberNotFoundException with scope."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamMemberNotFoundException(
             team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
@@ -406,8 +406,8 @@ class TestTeamMemberExceptions:
 
     def test_team_member_not_found_exception_without_scope(self):
         """Test TeamMemberNotFoundException without scope."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamMemberNotFoundException(
             team_id=team_id, principal_id=principal_id
         )
@@ -419,8 +419,8 @@ class TestTeamMemberExceptions:
 
     def test_team_member_already_exists_exception(self):
         """Test TeamMemberAlreadyExistsException."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamMemberAlreadyExistsException(
             team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
@@ -439,8 +439,8 @@ class TestTeamReviewerExceptions:
 
     def test_team_reviewer_not_found_exception_with_scope(self):
         """Test TeamReviewerNotFoundException with scope."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamReviewerNotFoundException(
             team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
@@ -455,8 +455,8 @@ class TestTeamReviewerExceptions:
 
     def test_team_reviewer_not_found_exception_without_scope(self):
         """Test TeamReviewerNotFoundException without scope."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamReviewerNotFoundException(
             team_id=team_id, principal_id=principal_id
         )
@@ -468,8 +468,8 @@ class TestTeamReviewerExceptions:
 
     def test_team_reviewer_already_exists_exception(self):
         """Test TeamReviewerAlreadyExistsException."""
-        team_id = uuid4()
-        principal_id = uuid4()
+        team_id = uuid7()
+        principal_id = uuid7()
         exception = TeamReviewerAlreadyExistsException(
             team_id=team_id, principal_id=principal_id, scope="test-scope"
         )
@@ -488,8 +488,8 @@ class TestOrganizationPrincipalExceptions:
 
     def test_organization_principal_not_found_exception_with_scope(self):
         """Test OrganizationPrincipalNotFoundException with scope."""
-        org_id = uuid4()
-        principal_id = uuid4()
+        org_id = uuid7()
+        principal_id = uuid7()
         exception = OrganizationPrincipalNotFoundException(
             org_id=org_id, principal_id=principal_id, scope="test-scope"
         )
@@ -504,8 +504,8 @@ class TestOrganizationPrincipalExceptions:
 
     def test_organization_principal_not_found_exception_without_scope(self):
         """Test OrganizationPrincipalNotFoundException without scope."""
-        org_id = uuid4()
-        principal_id = uuid4()
+        org_id = uuid7()
+        principal_id = uuid7()
         exception = OrganizationPrincipalNotFoundException(
             org_id=org_id, principal_id=principal_id
         )
@@ -517,8 +517,8 @@ class TestOrganizationPrincipalExceptions:
 
     def test_organization_principal_already_exists_exception(self):
         """Test OrganizationPrincipalAlreadyExistsException."""
-        org_id = uuid4()
-        principal_id = uuid4()
+        org_id = uuid7()
+        principal_id = uuid7()
         exception = OrganizationPrincipalAlreadyExistsException(
             org_id=org_id, principal_id=principal_id, scope="test-scope"
         )
@@ -533,8 +533,8 @@ class TestOrganizationPrincipalExceptions:
 
     def test_unauthorized_organization_access_exception(self):
         """Test UnauthorizedOrganizationAccessException."""
-        org_id = uuid4()
-        user_id = uuid4()
+        org_id = uuid7()
+        user_id = uuid7()
         exception = UnauthorizedOrganizationAccessException(
             org_id=org_id, user_id=user_id
         )
@@ -552,7 +552,7 @@ class TestProjectExceptions:
 
     def test_project_not_found_exception_with_scope(self):
         """Test ProjectNotFoundException with scope."""
-        project_id = uuid4()
+        project_id = uuid7()
         exception = ProjectNotFoundException(project_id=project_id, scope="test-scope")
 
         assert exception.project_id == project_id
@@ -564,7 +564,7 @@ class TestProjectExceptions:
 
     def test_project_not_found_exception_without_scope(self):
         """Test ProjectNotFoundException without scope."""
-        project_id = uuid4()
+        project_id = uuid7()
         exception = ProjectNotFoundException(project_id=project_id)
 
         assert exception.project_id == project_id
@@ -586,7 +586,7 @@ class TestProjectExceptions:
 
     def test_project_update_conflict_exception(self):
         """Test ProjectUpdateConflictException."""
-        project_id = uuid4()
+        project_id = uuid7()
         exception = ProjectUpdateConflictException(
             project_id=project_id, name="ConflictName", scope="test-scope"
         )
@@ -605,8 +605,8 @@ class TestProjectTeamExceptions:
 
     def test_project_team_not_found_exception_with_scope(self):
         """Test ProjectTeamNotFoundException with scope."""
-        project_id = uuid4()
-        team_id = uuid4()
+        project_id = uuid7()
+        team_id = uuid7()
         exception = ProjectTeamNotFoundException(
             project_id=project_id, team_id=team_id, scope="test-scope"
         )
@@ -621,8 +621,8 @@ class TestProjectTeamExceptions:
 
     def test_project_team_not_found_exception_without_scope(self):
         """Test ProjectTeamNotFoundException without scope."""
-        project_id = uuid4()
-        team_id = uuid4()
+        project_id = uuid7()
+        team_id = uuid7()
         exception = ProjectTeamNotFoundException(project_id=project_id, team_id=team_id)
 
         assert exception.project_id == project_id
@@ -632,8 +632,8 @@ class TestProjectTeamExceptions:
 
     def test_project_team_already_exists_exception(self):
         """Test ProjectTeamAlreadyExistsException."""
-        project_id = uuid4()
-        team_id = uuid4()
+        project_id = uuid7()
+        team_id = uuid7()
         exception = ProjectTeamAlreadyExistsException(
             project_id=project_id, team_id=team_id, scope="test-scope"
         )
@@ -652,7 +652,7 @@ class TestDocExceptions:
 
     def test_doc_not_found_exception_with_scope(self):
         """Test DocNotFoundException with scope."""
-        doc_id = uuid4()
+        doc_id = uuid7()
         exception = DocNotFoundException(doc_id=doc_id, scope="test-scope")
 
         assert exception.doc_id == doc_id
@@ -664,7 +664,7 @@ class TestDocExceptions:
 
     def test_doc_not_found_exception_without_scope(self):
         """Test DocNotFoundException without scope."""
-        doc_id = uuid4()
+        doc_id = uuid7()
         exception = DocNotFoundException(doc_id=doc_id)
 
         assert exception.doc_id == doc_id
@@ -684,7 +684,7 @@ class TestDocExceptions:
 
     def test_doc_update_conflict_exception(self):
         """Test DocUpdateConflictException."""
-        doc_id = uuid4()
+        doc_id = uuid7()
         exception = DocUpdateConflictException(
             doc_id=doc_id, name="ConflictName", scope="test-scope"
         )
@@ -703,7 +703,7 @@ class TestDeploymentEnvExceptions:
 
     def test_deployment_env_not_found_exception_with_scope(self):
         """Test DeploymentEnvNotFoundException with scope."""
-        deployment_env_id = uuid4()
+        deployment_env_id = uuid7()
         exception = DeploymentEnvNotFoundException(
             deployment_env_id=deployment_env_id, scope="test-scope"
         )
@@ -717,7 +717,7 @@ class TestDeploymentEnvExceptions:
 
     def test_deployment_env_not_found_exception_without_scope(self):
         """Test DeploymentEnvNotFoundException without scope."""
-        deployment_env_id = uuid4()
+        deployment_env_id = uuid7()
         exception = DeploymentEnvNotFoundException(deployment_env_id=deployment_env_id)
 
         assert exception.deployment_env_id == deployment_env_id
@@ -739,7 +739,7 @@ class TestDeploymentEnvExceptions:
 
     def test_deployment_env_update_conflict_exception(self):
         """Test DeploymentEnvUpdateConflictException."""
-        deployment_env_id = uuid4()
+        deployment_env_id = uuid7()
         exception = DeploymentEnvUpdateConflictException(
             deployment_env_id=deployment_env_id, name="staging", scope="test-scope"
         )
@@ -758,7 +758,7 @@ class TestFeatureExceptions:
 
     def test_feature_not_found_exception_with_scope(self):
         """Test FeatureNotFoundException with scope."""
-        feature_id = uuid4()
+        feature_id = uuid7()
         exception = FeatureNotFoundException(feature_id=feature_id, scope="test-scope")
 
         assert exception.feature_id == feature_id
@@ -770,7 +770,7 @@ class TestFeatureExceptions:
 
     def test_feature_not_found_exception_without_scope(self):
         """Test FeatureNotFoundException without scope."""
-        feature_id = uuid4()
+        feature_id = uuid7()
         exception = FeatureNotFoundException(feature_id=feature_id)
 
         assert exception.feature_id == feature_id
@@ -792,7 +792,7 @@ class TestFeatureExceptions:
 
     def test_feature_update_conflict_exception(self):
         """Test FeatureUpdateConflictException."""
-        feature_id = uuid4()
+        feature_id = uuid7()
         exception = FeatureUpdateConflictException(
             feature_id=feature_id, name="ConflictName", scope="test-scope"
         )
@@ -811,8 +811,8 @@ class TestFeatureDocExceptions:
 
     def test_feature_doc_not_found_exception_with_scope(self):
         """Test FeatureDocNotFoundException with scope."""
-        feature_id = uuid4()
-        doc_id = uuid4()
+        feature_id = uuid7()
+        doc_id = uuid7()
         exception = FeatureDocNotFoundException(
             feature_id=feature_id, doc_id=doc_id, scope="test-scope"
         )
@@ -827,8 +827,8 @@ class TestFeatureDocExceptions:
 
     def test_feature_doc_not_found_exception_without_scope(self):
         """Test FeatureDocNotFoundException without scope."""
-        feature_id = uuid4()
-        doc_id = uuid4()
+        feature_id = uuid7()
+        doc_id = uuid7()
         exception = FeatureDocNotFoundException(feature_id=feature_id, doc_id=doc_id)
 
         assert exception.feature_id == feature_id
@@ -838,8 +838,8 @@ class TestFeatureDocExceptions:
 
     def test_feature_doc_already_exists_exception(self):
         """Test FeatureDocAlreadyExistsException."""
-        feature_id = uuid4()
-        doc_id = uuid4()
+        feature_id = uuid7()
+        doc_id = uuid7()
         exception = FeatureDocAlreadyExistsException(
             feature_id=feature_id, doc_id=doc_id, scope="test-scope"
         )
@@ -858,8 +858,8 @@ class TestTaskDeploymentEnvExceptions:
 
     def test_task_deployment_env_not_found_exception_with_scope(self):
         """Test TaskDeploymentEnvNotFoundException with scope."""
-        task_id = uuid4()
-        deployment_env_id = uuid4()
+        task_id = uuid7()
+        deployment_env_id = uuid7()
         exception = TaskDeploymentEnvNotFoundException(
             task_id=task_id, deployment_env_id=deployment_env_id, scope="test-scope"
         )
@@ -874,8 +874,8 @@ class TestTaskDeploymentEnvExceptions:
 
     def test_task_deployment_env_not_found_exception_without_scope(self):
         """Test TaskDeploymentEnvNotFoundException without scope."""
-        task_id = uuid4()
-        deployment_env_id = uuid4()
+        task_id = uuid7()
+        deployment_env_id = uuid7()
         exception = TaskDeploymentEnvNotFoundException(
             task_id=task_id, deployment_env_id=deployment_env_id
         )
@@ -887,8 +887,8 @@ class TestTaskDeploymentEnvExceptions:
 
     def test_task_deployment_env_already_exists_exception(self):
         """Test TaskDeploymentEnvAlreadyExistsException."""
-        task_id = uuid4()
-        deployment_env_id = uuid4()
+        task_id = uuid7()
+        deployment_env_id = uuid7()
         exception = TaskDeploymentEnvAlreadyExistsException(
             task_id=task_id, deployment_env_id=deployment_env_id, scope="test-scope"
         )
@@ -907,8 +907,8 @@ class TestTaskFeatureExceptions:
 
     def test_task_feature_not_found_exception_with_scope(self):
         """Test TaskFeatureNotFoundException with scope."""
-        task_id = uuid4()
-        feature_id = uuid4()
+        task_id = uuid7()
+        feature_id = uuid7()
         exception = TaskFeatureNotFoundException(
             task_id=task_id, feature_id=feature_id, scope="test-scope"
         )
@@ -923,8 +923,8 @@ class TestTaskFeatureExceptions:
 
     def test_task_feature_not_found_exception_without_scope(self):
         """Test TaskFeatureNotFoundException without scope."""
-        task_id = uuid4()
-        feature_id = uuid4()
+        task_id = uuid7()
+        feature_id = uuid7()
         exception = TaskFeatureNotFoundException(task_id=task_id, feature_id=feature_id)
 
         assert exception.task_id == task_id
@@ -934,8 +934,8 @@ class TestTaskFeatureExceptions:
 
     def test_task_feature_already_exists_exception(self):
         """Test TaskFeatureAlreadyExistsException."""
-        task_id = uuid4()
-        feature_id = uuid4()
+        task_id = uuid7()
+        feature_id = uuid7()
         exception = TaskFeatureAlreadyExistsException(
             task_id=task_id, feature_id=feature_id, scope="test-scope"
         )
@@ -954,7 +954,7 @@ class TestPrincipalExceptions:
 
     def test_principal_not_found_exception_with_scope(self):
         """Test PrincipalNotFoundException with scope."""
-        principal_id = uuid4()
+        principal_id = uuid7()
         exception = PrincipalNotFoundException(
             principal_id=principal_id, scope="test-scope"
         )
@@ -967,7 +967,7 @@ class TestPrincipalExceptions:
 
     def test_principal_not_found_exception_without_scope(self):
         """Test PrincipalNotFoundException without scope."""
-        principal_id = uuid4()
+        principal_id = uuid7()
         exception = PrincipalNotFoundException(principal_id=principal_id)
 
         assert exception.principal_id == principal_id
@@ -980,8 +980,8 @@ class TestTaskOwnerExceptions:
 
     def test_task_owner_not_found_exception_with_scope(self):
         """Test TaskOwnerNotFoundException with scope."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskOwnerNotFoundException(
             task_id=task_id, principal_id=principal_id, scope="test-scope"
         )
@@ -996,8 +996,8 @@ class TestTaskOwnerExceptions:
 
     def test_task_owner_not_found_exception_without_scope(self):
         """Test TaskOwnerNotFoundException without scope."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskOwnerNotFoundException(
             task_id=task_id, principal_id=principal_id
         )
@@ -1009,8 +1009,8 @@ class TestTaskOwnerExceptions:
 
     def test_task_owner_already_exists_exception(self):
         """Test TaskOwnerAlreadyExistsException."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskOwnerAlreadyExistsException(
             task_id=task_id, principal_id=principal_id, scope="test-scope"
         )
@@ -1029,8 +1029,8 @@ class TestTaskReviewerExceptions:
 
     def test_task_reviewer_not_found_exception_with_scope(self):
         """Test TaskReviewerNotFoundException with scope."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskReviewerNotFoundException(
             task_id=task_id, principal_id=principal_id, scope="test-scope"
         )
@@ -1045,8 +1045,8 @@ class TestTaskReviewerExceptions:
 
     def test_task_reviewer_not_found_exception_without_scope(self):
         """Test TaskReviewerNotFoundException without scope."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskReviewerNotFoundException(
             task_id=task_id, principal_id=principal_id
         )
@@ -1058,8 +1058,8 @@ class TestTaskReviewerExceptions:
 
     def test_task_reviewer_already_exists_exception(self):
         """Test TaskReviewerAlreadyExistsException."""
-        task_id = uuid4()
-        principal_id = uuid4()
+        task_id = uuid7()
+        principal_id = uuid7()
         exception = TaskReviewerAlreadyExistsException(
             task_id=task_id, principal_id=principal_id, scope="test-scope"
         )

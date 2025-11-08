@@ -1,6 +1,6 @@
 """Unit tests for organization principal management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -110,7 +110,7 @@ class TestAddOrganizationPrincipal:
         test_principal: KPrincipal,
     ):
         """Test adding a principal to a non-existent organization."""
-        non_existent_org_id = uuid4()
+        non_existent_org_id = uuid7()
         principal_data = {"principal_id": str(test_principal.id)}
 
         response = await client.post(
@@ -274,7 +274,7 @@ class TestListOrganizationPrincipals:
         client: AsyncClient,
     ):
         """Test listing principals of a non-existent organization."""
-        non_existent_org_id = uuid4()
+        non_existent_org_id = uuid7()
 
         response = await client.get(f"/organizations/{non_existent_org_id}/principals")
 
@@ -326,7 +326,7 @@ class TestGetOrganizationPrincipal:
         test_organization: KOrganization,
     ):
         """Test getting an organization principal that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.get(
             f"/organizations/{test_organization.id}/principals/{non_existent_principal_id}"
@@ -446,7 +446,7 @@ class TestUpdateOrganizationPrincipal:
         test_organization: KOrganization,
     ):
         """Test updating an organization principal that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
         update_data = {"role": "admin"}
 
         response = await client.patch(
@@ -540,7 +540,7 @@ class TestRemoveOrganizationPrincipal:
         test_organization: KOrganization,
     ):
         """Test removing an organization principal that doesn't exist."""
-        non_existent_principal_id = uuid4()
+        non_existent_principal_id = uuid7()
 
         response = await client.delete(
             f"/organizations/{test_organization.id}/principals/{non_existent_principal_id}"
@@ -651,7 +651,7 @@ class TestOrganizationPrincipalDataInconsistency:
 
         from sqlalchemy import text
 
-        fake_org_id = uuid4()
+        fake_org_id = uuid7()
         await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
@@ -708,7 +708,7 @@ class TestOrganizationPrincipalDataInconsistency:
 
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
-        fake_org_id = uuid4()
+        fake_org_id = uuid7()
         await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(

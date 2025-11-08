@@ -4,7 +4,7 @@ import base64
 import secrets
 from datetime import datetime
 from unittest.mock import ANY, AsyncMock, patch
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 from fastapi import FastAPI
@@ -302,7 +302,7 @@ class TestListCredentialsEndpoint:
         ) as mock_list:
             credentials = [
                 Fido2CredentialDetail(
-                    id=uuid4(),
+                    id=uuid7(),
                     credential_id="test_cred_1",
                     nickname="YubiKey 5",
                     aaguid="00112233445566778899aabbccddeeff",
@@ -312,7 +312,7 @@ class TestListCredentialsEndpoint:
                     created=datetime.now(),
                 ),
                 Fido2CredentialDetail(
-                    id=uuid4(),
+                    id=uuid7(),
                     credential_id="test_cred_2",
                     nickname="iPhone TouchID",
                     aaguid="00112233445566778899aabbccddeeff",
@@ -354,7 +354,7 @@ class TestUpdateCredentialEndpoint:
     @pytest.mark.asyncio
     async def test_update_credential_success(self, client: AsyncClient, mock_user):
         """Test successful credential update."""
-        credential_id = uuid4()
+        credential_id = uuid7()
 
         with patch(
             "app.logic.auth.update_credential_nickname", new_callable=AsyncMock
@@ -391,7 +391,7 @@ class TestUpdateCredentialEndpoint:
         """Test update fails when credential not found."""
         from app.core.exceptions.domain_exceptions import InvalidCredentialsException
 
-        credential_id = uuid4()
+        credential_id = uuid7()
 
         with patch(
             "app.logic.auth.update_credential_nickname", new_callable=AsyncMock
@@ -414,7 +414,7 @@ class TestDeleteCredentialEndpoint:
     @pytest.mark.asyncio
     async def test_delete_credential_success(self, client: AsyncClient, mock_user):
         """Test successful credential deletion."""
-        credential_id = uuid4()
+        credential_id = uuid7()
 
         with patch(
             "app.logic.auth.delete_credential", new_callable=AsyncMock
@@ -432,7 +432,7 @@ class TestDeleteCredentialEndpoint:
         """Test delete fails when credential not found."""
         from app.core.exceptions.domain_exceptions import InvalidCredentialsException
 
-        credential_id = uuid4()
+        credential_id = uuid7()
 
         with patch(
             "app.logic.auth.delete_credential", new_callable=AsyncMock
@@ -448,6 +448,6 @@ class TestDeleteCredentialEndpoint:
     @pytest.mark.asyncio
     async def test_delete_credential_unauthorized(self, client_no_auth: AsyncClient):
         """Test delete fails without authentication."""
-        credential_id = uuid4()
+        credential_id = uuid7()
         result = await client_no_auth.delete(f"/auth/fido2/credentials/{credential_id}")
         assert result.status_code == 401

@@ -253,16 +253,16 @@ class TestLoggingSetup:
 class TestUvloopConfiguration:
     """Test suite for uvloop configuration."""
 
-    @patch("app.main.asyncio.set_event_loop_policy")
-    @patch("app.main.sys.platform", "linux")
-    def test_uvloop_used_on_linux(self, mock_set_policy):
-        """Test that uvloop is configured on Linux."""
-        # This test verifies the concept, but uvloop is set at module import
-        # so we can only check that it's attempted when platform is not win32
-        assert sys.platform != "win32" or True  # Just verify platform check works
+    def test_uvloop_configuration(self):
+        """Test uvloop configuration on non-Windows platforms."""
+        # The uvloop setup code runs at module import time
+        # This test just verifies the module imported successfully
+        from app.main import app
+
+        assert app is not None
 
     def test_platform_check_exists(self):
-        """Test that platform is checked for uvloop."""
+        """Test that platform check exists for uvloop."""
         # Verify sys.platform is accessible
         assert sys.platform is not None
 

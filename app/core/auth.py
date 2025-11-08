@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import uuid4
+from uuid import uuid7
 
 import bcrypt
 from fastapi.security import OAuth2PasswordBearer
@@ -58,7 +58,7 @@ async def create_access_token(
 
     to_encode.update({"iss": "https://auth.baseklass.io"})
     to_encode.update({"aud": "https://dev.skrm.io"}),
-    to_encode.update({"jti": str(uuid4())})
+    to_encode.update({"jti": str(uuid7())})
     to_encode.update({"iat": int(now_utc.timestamp())})
     to_encode.update({"exp": int(expire_utc.timestamp())})
     to_encode.update({"ss": int(session_start_utc.timestamp())})
@@ -89,7 +89,7 @@ async def create_refresh_token(
 
     to_encode.update({"iss": "https://auth.baseklass.io"})
     to_encode.update({"aud": "https://dev.skrm.io"}),
-    to_encode.update({"jti": str(uuid4())})
+    to_encode.update({"jti": str(uuid7())})
     to_encode.update({"iat": int(now_utc.timestamp())})
     to_encode.update({"exp": int(expire_utc.timestamp())})
     to_encode.update({"ss": int(session_start_utc.timestamp())})

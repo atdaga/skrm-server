@@ -1,6 +1,6 @@
 """Unit tests for task deployment environment management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -161,7 +161,7 @@ class TestAddTaskDeploymentEnv:
         deployment_env: KDeploymentEnv,
     ):
         """Test that adding a deployment environment to a non-existent task fails."""
-        non_existent_task_id = uuid4()
+        non_existent_task_id = uuid7()
         deployment_env_data = {"deployment_env_id": str(deployment_env.id)}
 
         response = await client.post(
@@ -176,7 +176,7 @@ class TestAddTaskDeploymentEnv:
         task: KTask,
     ):
         """Test that adding a non-existent deployment environment fails."""
-        non_existent_env_id = uuid4()
+        non_existent_env_id = uuid7()
         deployment_env_data = {"deployment_env_id": str(non_existent_env_id)}
 
         response = await client.post(
@@ -264,7 +264,7 @@ class TestListTaskDeploymentEnvs:
         client: AsyncClient,
     ):
         """Test listing deployment environments for a non-existent task."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(f"/tasks/{non_existent_id}/deployment_envs")
         assert response.status_code == 404
@@ -315,7 +315,7 @@ class TestGetTaskDeploymentEnv:
         task: KTask,
     ):
         """Test getting a non-existent task deployment environment."""
-        non_existent_env_id = uuid4()
+        non_existent_env_id = uuid7()
 
         response = await client.get(
             f"/tasks/{task.id}/deployment_envs/{non_existent_env_id}"
@@ -408,7 +408,7 @@ class TestUpdateTaskDeploymentEnv:
         task: KTask,
     ):
         """Test updating a non-existent task deployment environment."""
-        non_existent_env_id = uuid4()
+        non_existent_env_id = uuid7()
         update_data = {"role": "new_role"}
 
         response = await client.patch(
@@ -463,7 +463,7 @@ class TestRemoveTaskDeploymentEnv:
         task: KTask,
     ):
         """Test removing a non-existent task deployment environment."""
-        non_existent_env_id = uuid4()
+        non_existent_env_id = uuid7()
 
         response = await client.delete(
             f"/tasks/{task.id}/deployment_envs/{non_existent_env_id}"

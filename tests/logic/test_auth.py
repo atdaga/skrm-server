@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 
@@ -20,7 +20,7 @@ class TestPerformLogin:
     @pytest.fixture
     def mock_user(self):
         """Create a mock user for testing."""
-        user_id = uuid4()
+        user_id = uuid7()
         now = datetime.now()
         return UserDetail(
             id=user_id,
@@ -42,9 +42,9 @@ class TestPerformLogin:
             system_role="system_user",
             meta={},
             created=now,
-            created_by=uuid4(),
+            created_by=uuid7(),
             last_modified=now,
-            last_modified_by=uuid4(),
+            last_modified_by=uuid7(),
         )
 
     @pytest.mark.asyncio
@@ -219,7 +219,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_success(self):
         """Test successful token refresh with valid refresh token."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -228,7 +228,7 @@ class TestRefreshAccessToken:
             "scope": "global",
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": now_ts,
@@ -292,7 +292,7 @@ class TestRefreshAccessToken:
             "scope": "global",
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": now_ts,
@@ -312,7 +312,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_preserves_scope(self):
         """Test that token refresh preserves the original scope."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -321,7 +321,7 @@ class TestRefreshAccessToken:
             "scope": "read write admin",
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": now_ts,
@@ -347,7 +347,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_default_scope(self):
         """Test that token refresh uses default scope if not present in payload."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -356,7 +356,7 @@ class TestRefreshAccessToken:
             # No scope provided
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": now_ts,
@@ -382,7 +382,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_preserves_issuer(self):
         """Test that token refresh preserves the original issuer."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -391,7 +391,7 @@ class TestRefreshAccessToken:
             "scope": "global",
             "iss": "https://custom-issuer.example.com",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": now_ts,
@@ -421,7 +421,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_missing_session_start(self):
         """Test token refresh with missing session start claim raises exception."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -430,7 +430,7 @@ class TestRefreshAccessToken:
             "scope": "global",
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             # Missing "ss"
@@ -449,7 +449,7 @@ class TestRefreshAccessToken:
     @pytest.mark.asyncio
     async def test_refresh_token_absolute_expiration_exceeded(self):
         """Test token refresh fails when absolute expiration time is exceeded."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         now = datetime.now(UTC).replace(tzinfo=None)
         now_ts = int(now.replace(tzinfo=UTC).timestamp())
 
@@ -461,7 +461,7 @@ class TestRefreshAccessToken:
             "scope": "global",
             "iss": "https://auth.baseklass.io",
             "aud": "https://dev.skrm.io",
-            "jti": str(uuid4()),
+            "jti": str(uuid7()),
             "iat": now_ts,
             "exp": now_ts + 1800,
             "ss": session_start_ts,  # Session started 31 days ago

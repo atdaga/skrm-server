@@ -1,6 +1,6 @@
 """Unit tests for team management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -262,7 +262,7 @@ class TestGetTeam:
         test_organization: KOrganization,
     ):
         """Test getting a team that doesn't exist."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/teams/{non_existent_id}?org_id={test_organization.id}"
@@ -387,7 +387,7 @@ class TestUpdateTeam:
         test_organization: KOrganization,
     ):
         """Test updating a team that doesn't exist."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
@@ -541,7 +541,7 @@ class TestDeleteTeam:
         test_organization: KOrganization,
     ):
         """Test deleting a team that doesn't exist."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/teams/{non_existent_id}?org_id={test_organization.id}"

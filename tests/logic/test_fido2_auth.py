@@ -4,7 +4,7 @@ import base64
 import secrets
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 
@@ -30,7 +30,7 @@ from app.models.k_principal import KPrincipal
 @pytest.fixture
 async def test_user(async_session, creator_id):
     """Create a test user for FIDO2 operations."""
-    user_id = uuid4()
+    user_id = uuid7()
 
     # Create a creator principal if needed
     creator_principal = KPrincipal(
@@ -95,9 +95,9 @@ async def test_user(async_session, creator_id):
 @pytest.fixture
 def mock_credential(creator_id):
     """Create a mock FIDO2 credential."""
-    user_id = uuid4()
+    user_id = uuid7()
     return KFido2Credential(
-        id=uuid4(),
+        id=uuid7(),
         principal_id=user_id,
         credential_id=secrets.token_bytes(32),
         public_key=secrets.token_bytes(65),
@@ -155,7 +155,7 @@ class TestBeginFido2Registration:
     @pytest.mark.asyncio
     async def test_begin_registration_user_not_found(self, async_session):
         """Test registration fails when user not found."""
-        nonexistent_user_id = uuid4()
+        nonexistent_user_id = uuid7()
 
         with pytest.raises(InvalidCredentialsException):
             await begin_fido2_registration(nonexistent_user_id, async_session)
@@ -444,8 +444,8 @@ class TestPerform2faLogin:
     @pytest.mark.asyncio
     async def test_2fa_login_user_mismatch(self, async_session):
         """Test 2FA login fails when FIDO2 credential belongs to different user."""
-        user1_id = uuid4()
-        user2_id = uuid4()
+        user1_id = uuid7()
+        user2_id = uuid7()
 
         user1 = MagicMock()
         user1.id = user1_id
@@ -535,7 +535,7 @@ class TestUpdateCredentialNickname:
         """Test update fails when credential not found."""
         with pytest.raises(InvalidCredentialsException):
             await update_credential_nickname(
-                test_user.id, uuid4(), "New Nickname", async_session
+                test_user.id, uuid7(), "New Nickname", async_session
             )
 
     @pytest.mark.asyncio
@@ -543,7 +543,7 @@ class TestUpdateCredentialNickname:
         self, async_session, test_user, mock_credential, creator_id
     ):
         """Test update fails when credential belongs to different user."""
-        other_user_id = uuid4()
+        other_user_id = uuid7()
         other_user = KPrincipal(
             id=other_user_id,
             scope="global",
@@ -607,14 +607,14 @@ class TestDeleteCredential:
     async def test_delete_credential_not_found(self, async_session, test_user):
         """Test delete fails when credential not found."""
         with pytest.raises(InvalidCredentialsException):
-            await delete_credential(test_user.id, uuid4(), async_session)
+            await delete_credential(test_user.id, uuid7(), async_session)
 
     @pytest.mark.asyncio
     async def test_delete_credential_wrong_user(
         self, async_session, test_user, mock_credential, creator_id
     ):
         """Test delete fails when credential belongs to different user."""
-        other_user_id = uuid4()
+        other_user_id = uuid7()
         other_user = KPrincipal(
             id=other_user_id,
             scope="global",

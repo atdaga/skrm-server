@@ -3,7 +3,7 @@
 import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -113,7 +113,7 @@ async def session(async_session):
 # @pytest.fixture
 # def sample_uuid():
 #     """Generate a sample UUID for testing."""
-#     return uuid4()
+#     return uuid7()
 
 
 # @pytest.fixture
@@ -125,13 +125,13 @@ async def session(async_session):
 @pytest.fixture
 def creator_id() -> UUID:
     """Generate a UUID for the creator field."""
-    return uuid4()
+    return uuid7()
 
 
 @pytest.fixture
 def test_user_id() -> UUID:
     """Generate a test user ID for route testing."""
-    return uuid4()
+    return uuid7()
 
 
 @pytest.fixture
@@ -167,7 +167,7 @@ def mock_token_data(test_user_id: UUID, test_scope: str) -> TokenData:
         scope=test_scope,
         iss="test-issuer",
         aud="test-audience",
-        jti=str(uuid4()),
+        jti=str(uuid7()),
         iat=now,
         exp=now,
         ss=now,

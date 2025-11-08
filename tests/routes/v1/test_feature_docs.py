@@ -1,6 +1,6 @@
 """Unit tests for feature doc management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -145,7 +145,7 @@ class TestAddFeatureDoc:
         doc: KDoc,
     ):
         """Test adding a doc to a non-existent feature."""
-        non_existent_feature_id = uuid4()
+        non_existent_feature_id = uuid7()
         doc_data = {"doc_id": str(doc.id)}
 
         response = await client.post(
@@ -162,7 +162,7 @@ class TestAddFeatureDoc:
         feature: KFeature,
     ):
         """Test adding a non-existent doc to a feature."""
-        non_existent_doc_id = uuid4()
+        non_existent_doc_id = uuid7()
         doc_data = {"doc_id": str(non_existent_doc_id)}
 
         response = await client.post(f"/features/{feature.id}/docs", json=doc_data)
@@ -314,7 +314,7 @@ class TestListFeatureDocs:
         client: AsyncClient,
     ):
         """Test listing docs of a non-existent feature."""
-        non_existent_feature_id = uuid4()
+        non_existent_feature_id = uuid7()
 
         response = await client.get(f"/features/{non_existent_feature_id}/docs")
 
@@ -365,7 +365,7 @@ class TestGetFeatureDoc:
         feature: KFeature,
     ):
         """Test getting a feature doc that doesn't exist."""
-        non_existent_doc_id = uuid4()
+        non_existent_doc_id = uuid7()
 
         response = await client.get(
             f"/features/{feature.id}/docs/{non_existent_doc_id}"
@@ -488,7 +488,7 @@ class TestUpdateFeatureDoc:
         feature: KFeature,
     ):
         """Test updating a feature doc that doesn't exist."""
-        non_existent_doc_id = uuid4()
+        non_existent_doc_id = uuid7()
         update_data = {"role": "final"}
 
         response = await client.patch(
@@ -582,7 +582,7 @@ class TestRemoveFeatureDoc:
         feature: KFeature,
     ):
         """Test removing a feature doc that doesn't exist."""
-        non_existent_doc_id = uuid4()
+        non_existent_doc_id = uuid7()
 
         response = await client.delete(
             f"/features/{feature.id}/docs/{non_existent_doc_id}"

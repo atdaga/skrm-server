@@ -1,6 +1,6 @@
 """Unit tests for deployment environment management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -93,7 +93,7 @@ class TestCreateDeploymentEnv:
         self, client: AsyncClient, test_user_id: UUID
     ):
         """Test that creating a deployment environment in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
         deployment_env_data = {"name": "Test Env"}
 
         response = await client.post(
@@ -157,7 +157,7 @@ class TestListDeploymentEnvs:
     @pytest.mark.asyncio
     async def test_list_deployment_envs_unauthorized_org(self, client: AsyncClient):
         """Test that listing deployment environments in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
 
         response = await client.get(f"/deployment-envs?org_id={unauthorized_org_id}")
         assert response.status_code == 403
@@ -199,7 +199,7 @@ class TestGetDeploymentEnv:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test getting a non-existent deployment environment."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/deployment-envs/{non_existent_id}?org_id={test_organization.id}"
@@ -235,7 +235,7 @@ class TestGetDeploymentEnv:
         await async_session.refresh(deployment_env)
 
         # Try to access with unauthorized org
-        wrong_org_id = uuid4()
+        wrong_org_id = uuid7()
         response = await client.get(
             f"/deployment-envs/{deployment_env.id}?org_id={wrong_org_id}"
         )
@@ -316,7 +316,7 @@ class TestUpdateDeploymentEnv:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test updating a non-existent deployment environment."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
@@ -436,7 +436,7 @@ class TestDeleteDeploymentEnv:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test deleting a non-existent deployment environment."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/deployment-envs/{non_existent_id}?org_id={test_organization.id}"

@@ -1,6 +1,6 @@
 """Unit tests for project management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -96,7 +96,7 @@ class TestCreateProject:
         self, client: AsyncClient, test_user_id: UUID
     ):
         """Test that creating a project in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
         project_data = {"name": "Test Project"}
 
         response = await client.post(
@@ -161,7 +161,7 @@ class TestListProjects:
     @pytest.mark.asyncio
     async def test_list_projects_unauthorized_org(self, client: AsyncClient):
         """Test that listing projects in unauthorized org fails."""
-        unauthorized_org_id = uuid4()
+        unauthorized_org_id = uuid7()
 
         response = await client.get(f"/projects?org_id={unauthorized_org_id}")
         assert response.status_code == 403
@@ -205,7 +205,7 @@ class TestGetProject:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test getting a non-existent project."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.get(
             f"/projects/{non_existent_id}?org_id={test_organization.id}"
@@ -241,7 +241,7 @@ class TestGetProject:
         await async_session.refresh(project)
 
         # Try to access with unauthorized org
-        wrong_org_id = uuid4()
+        wrong_org_id = uuid7()
         response = await client.get(f"/projects/{project.id}?org_id={wrong_org_id}")
         assert response.status_code == 403
 
@@ -323,7 +323,7 @@ class TestUpdateProject:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test updating a non-existent project."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
         update_data = {"name": "New Name"}
 
         response = await client.patch(
@@ -443,7 +443,7 @@ class TestDeleteProject:
         self, client: AsyncClient, test_organization: KOrganization
     ):
         """Test deleting a non-existent project."""
-        non_existent_id = uuid4()
+        non_existent_id = uuid7()
 
         response = await client.delete(
             f"/projects/{non_existent_id}?org_id={test_organization.id}"

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
@@ -17,7 +17,7 @@ class KPrincipal(SQLModel, table=True):
     __tablename__ = "k_principal"
     __table_args__ = (UniqueConstraint("scope", "username"),)
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
     scope: str = Field(default="global", max_length=255)
     username: str = Field(..., max_length=255)
     primary_email: str = Field(..., max_length=255)

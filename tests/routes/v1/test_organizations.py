@@ -1,6 +1,6 @@
 """Unit tests for organization management endpoints."""
 
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 import pytest
 from httpx import AsyncClient
@@ -363,7 +363,7 @@ class TestGetOrganization:
         client: AsyncClient,
     ):
         """Test retrieving a non-existent organization."""
-        fake_id = uuid4()
+        fake_id = uuid7()
         response = await client.get(f"/organizations/{fake_id}")
 
         # This will return 403 (forbidden) because the user is not a member of a non-existent org
@@ -575,7 +575,7 @@ class TestUpdateOrganization:
         client: AsyncClient,
     ):
         """Test updating a non-existent organization."""
-        fake_id = uuid4()
+        fake_id = uuid7()
         update_data = {"name": "New Name"}
         response = await client.patch(f"/organizations/{fake_id}", json=update_data)
 
@@ -996,7 +996,7 @@ class TestDeleteOrganization:
         client: AsyncClient,
     ):
         """Test deleting a non-existent organization."""
-        fake_id = uuid4()
+        fake_id = uuid7()
         response = await client.delete(f"/organizations/{fake_id}")
 
         # Returns 403 because user is not a member of non-existent org
@@ -1084,7 +1084,7 @@ class TestOrganizationDataInconsistency:
 
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
-        fake_org_id = uuid4()
+        fake_org_id = uuid7()
         await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
@@ -1140,7 +1140,7 @@ class TestOrganizationDataInconsistency:
 
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
-        fake_org_id = uuid4()
+        fake_org_id = uuid7()
         await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
@@ -1197,7 +1197,7 @@ class TestOrganizationDataInconsistency:
 
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
-        fake_org_id = uuid4()
+        fake_org_id = uuid7()
         await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(

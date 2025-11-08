@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import datetime
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 
@@ -17,7 +17,7 @@ class TestKFido2CredentialModel:
     def test_principal(self, creator_id):
         """Create a test principal for foreign key relationships."""
         return KPrincipal(
-            id=uuid4(),
+            id=uuid7(),
             scope="global",
             username="testuser",
             primary_email="test@example.com",

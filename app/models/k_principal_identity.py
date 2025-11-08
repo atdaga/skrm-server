@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID, uuid7
 
 from sqlalchemy import JSON
 from sqlmodel import Field, SQLModel
@@ -8,7 +8,7 @@ from sqlmodel import Field, SQLModel
 class KPrincipalIdentity(SQLModel, table=True):
     __tablename__ = "k_principal_identity"
 
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
     principal_id: UUID | None = Field(
         default=None, foreign_key="k_principal.id", index=True
     )

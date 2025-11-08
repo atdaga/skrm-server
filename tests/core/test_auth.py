@@ -1,7 +1,7 @@
 """Unit tests for authentication and security utilities."""
 
 from datetime import UTC, datetime, timedelta
-from uuid import uuid4
+from uuid import uuid7
 
 import pytest
 from jose import jwt
@@ -174,7 +174,7 @@ class TestAccessTokenCreation:
     @pytest.mark.asyncio
     async def test_create_access_token_contains_data(self):
         """Test that created token contains the provided data."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         data = {"sub": user_id, "scope": "test-scope"}
         now = datetime.now(UTC).replace(tzinfo=None)
 
@@ -287,7 +287,7 @@ class TestRefreshTokenCreation:
     @pytest.mark.asyncio
     async def test_create_refresh_token_contains_data(self):
         """Test that created refresh token contains the provided data."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         data = {"sub": user_id, "scope": "test-scope"}
         now = datetime.now(UTC).replace(tzinfo=None)
 
@@ -456,7 +456,7 @@ class TestTokenVerification:
                 "scope": "test",
                 "iss": "test-issuer",
                 "aud": "test-audience",
-                "jti": str(uuid4()),
+                "jti": str(uuid7()),
                 "iat": int(now_utc.timestamp()),
                 "exp": int((now_utc + timedelta(minutes=15)).timestamp()),
                 "ss": int(now_utc.timestamp()),
@@ -521,7 +521,7 @@ class TestTokenIntegration:
     @pytest.mark.asyncio
     async def test_access_token_full_lifecycle(self):
         """Test creating and verifying an access token."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         data = {"sub": user_id, "scope": "global"}
         now = datetime.now(UTC).replace(tzinfo=None)
 
@@ -538,7 +538,7 @@ class TestTokenIntegration:
     @pytest.mark.asyncio
     async def test_refresh_token_full_lifecycle(self):
         """Test creating and verifying a refresh token."""
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         data = {"sub": user_id, "scope": "global"}
         now = datetime.now(UTC).replace(tzinfo=None)
 
@@ -581,7 +581,7 @@ class TestTokenIntegration:
         assert is_valid is True
 
         # Create token after successful verification
-        user_id = str(uuid4())
+        user_id = str(uuid7())
         token_data = {"sub": user_id, "scope": "global"}
         now = datetime.now(UTC).replace(tzinfo=None)
         token = await create_access_token(token_data, now)
@@ -599,7 +599,7 @@ class TestAuthenticateUser:
     async def test_authenticate_user_success(self, async_session, creator_id):
         """Test successful user authentication with valid credentials."""
         # Create a principal
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -642,7 +642,7 @@ class TestAuthenticateUser:
     async def test_authenticate_user_wrong_password(self, async_session, creator_id):
         """Test authentication fails with wrong password."""
         # Create principal and identity
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -688,7 +688,7 @@ class TestAuthenticateUser:
     ):
         """Test authentication fails when user has no password identity."""
         # Create principal without identity
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -713,7 +713,7 @@ class TestAuthenticateUser:
     @pytest.mark.asyncio
     async def test_authenticate_user_null_password(self, async_session, creator_id):
         """Test authentication fails when password field is None."""
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -748,7 +748,7 @@ class TestAuthenticateUser:
     @pytest.mark.asyncio
     async def test_authenticate_user_disabled_account(self, async_session, creator_id):
         """Test authentication fails for disabled accounts."""
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -785,7 +785,7 @@ class TestAuthenticateUser:
         self, async_session, creator_id
     ):
         """Test authentication fails for non-human principals (service accounts)."""
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="global",
@@ -820,7 +820,7 @@ class TestAuthenticateUser:
     @pytest.mark.asyncio
     async def test_authenticate_user_wrong_scope(self, async_session, creator_id):
         """Test authentication fails for users not in 'global' scope."""
-        user_id = uuid4()
+        user_id = uuid7()
         principal = KPrincipal(
             id=user_id,
             scope="custom-scope",  # Not global
