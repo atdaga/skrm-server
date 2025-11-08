@@ -10,6 +10,7 @@ from .k_feature import ReviewResult
 
 if TYPE_CHECKING:
     from .k_task_deployment_env import KTaskDeploymentEnv
+    from .k_task_feature import KTaskFeature
 
 
 class TaskStatus(str, Enum):
@@ -46,6 +47,9 @@ class KTask(SQLModel, table=True):
 
     # Relationships
     task_deployment_envs: list["KTaskDeploymentEnv"] = Relationship(
+        back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    task_features: list["KTaskFeature"] = Relationship(
         back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
     )
 

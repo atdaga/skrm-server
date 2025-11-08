@@ -584,3 +584,32 @@ class TaskDeploymentEnvAlreadyExistsException(DomainException):
         self.task_id = task_id
         self.deployment_env_id = deployment_env_id
         self.scope = scope
+
+
+# ============================================================================
+# Task Feature-related exceptions
+# ============================================================================
+
+
+class TaskFeatureNotFoundException(DomainException):
+    """Raised when a task feature relationship cannot be found."""
+
+    def __init__(self, task_id: UUID, feature_id: UUID, scope: str | None = None):
+        message = f"Task feature with task_id '{task_id}' and feature_id '{feature_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="task_feature", entity_id=feature_id)
+        self.task_id = task_id
+        self.feature_id = feature_id
+        self.scope = scope
+
+
+class TaskFeatureAlreadyExistsException(DomainException):
+    """Raised when attempting to add a task feature relationship that already exists."""
+
+    def __init__(self, task_id: UUID, feature_id: UUID, scope: str):
+        message = f"Task feature with task_id '{task_id}' and feature_id '{feature_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="task_feature", entity_id=feature_id)
+        self.task_id = task_id
+        self.feature_id = feature_id
+        self.scope = scope

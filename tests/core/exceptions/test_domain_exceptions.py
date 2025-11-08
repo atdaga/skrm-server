@@ -33,6 +33,8 @@ from app.core.exceptions.domain_exceptions import (
     ProjectUpdateConflictException,
     TaskDeploymentEnvAlreadyExistsException,
     TaskDeploymentEnvNotFoundException,
+    TaskFeatureAlreadyExistsException,
+    TaskFeatureNotFoundException,
     TeamAlreadyExistsException,
     TeamMemberAlreadyExistsException,
     TeamMemberNotFoundException,
@@ -893,3 +895,50 @@ class TestTaskDeploymentEnvExceptions:
         assert str(deployment_env_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "task_deployment_env"
+
+
+class TestTaskFeatureExceptions:
+    """Test suite for task feature-related exceptions."""
+
+    def test_task_feature_not_found_exception_with_scope(self):
+        """Test TaskFeatureNotFoundException with scope."""
+        task_id = uuid4()
+        feature_id = uuid4()
+        exception = TaskFeatureNotFoundException(
+            task_id=task_id, feature_id=feature_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.feature_id == feature_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(feature_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_feature"
+
+    def test_task_feature_not_found_exception_without_scope(self):
+        """Test TaskFeatureNotFoundException without scope."""
+        task_id = uuid4()
+        feature_id = uuid4()
+        exception = TaskFeatureNotFoundException(task_id=task_id, feature_id=feature_id)
+
+        assert exception.task_id == task_id
+        assert exception.feature_id == feature_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_task_feature_already_exists_exception(self):
+        """Test TaskFeatureAlreadyExistsException."""
+        task_id = uuid4()
+        feature_id = uuid4()
+        exception = TaskFeatureAlreadyExistsException(
+            task_id=task_id, feature_id=feature_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.feature_id == feature_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(feature_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_feature"

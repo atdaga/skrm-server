@@ -9,6 +9,7 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from .k_feature_doc import KFeatureDoc
     from .k_project_feature import KProjectFeature
+    from .k_task_feature import KTaskFeature
 
 
 class FeatureType(str, Enum):
@@ -55,6 +56,10 @@ class KFeature(SQLModel, table=True):
         sa_relationship_kwargs={"passive_deletes": True},
     )
     feature_projects: list["KProjectFeature"] = Relationship(
+        back_populates="feature",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    task_features: list["KTaskFeature"] = Relationship(
         back_populates="feature",
         sa_relationship_kwargs={"passive_deletes": True},
     )
