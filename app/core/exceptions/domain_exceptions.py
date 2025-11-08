@@ -187,6 +187,18 @@ class OrganizationUpdateConflictException(DomainException):
 # ============================================================================
 
 
+class PrincipalNotFoundException(DomainException):
+    """Raised when a principal cannot be found."""
+
+    def __init__(self, principal_id: UUID, scope: str | None = None):
+        message = f"Principal with id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="principal", entity_id=principal_id)
+        self.principal_id = principal_id
+        self.scope = scope
+
+
 class UserNotFoundException(DomainException):
     """Raised when a user cannot be found."""
 
@@ -612,4 +624,62 @@ class TaskFeatureAlreadyExistsException(DomainException):
         super().__init__(message, entity_type="task_feature", entity_id=feature_id)
         self.task_id = task_id
         self.feature_id = feature_id
+        self.scope = scope
+
+
+# ============================================================================
+# Task Owner-related exceptions
+# ============================================================================
+
+
+class TaskOwnerNotFoundException(DomainException):
+    """Raised when a task owner relationship cannot be found."""
+
+    def __init__(self, task_id: UUID, principal_id: UUID, scope: str | None = None):
+        message = f"Task owner with task_id '{task_id}' and principal_id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="task_owner", entity_id=principal_id)
+        self.task_id = task_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+class TaskOwnerAlreadyExistsException(DomainException):
+    """Raised when attempting to add a task owner relationship that already exists."""
+
+    def __init__(self, task_id: UUID, principal_id: UUID, scope: str):
+        message = f"Task owner with task_id '{task_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="task_owner", entity_id=principal_id)
+        self.task_id = task_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+# ============================================================================
+# Task Reviewer-related exceptions
+# ============================================================================
+
+
+class TaskReviewerNotFoundException(DomainException):
+    """Raised when a task reviewer relationship cannot be found."""
+
+    def __init__(self, task_id: UUID, principal_id: UUID, scope: str | None = None):
+        message = f"Task reviewer with task_id '{task_id}' and principal_id '{principal_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="task_reviewer", entity_id=principal_id)
+        self.task_id = task_id
+        self.principal_id = principal_id
+        self.scope = scope
+
+
+class TaskReviewerAlreadyExistsException(DomainException):
+    """Raised when attempting to add a task reviewer relationship that already exists."""
+
+    def __init__(self, task_id: UUID, principal_id: UUID, scope: str):
+        message = f"Task reviewer with task_id '{task_id}' and principal_id '{principal_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="task_reviewer", entity_id=principal_id)
+        self.task_id = task_id
+        self.principal_id = principal_id
         self.scope = scope

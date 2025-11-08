@@ -13,6 +13,8 @@ from . import (
     projects,
     task_deployment_envs,
     task_features,
+    task_owners,
+    task_reviewers,
     tasks,
     team_members,
     team_reviewers,
@@ -39,5 +41,7 @@ router.include_router(feature_docs.router)
 router.include_router(tasks.router)
 router.include_router(task_deployment_envs.router)
 router.include_router(task_features.router)
+router.include_router(task_owners.router)
+router.include_router(task_reviewers.router)
 
 __all__ = ["router"]

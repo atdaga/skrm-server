@@ -15,6 +15,8 @@ from .k_project_team import KProjectTeam
 from .k_task import KTask, TaskStatus
 from .k_task_deployment_env import KTaskDeploymentEnv
 from .k_task_feature import KTaskFeature
+from .k_task_owner import KTaskOwner
+from .k_task_reviewer import KTaskReviewer
 from .k_team import KTeam
 from .k_team_member import KTeamMember
 from .k_team_reviewer import KTeamReviewer
@@ -36,6 +38,8 @@ __all__ = [
     "KTask",
     "KTaskDeploymentEnv",
     "KTaskFeature",
+    "KTaskOwner",
+    "KTaskReviewer",
     "KTeam",
     "KTeamMember",
     "KTeamReviewer",

@@ -26,6 +26,7 @@ from app.core.exceptions.domain_exceptions import (
     OrganizationPrincipalAlreadyExistsException,
     OrganizationPrincipalNotFoundException,
     OrganizationUpdateConflictException,
+    PrincipalNotFoundException,
     ProjectAlreadyExistsException,
     ProjectNotFoundException,
     ProjectTeamAlreadyExistsException,
@@ -35,6 +36,10 @@ from app.core.exceptions.domain_exceptions import (
     TaskDeploymentEnvNotFoundException,
     TaskFeatureAlreadyExistsException,
     TaskFeatureNotFoundException,
+    TaskOwnerAlreadyExistsException,
+    TaskOwnerNotFoundException,
+    TaskReviewerAlreadyExistsException,
+    TaskReviewerNotFoundException,
     TeamAlreadyExistsException,
     TeamMemberAlreadyExistsException,
     TeamMemberNotFoundException,
@@ -942,3 +947,127 @@ class TestTaskFeatureExceptions:
         assert str(feature_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "task_feature"
+
+
+class TestPrincipalExceptions:
+    """Test suite for principal-related exceptions."""
+
+    def test_principal_not_found_exception_with_scope(self):
+        """Test PrincipalNotFoundException with scope."""
+        principal_id = uuid4()
+        exception = PrincipalNotFoundException(
+            principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "principal"
+
+    def test_principal_not_found_exception_without_scope(self):
+        """Test PrincipalNotFoundException without scope."""
+        principal_id = uuid4()
+        exception = PrincipalNotFoundException(principal_id=principal_id)
+
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+
+class TestTaskOwnerExceptions:
+    """Test suite for task owner-related exceptions."""
+
+    def test_task_owner_not_found_exception_with_scope(self):
+        """Test TaskOwnerNotFoundException with scope."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskOwnerNotFoundException(
+            task_id=task_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_owner"
+
+    def test_task_owner_not_found_exception_without_scope(self):
+        """Test TaskOwnerNotFoundException without scope."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskOwnerNotFoundException(
+            task_id=task_id, principal_id=principal_id
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_task_owner_already_exists_exception(self):
+        """Test TaskOwnerAlreadyExistsException."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskOwnerAlreadyExistsException(
+            task_id=task_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_owner"
+
+
+class TestTaskReviewerExceptions:
+    """Test suite for task reviewer-related exceptions."""
+
+    def test_task_reviewer_not_found_exception_with_scope(self):
+        """Test TaskReviewerNotFoundException with scope."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskReviewerNotFoundException(
+            task_id=task_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_reviewer"
+
+    def test_task_reviewer_not_found_exception_without_scope(self):
+        """Test TaskReviewerNotFoundException without scope."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskReviewerNotFoundException(
+            task_id=task_id, principal_id=principal_id
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_task_reviewer_already_exists_exception(self):
+        """Test TaskReviewerAlreadyExistsException."""
+        task_id = uuid4()
+        principal_id = uuid4()
+        exception = TaskReviewerAlreadyExistsException(
+            task_id=task_id, principal_id=principal_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.principal_id == principal_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(principal_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_reviewer"

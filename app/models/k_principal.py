@@ -7,6 +7,8 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_organization_principal import KOrganizationPrincipal
+    from .k_task_owner import KTaskOwner
+    from .k_task_reviewer import KTaskReviewer
     from .k_team_member import KTeamMember
     from .k_team_reviewer import KTeamReviewer
 
@@ -49,6 +51,14 @@ class KPrincipal(SQLModel, table=True):
         sa_relationship_kwargs={"passive_deletes": True},
     )
     team_reviewer_assignments: list["KTeamReviewer"] = Relationship(
+        back_populates="principal",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    task_owner_assignments: list["KTaskOwner"] = Relationship(
+        back_populates="principal",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    task_reviewer_assignments: list["KTaskReviewer"] = Relationship(
         back_populates="principal",
         sa_relationship_kwargs={"passive_deletes": True},
     )
