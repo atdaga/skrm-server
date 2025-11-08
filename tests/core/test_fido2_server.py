@@ -27,7 +27,7 @@ class TestFido2ServerInstance:
         server = get_fido2_server()
         assert isinstance(server, Fido2Server)
         assert server.rp.id == "localhost"  # Default from config
-        assert server.rp.name == "Python Server"  # Default from config
+        assert server.rp.name == "sKrm Server"  # Default from config
 
     def test_get_fido2_server_returns_same_config(self):
         """Test that multiple calls return consistent configuration."""

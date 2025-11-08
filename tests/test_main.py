@@ -21,7 +21,7 @@ class TestApplicationConfiguration:
         """Test that app has correct title from settings."""
         from app.main import app
 
-        assert app.title == "Python Server"
+        assert app.title == "sKrm Server"
 
     def test_app_version(self):
         """Test that app has correct version."""
@@ -33,7 +33,7 @@ class TestApplicationConfiguration:
         """Test that app has a description."""
         from app.main import app
 
-        assert app.description == "A modern Python web server built with FastAPI"
+        assert app.description == "Backend API for the sKrm application"
 
     def test_app_has_lifespan(self):
         """Test that app has lifespan context manager configured."""
@@ -207,7 +207,7 @@ class TestApplicationEndpoints:
             assert response.status_code == 200
             data = response.json()
             assert "openapi" in data
-            assert data["info"]["title"] == "Python Server"
+            assert data["info"]["title"] == "sKrm Server"
             assert data["info"]["version"] == "0.1.0"
 
     @pytest.mark.asyncio

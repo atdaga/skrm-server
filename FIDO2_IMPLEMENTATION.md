@@ -17,7 +17,7 @@ Complete FIDO2 server implementation with support for:
 
 New settings added:
 - `rp_id`: Relying Party ID (domain name, default: "localhost")
-- `rp_name`: Relying Party display name (default: "Python Server")
+- `rp_name`: Relying Party display name (default: "sKrm Server")
 - `rp_origin`: Origin URL that must match browser (default: "http://localhost:8000")
 - `fido2_timeout`: Operation timeout in milliseconds (default: 60000)
 - `fido2_require_resident_key`: Require discoverable credentials (default: False)
@@ -126,7 +126,7 @@ Update your `.env` file if needed:
 ```env
 # FIDO2/WebAuthn Configuration
 RP_ID=localhost
-RP_NAME=Python Server
+RP_NAME=sKrm Server
 RP_ORIGIN=http://localhost:8000
 FIDO2_TIMEOUT=60000
 FIDO2_REQUIRE_RESIDENT_KEY=false

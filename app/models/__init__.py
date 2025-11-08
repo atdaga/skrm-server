@@ -12,6 +12,9 @@ from .k_principal_identity import KPrincipalIdentity
 from .k_project import KProject
 from .k_project_feature import KProjectFeature
 from .k_project_team import KProjectTeam
+from .k_sprint import KSprint, SprintStatus
+from .k_sprint_task import KSprintTask
+from .k_sprint_team import KSprintTeam
 from .k_task import KTask, TaskStatus
 from .k_task_deployment_env import KTaskDeploymentEnv
 from .k_task_feature import KTaskFeature
@@ -35,6 +38,9 @@ __all__ = [
     "KProject",
     "KProjectFeature",
     "KProjectTeam",
+    "KSprint",
+    "KSprintTask",
+    "KSprintTeam",
     "KTask",
     "KTaskDeploymentEnv",
     "KTaskFeature",
@@ -44,5 +50,6 @@ __all__ = [
     "KTeamMember",
     "KTeamReviewer",
     "ReviewResult",
+    "SprintStatus",
     "TaskStatus",
 ]

@@ -11,6 +11,9 @@ from . import (
     organizations,
     project_teams,
     projects,
+    sprint_tasks,
+    sprint_teams,
+    sprints,
     task_deployment_envs,
     task_features,
     task_owners,
@@ -34,6 +37,9 @@ router.include_router(team_members.router)
 router.include_router(team_reviewers.router)
 router.include_router(projects.router)
 router.include_router(project_teams.router)
+router.include_router(sprints.router)
+router.include_router(sprint_tasks.router)
+router.include_router(sprint_teams.router)
 router.include_router(deployment_envs.router)
 router.include_router(docs.router)
 router.include_router(features.router)

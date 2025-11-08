@@ -662,3 +662,88 @@ class TaskReviewerAlreadyExistsException(DomainException):
         self.task_id = task_id
         self.principal_id = principal_id
         self.scope = scope
+
+
+# ============================================================================
+# Sprint-related exceptions
+# ============================================================================
+
+
+class SprintNotFoundException(DomainException):
+    """Raised when a sprint cannot be found."""
+
+    def __init__(self, sprint_id: UUID, scope: str | None = None):
+        message = f"Sprint with id '{sprint_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="sprint", entity_id=sprint_id)
+        self.sprint_id = sprint_id
+        self.scope = scope
+
+
+class SprintUpdateConflictException(DomainException):
+    """Raised when updating a sprint causes a conflict."""
+
+    def __init__(self, sprint_id: UUID, scope: str):
+        message = f"Cannot update sprint '{sprint_id}' in scope '{scope}'"
+        super().__init__(message, entity_type="sprint", entity_id=sprint_id)
+        self.sprint_id = sprint_id
+        self.scope = scope
+
+
+# ============================================================================
+# Sprint Task-related exceptions
+# ============================================================================
+
+
+class SprintTaskNotFoundException(DomainException):
+    """Raised when a sprint task relationship cannot be found."""
+
+    def __init__(self, sprint_id: UUID, task_id: UUID, scope: str | None = None):
+        message = f"Sprint task with sprint_id '{sprint_id}' and task_id '{task_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="sprint_task", entity_id=task_id)
+        self.sprint_id = sprint_id
+        self.task_id = task_id
+        self.scope = scope
+
+
+class SprintTaskAlreadyExistsException(DomainException):
+    """Raised when attempting to add a sprint task relationship that already exists."""
+
+    def __init__(self, sprint_id: UUID, task_id: UUID, scope: str):
+        message = f"Sprint task with sprint_id '{sprint_id}' and task_id '{task_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="sprint_task", entity_id=task_id)
+        self.sprint_id = sprint_id
+        self.task_id = task_id
+        self.scope = scope
+
+
+# ============================================================================
+# Sprint Team-related exceptions
+# ============================================================================
+
+
+class SprintTeamNotFoundException(DomainException):
+    """Raised when a sprint team relationship cannot be found."""
+
+    def __init__(self, sprint_id: UUID, team_id: UUID, scope: str | None = None):
+        message = f"Sprint team with sprint_id '{sprint_id}' and team_id '{team_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="sprint_team", entity_id=team_id)
+        self.sprint_id = sprint_id
+        self.team_id = team_id
+        self.scope = scope
+
+
+class SprintTeamAlreadyExistsException(DomainException):
+    """Raised when attempting to add a sprint team relationship that already exists."""
+
+    def __init__(self, sprint_id: UUID, team_id: UUID, scope: str):
+        message = f"Sprint team with sprint_id '{sprint_id}' and team_id '{team_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="sprint_team", entity_id=team_id)
+        self.sprint_id = sprint_id
+        self.team_id = team_id
+        self.scope = scope

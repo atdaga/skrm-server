@@ -32,10 +32,17 @@ from app.core.exceptions.domain_exceptions import (
     ProjectTeamAlreadyExistsException,
     ProjectTeamNotFoundException,
     ProjectUpdateConflictException,
+    SprintNotFoundException,
+    SprintTaskAlreadyExistsException,
+    SprintTaskNotFoundException,
+    SprintTeamAlreadyExistsException,
+    SprintTeamNotFoundException,
+    SprintUpdateConflictException,
     TaskDeploymentEnvAlreadyExistsException,
     TaskDeploymentEnvNotFoundException,
     TaskFeatureAlreadyExistsException,
     TaskFeatureNotFoundException,
+    TaskNotFoundException,
     TaskOwnerAlreadyExistsException,
     TaskOwnerNotFoundException,
     TaskReviewerAlreadyExistsException,
@@ -1071,3 +1078,171 @@ class TestTaskReviewerExceptions:
         assert str(principal_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "task_reviewer"
+
+
+class TestTaskExceptions:
+    """Test suite for task-related exceptions."""
+
+    def test_task_not_found_exception_with_scope(self):
+        """Test TaskNotFoundException with scope."""
+        task_id = uuid7()
+        exception = TaskNotFoundException(task_id=task_id, scope="test-scope")
+
+        assert exception.task_id == task_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task"
+        assert exception.entity_id == task_id
+
+    def test_task_not_found_exception_without_scope(self):
+        """Test TaskNotFoundException without scope."""
+        task_id = uuid7()
+        exception = TaskNotFoundException(task_id=task_id)
+
+        assert exception.task_id == task_id
+        assert exception.scope is None
+        assert str(task_id) in exception.message
+        assert "in scope" not in exception.message
+
+
+class TestSprintExceptions:
+    """Test suite for sprint-related exceptions."""
+
+    def test_sprint_not_found_exception_with_scope(self):
+        """Test SprintNotFoundException with scope."""
+        sprint_id = uuid7()
+        exception = SprintNotFoundException(sprint_id=sprint_id, scope="test-scope")
+
+        assert exception.sprint_id == sprint_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint"
+        assert exception.entity_id == sprint_id
+
+    def test_sprint_not_found_exception_without_scope(self):
+        """Test SprintNotFoundException without scope."""
+        sprint_id = uuid7()
+        exception = SprintNotFoundException(sprint_id=sprint_id)
+
+        assert exception.sprint_id == sprint_id
+        assert exception.scope is None
+        assert str(sprint_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_sprint_update_conflict_exception(self):
+        """Test SprintUpdateConflictException."""
+        sprint_id = uuid7()
+        exception = SprintUpdateConflictException(
+            sprint_id=sprint_id, scope="test-scope"
+        )
+
+        assert exception.sprint_id == sprint_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint"
+        assert exception.entity_id == sprint_id
+
+
+class TestSprintTaskExceptions:
+    """Test suite for sprint task-related exceptions."""
+
+    def test_sprint_task_not_found_exception_with_scope(self):
+        """Test SprintTaskNotFoundException with scope."""
+        sprint_id = uuid7()
+        task_id = uuid7()
+        exception = SprintTaskNotFoundException(
+            sprint_id=sprint_id, task_id=task_id, scope="test-scope"
+        )
+
+        assert exception.sprint_id == sprint_id
+        assert exception.task_id == task_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert str(task_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint_task"
+        assert exception.entity_id == task_id
+
+    def test_sprint_task_not_found_exception_without_scope(self):
+        """Test SprintTaskNotFoundException without scope."""
+        sprint_id = uuid7()
+        task_id = uuid7()
+        exception = SprintTaskNotFoundException(sprint_id=sprint_id, task_id=task_id)
+
+        assert exception.sprint_id == sprint_id
+        assert exception.task_id == task_id
+        assert exception.scope is None
+        assert str(sprint_id) in exception.message
+        assert str(task_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_sprint_task_already_exists_exception(self):
+        """Test SprintTaskAlreadyExistsException."""
+        sprint_id = uuid7()
+        task_id = uuid7()
+        exception = SprintTaskAlreadyExistsException(
+            sprint_id=sprint_id, task_id=task_id, scope="test-scope"
+        )
+
+        assert exception.sprint_id == sprint_id
+        assert exception.task_id == task_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert str(task_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint_task"
+        assert exception.entity_id == task_id
+
+
+class TestSprintTeamExceptions:
+    """Test suite for sprint team-related exceptions."""
+
+    def test_sprint_team_not_found_exception_with_scope(self):
+        """Test SprintTeamNotFoundException with scope."""
+        sprint_id = uuid7()
+        team_id = uuid7()
+        exception = SprintTeamNotFoundException(
+            sprint_id=sprint_id, team_id=team_id, scope="test-scope"
+        )
+
+        assert exception.sprint_id == sprint_id
+        assert exception.team_id == team_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert str(team_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint_team"
+        assert exception.entity_id == team_id
+
+    def test_sprint_team_not_found_exception_without_scope(self):
+        """Test SprintTeamNotFoundException without scope."""
+        sprint_id = uuid7()
+        team_id = uuid7()
+        exception = SprintTeamNotFoundException(sprint_id=sprint_id, team_id=team_id)
+
+        assert exception.sprint_id == sprint_id
+        assert exception.team_id == team_id
+        assert exception.scope is None
+        assert str(sprint_id) in exception.message
+        assert str(team_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_sprint_team_already_exists_exception(self):
+        """Test SprintTeamAlreadyExistsException."""
+        sprint_id = uuid7()
+        team_id = uuid7()
+        exception = SprintTeamAlreadyExistsException(
+            sprint_id=sprint_id, team_id=team_id, scope="test-scope"
+        )
+
+        assert exception.sprint_id == sprint_id
+        assert exception.team_id == team_id
+        assert exception.scope == "test-scope"
+        assert str(sprint_id) in exception.message
+        assert str(team_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "sprint_team"
+        assert exception.entity_id == team_id

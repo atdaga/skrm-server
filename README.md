@@ -1,6 +1,6 @@
-# Python Server
+# sKrm Server
 
-A modern Python web server built with FastAPI, featuring structured logging, comprehensive testing, and development best practices.
+Backend API for the sKrm application built with FastAPI, featuring structured logging, comprehensive testing, and development best practices.
 
 ## Features
 

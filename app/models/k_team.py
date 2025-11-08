@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from .k_organization import KOrganization
     from .k_project_team import KProjectTeam
+    from .k_sprint_team import KSprintTeam
     from .k_team_member import KTeamMember
     from .k_team_reviewer import KTeamReviewer
 
@@ -37,6 +38,10 @@ class KTeam(SQLModel, table=True):
         sa_relationship_kwargs={"passive_deletes": True},
     )
     project_teams: list["KProjectTeam"] = Relationship(
+        back_populates="team",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    sprint_teams: list["KSprintTeam"] = Relationship(
         back_populates="team",
         sa_relationship_kwargs={"passive_deletes": True},
     )

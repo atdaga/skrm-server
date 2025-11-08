@@ -10,6 +10,7 @@ from .k_feature import ReviewResult
 
 if TYPE_CHECKING:
     from .k_organization import KOrganization
+    from .k_sprint_task import KSprintTask
     from .k_task_deployment_env import KTaskDeploymentEnv
     from .k_task_feature import KTaskFeature
     from .k_task_owner import KTaskOwner
@@ -61,6 +62,9 @@ class KTask(SQLModel, table=True):
         back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
     )
     task_reviewers: list["KTaskReviewer"] = Relationship(
+        back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
+    )
+    sprint_tasks: list["KSprintTask"] = Relationship(
         back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
     )
 

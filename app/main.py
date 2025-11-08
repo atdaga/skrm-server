@@ -61,7 +61,7 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title=settings.app_name,
-    description="A modern Python web server built with FastAPI",
+    description="Backend API for the sKrm application",
     version="0.1.0",
     debug=settings.debug,
     lifespan=lifespan,
