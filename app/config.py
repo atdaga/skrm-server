@@ -1,6 +1,6 @@
 from typing import List, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     refresh_token_absolute_expire_months: int = Field(
         default=1,
         description="Absolute refresh token expiration in months from session start",
+    )
+    cookie_secure: bool = Field(
+        default=True,
+        description="Set Secure flag on cookies (True for HTTPS, False for HTTP in development). Auto-set to False when debug=True",
     )
 
     # FIDO2/WebAuthn configuration
@@ -107,6 +111,14 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [header.strip() for header in v.split(",") if header.strip()]
         return v
+
+    @model_validator(mode="after")
+    def set_cookie_secure_from_debug(self) -> "Settings":
+        """Auto-set cookie_secure to False when in debug mode (for HTTP development)."""
+        if self.debug and self.cookie_secure:
+            # In debug mode, allow HTTP cookies for local development
+            self.cookie_secure = False
+        return self
 
     @property
     def database_url(self) -> str:

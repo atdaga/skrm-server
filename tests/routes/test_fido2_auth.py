@@ -212,6 +212,11 @@ class TestFido2AuthenticateCompleteEndpoint:
             data = result.json()
             assert data["access_token"] == "test_access_token"
             assert data["token_type"] == "bearer"
+            # For web clients, refresh_token is in cookie, not response body
+            assert data["refresh_token"] == ""
+            # Verify refresh token cookie is set
+            assert "refresh_token" in result.cookies
+            assert result.cookies["refresh_token"] == "test_refresh_token"
 
     @pytest.mark.asyncio
     async def test_authenticate_complete_invalid_credentials(self, client: AsyncClient):
@@ -262,7 +267,11 @@ class TestLogin2faEndpoint:
             assert result.status_code == 200
             data = result.json()
             assert data["access_token"] == "test_access_token"
-            assert data["refresh_token"] == "test_refresh_token"
+            # For web clients, refresh_token is in cookie, not response body
+            assert data["refresh_token"] == ""
+            # Verify refresh token cookie is set
+            assert "refresh_token" in result.cookies
+            assert result.cookies["refresh_token"] == "test_refresh_token"
 
             mock_login.assert_called_once_with(
                 "testuser", "testpassword", "test_session", ANY, ANY

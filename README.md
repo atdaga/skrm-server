@@ -124,10 +124,272 @@ uv lock
 
 This command updates the `uv.lock` file to reflect your changes. The lock file contains exact versions and dependency resolution for reproducible installations across different environments. This ensures all developers and deployment environments use identical dependency versions.
 
+## Authentication & Refresh Tokens
+
+The API implements a dual-strategy refresh token system that supports both web SPAs and mobile applications with optimal security for each platform.
+
+### Overview
+
+**Refresh Token Strategy:**
+- **Web Clients (SPAs)**: Refresh tokens are stored in HTTP-only cookies (XSS protection)
+- **Mobile Clients (iOS/Android)**: Refresh tokens are returned in response body (stored securely in Keychain/Keystore)
+
+**Client Detection:**
+- Preferred: `X-Client-Type: mobile` header
+- Fallback: User-Agent patterns (OkHttp, Alamofire, CFNetwork)
+
+### Security Features
+
+1. **HTTP-only Cookies**: Not accessible to JavaScript (XSS protection)
+2. **SameSite=Strict**: CSRF protection for web clients
+3. **Secure Flag**: Conditional based on environment
+   - `False` in development (allows HTTP)
+   - `True` in production (HTTPS only)
+4. **Token Rotation**: Both access and refresh tokens are rotated on refresh
+5. **Path Restriction**: Cookies only sent to `/api/auth` endpoints
+
+### Configuration
+
+The `cookie_secure` setting automatically adjusts based on the `debug` flag:
+- When `debug=True`: `cookie_secure` is set to `False` (allows HTTP cookies for local development)
+- When `debug=False`: `cookie_secure` defaults to `True` (requires HTTPS)
+
+### Usage Examples
+
+#### Web SPA (JavaScript)
+
+**Login:**
+```javascript
+// Login - cookie set automatically
+const formData = new FormData();
+formData.append('username', 'user@example.com');
+formData.append('password', 'password123');
+
+const response = await fetch('http://localhost:8000/api/auth/login', {
+  method: 'POST',
+  credentials: 'include', // Important: sends/receives cookies
+  body: formData
+});
+
+const { access_token, token_type } = await response.json();
+// Refresh token is in HTTP-only cookie, not accessible to JavaScript
+// Store access_token in memory or sessionStorage
+```
+
+**Refresh Token:**
+```javascript
+// Refresh - cookie sent automatically
+const refreshResponse = await fetch('http://localhost:8000/api/auth/refresh', {
+  method: 'POST',
+  credentials: 'include', // Cookie sent automatically
+});
+
+const { access_token } = await refreshResponse.json();
+// New refresh token cookie is set automatically
+```
+
+**Logout:**
+```javascript
+// Logout - clears refresh token cookie
+await fetch('http://localhost:8000/api/auth/logout', {
+  method: 'POST',
+  credentials: 'include',
+});
+```
+
+**Using Access Token:**
+```javascript
+// Include access token in Authorization header for API requests
+const apiResponse = await fetch('http://localhost:8000/api/v1/some-endpoint', {
+  headers: {
+    'Authorization': `Bearer ${access_token}`
+  },
+  credentials: 'include'
+});
+```
+
+#### Mobile iOS (Swift)
+
+**Login:**
+```swift
+import Foundation
+
+// Login - include header to identify as mobile client
+var request = URLRequest(url: URL(string: "http://localhost:8000/api/auth/login")!)
+request.httpMethod = "POST"
+request.setValue("mobile", forHTTPHeaderField: "X-Client-Type")
+request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+let body = "username=user@example.com&password=password123"
+request.httpBody = body.data(using: .utf8)
+
+let (data, _) = try await URLSession.shared.data(for: request)
+let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+
+// Store refresh_token securely in Keychain
+KeychainHelper.store(tokenResponse.refresh_token, forKey: "refresh_token")
+// Store access_token in memory
+```
+
+**Refresh Token:**
+```swift
+// Refresh - send token in request body
+var refreshRequest = URLRequest(url: URL(string: "http://localhost:8000/api/auth/refresh")!)
+refreshRequest.httpMethod = "POST"
+refreshRequest.setValue("mobile", forHTTPHeaderField: "X-Client-Type")
+refreshRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+let storedToken = KeychainHelper.retrieve(forKey: "refresh_token")
+let refreshBody = ["refresh_token": storedToken]
+refreshRequest.httpBody = try JSONEncoder().encode(refreshBody)
+
+let (data, _) = try await URLSession.shared.data(for: refreshRequest)
+let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+
+// Update stored tokens
+KeychainHelper.store(tokenResponse.refresh_token, forKey: "refresh_token")
+```
+
+**Token Response Model:**
+```swift
+struct TokenResponse: Codable {
+    let access_token: String
+    let token_type: String
+    let refresh_token: String
+}
+```
+
+#### Mobile Android (Kotlin)
+
+**Login:**
+```kotlin
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+
+// Login - include header to identify as mobile client
+val client = OkHttpClient()
+val formBody = FormBody.Builder()
+    .add("username", "user@example.com")
+    .add("password", "password123")
+    .build()
+
+val request = Request.Builder()
+    .url("http://localhost:8000/api/auth/login")
+    .addHeader("X-Client-Type", "mobile")
+    .post(formBody)
+    .build()
+
+val response = client.newCall(request).execute()
+val tokenResponse = JSONObject(response.body?.string() ?: "")
+
+// Store refresh_token securely in EncryptedSharedPreferences or Keystore
+val refreshToken = tokenResponse.getString("refresh_token")
+SecureStorage.store("refresh_token", refreshToken)
+```
+
+**Refresh Token:**
+```kotlin
+// Refresh - send token in request body
+val refreshToken = SecureStorage.retrieve("refresh_token")
+val jsonBody = JSONObject().apply {
+    put("refresh_token", refreshToken)
+}.toString().toRequestBody("application/json".toMediaType())
+
+val refreshRequest = Request.Builder()
+    .url("http://localhost:8000/api/auth/refresh")
+    .addHeader("X-Client-Type", "mobile")
+    .post(jsonBody)
+    .build()
+
+val refreshResponse = client.newCall(refreshRequest).execute()
+val newTokenResponse = JSONObject(refreshResponse.body?.string() ?: "")
+
+// Update stored tokens
+SecureStorage.store("refresh_token", newTokenResponse.getString("refresh_token"))
+```
+
 ### API Endpoints
+
+**Authentication:**
+- `POST /api/auth/login` - Authenticate user and get tokens
+- `POST /api/auth/refresh` - Exchange refresh token for new tokens
+- `POST /api/auth/logout` - Clear refresh token cookie (web clients)
+
+**Request/Response Format:**
+
+**Login (Web):**
+```bash
+# Request
+POST /api/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=user@example.com&password=password123
+
+# Response
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "refresh_token": ""  # Empty for web clients (in cookie)
+}
+# Set-Cookie: refresh_token=eyJ...; HttpOnly; SameSite=Strict; Path=/api/auth
+```
+
+**Login (Mobile):**
+```bash
+# Request
+POST /api/auth/login
+Content-Type: application/x-www-form-urlencoded
+X-Client-Type: mobile
+
+username=user@example.com&password=password123
+
+# Response
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "refresh_token": "eyJ..."  # Included in body for mobile
+}
+```
+
+**Refresh (Web):**
+```bash
+# Request
+POST /api/auth/refresh
+Cookie: refresh_token=eyJ...
+
+# Response
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "refresh_token": ""  # Empty (new token in cookie)
+}
+# Set-Cookie: refresh_token=eyJ...; HttpOnly; SameSite=Strict; Path=/api/auth
+```
+
+**Refresh (Mobile):**
+```bash
+# Request
+POST /api/auth/refresh
+Content-Type: application/json
+X-Client-Type: mobile
+
+{"refresh_token": "eyJ..."}
+
+# Response
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "refresh_token": "eyJ..."  # New refresh token in body
+}
+```
+
+## General API Endpoints
 
 - `GET /` - Hello World endpoint
 - `GET /health` - Health check endpoint
+
+See the [Authentication & Refresh Tokens](#authentication--refresh-tokens) section above for authentication endpoints.
 
 ## Project Structure
 

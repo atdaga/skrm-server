@@ -3,10 +3,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
 from ..core.db.database import get_db
 from ..core.exceptions.domain_exceptions import (
     InvalidCredentialsException,
@@ -31,22 +32,104 @@ from .deps import get_current_user
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
+def _is_mobile_client(request: Request) -> bool:
+    """Detect if client is a mobile app based on User-Agent or X-Client-Type header.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        True if mobile client, False if web client
+    """
+    # Check for explicit client type header (preferred method)
+    client_type = request.headers.get("X-Client-Type", "").lower()
+    if client_type in ("mobile", "ios", "android"):
+        return True
+
+    # Fallback: Check User-Agent for mobile app patterns
+    user_agent = request.headers.get("User-Agent", "").lower()
+    mobile_patterns = ["okhttp", "alamofire", "cfnetwork", "mobile"]
+    return any(pattern in user_agent for pattern in mobile_patterns)
+
+
+def _set_refresh_token_cookie(
+    response: Response, refresh_token: str, expires_in_days: int
+) -> None:
+    """Set refresh token as HTTP-only cookie.
+
+    Args:
+        response: FastAPI response object
+        refresh_token: Refresh token value
+        expires_in_days: Cookie expiration in days
+    """
+    max_age = expires_in_days * 24 * 60 * 60  # Convert days to seconds
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.cookie_secure,  # False in debug mode (HTTP), True in production (HTTPS)
+        samesite="strict",  # CSRF protection
+        max_age=max_age,
+        path="/api/auth",  # Only sent to auth endpoints
+    )
+
+
+def _create_token_response(
+    token: Token, request: Request, response: Response, is_mobile: bool
+) -> Token:
+    """Create token response with appropriate refresh token handling.
+
+    For web clients: Sets refresh token as HTTP-only cookie, excludes from body.
+    For mobile clients: Returns refresh token in response body.
+
+    Args:
+        token: Token object with access and refresh tokens
+        request: FastAPI request object
+        response: FastAPI response object
+        is_mobile: Whether client is a mobile app
+
+    Returns:
+        Token object (with refresh_token excluded for web clients)
+    """
+    if is_mobile:
+        # Mobile: return refresh token in body
+        return token
+    else:
+        # Web: set cookie, exclude from body
+        _set_refresh_token_cookie(
+            response, token.refresh_token, settings.refresh_token_expire_days
+        )
+        return Token(
+            access_token=token.access_token,
+            token_type=token.token_type,
+            refresh_token="",  # Don't expose in body for web clients
+        )
+
+
 @router.post("/login", response_model=Token)
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    request: Request,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
     """Authenticate user and return access token.
 
     The scope field accepts a space-separated list of scopes (e.g., "read write").
+
+    For web clients: Refresh token is set as HTTP-only cookie.
+    For mobile clients: Refresh token is returned in response body.
+    Client type is detected via X-Client-Type header or User-Agent.
     """
     try:
-        return await auth_logic.perform_login(
+        token = await auth_logic.perform_login(
             username=form_data.username,
             password=form_data.password,
             db=db,
             scopes=form_data.scopes,
         )
+        is_mobile = _is_mobile_client(request)
+        return _create_token_response(token, request, response, is_mobile)
     except InvalidCredentialsException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,27 +140,90 @@ async def login(
 
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
-    refresh_token: Annotated[str, Body(embed=True)],
+    request: Request,
+    response: Response,
+    refresh_token: Annotated[str | None, Body(embed=True)] = None,
 ) -> Token:
     """Exchange a refresh token for new access and refresh tokens.
 
+    Supports both web (cookie-based) and mobile (body-based) clients:
+    - Web clients: Refresh token sent via HTTP-only cookie
+    - Mobile clients: Refresh token sent in request body as {"refresh_token": "..."}
+
     Args:
-        refresh_token: The refresh token to exchange
+        request: FastAPI request object (for cookie access)
+        response: FastAPI response object (for setting cookies)
+        refresh_token: Optional refresh token from request body (for mobile clients)
 
     Returns:
-        New access and refresh tokens
+        New access and refresh tokens (refresh token in cookie for web, body for mobile)
 
     Raises:
         HTTPException: If the refresh token is invalid or expired
     """
+    is_mobile = _is_mobile_client(request)
+
+    # Get refresh token from appropriate source
+    if is_mobile:
+        # Mobile: get from request body
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refresh token required in request body for mobile clients",
+            )
+        token_value: str = refresh_token
+    else:
+        # Web: get from cookie
+        cookie_token = request.cookies.get("refresh_token")
+        if not cookie_token:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token missing from cookie",
+            )
+        token_value = cookie_token
+
     try:
-        return await auth_logic.refresh_access_token(refresh_token)
+        token = await auth_logic.refresh_access_token(token_value)
+        return _create_token_response(token, request, response, is_mobile)
     except InvalidTokenException as e:
+        # Clear invalid cookie if present
+        if not is_mobile:
+            response.delete_cookie(key="refresh_token", path="/api/auth")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.message,
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    response: Response,
+) -> dict[str, str]:
+    """Logout user by clearing refresh token cookie.
+
+    For web clients: Clears HTTP-only refresh token cookie.
+    For mobile clients: No-op (client should discard refresh token).
+
+    Args:
+        request: FastAPI request object (for client detection)
+        response: FastAPI response object (for clearing cookies)
+
+    Returns:
+        Logout confirmation message
+    """
+    is_mobile = _is_mobile_client(request)
+
+    if not is_mobile:
+        # Clear refresh token cookie for web clients
+        response.delete_cookie(
+            key="refresh_token",
+            path="/api/auth",
+            samesite="strict",
+        )
+
+    return {"message": "Logged out successfully"}
 
 
 # FIDO2 Registration Endpoints
@@ -194,27 +340,33 @@ async def fido2_authenticate_begin(
 
 @router.post("/fido2/authenticate/complete", response_model=Token)
 async def fido2_authenticate_complete(
-    request: Fido2AuthenticationCompleteRequest,
+    request_body: Fido2AuthenticationCompleteRequest,
+    request: Request,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
     """Complete FIDO2 passwordless authentication.
 
     Args:
-        request: Authentication completion request with assertion and session_id
+        request_body: Authentication completion request with assertion and session_id
+        request: FastAPI request object (for client detection)
+        response: FastAPI response object (for setting cookies)
         db: Database session
 
     Returns:
-        JWT access and refresh tokens
+        JWT access and refresh tokens (refresh token in cookie for web, body for mobile)
 
     Raises:
         HTTPException: If authentication verification fails
     """
     try:
-        return await auth_logic.perform_passwordless_login(
-            request.session_id,
-            request.credential,
+        token = await auth_logic.perform_passwordless_login(
+            request_body.session_id,
+            request_body.credential,
             db,
         )
+        is_mobile = _is_mobile_client(request)
+        return _create_token_response(token, request, response, is_mobile)
     except InvalidCredentialsException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -229,6 +381,8 @@ async def login_2fa(
     password: Annotated[str, Body()],
     session_id: Annotated[str, Body()],
     credential: Annotated[dict, Body()],
+    request: Request,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
     """Perform two-factor authentication with password + FIDO2.
@@ -242,22 +396,26 @@ async def login_2fa(
         password: Password
         session_id: FIDO2 session ID from authenticate/begin
         credential: FIDO2 assertion from authenticator
+        request: FastAPI request object (for client detection)
+        response: FastAPI response object (for setting cookies)
         db: Database session
 
     Returns:
-        JWT access and refresh tokens
+        JWT access and refresh tokens (refresh token in cookie for web, body for mobile)
 
     Raises:
         HTTPException: If either password or FIDO2 verification fails
     """
     try:
-        return await auth_logic.perform_2fa_login(
+        token = await auth_logic.perform_2fa_login(
             username,
             password,
             session_id,
             credential,
             db,
         )
+        is_mobile = _is_mobile_client(request)
+        return _create_token_response(token, request, response, is_mobile)
     except InvalidCredentialsException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -41,7 +41,11 @@ class TestLoginEndpoint:
             data = response.json()
             assert data["access_token"] == "test_access_token_12345"
             assert data["token_type"] == "bearer"
-            assert data["refresh_token"] == "test_refresh_token_12345"
+            # For web clients, refresh_token is in cookie, not response body
+            assert data["refresh_token"] == ""
+            # Verify refresh token cookie is set
+            assert "refresh_token" in response.cookies
+            assert response.cookies["refresh_token"] == "test_refresh_token_12345"
 
             # Verify perform_login was called with correct params
             mock_login.assert_called_once_with(
@@ -191,7 +195,7 @@ class TestRefreshEndpoint:
 
     @pytest.mark.asyncio
     async def test_refresh_token_success(self, client: AsyncClient):
-        """Test successful token refresh with valid refresh token."""
+        """Test successful token refresh with valid refresh token (web client via cookie)."""
         from app.schemas.user import Token
 
         with patch(
@@ -203,15 +207,50 @@ class TestRefreshEndpoint:
                 refresh_token="new_refresh_token",
             )
 
+            # Web client: refresh token comes from cookie
+            # Set cookie on client instance to avoid deprecation warning
+            client.cookies["refresh_token"] = "valid_refresh_token"
+            response = await client.post("/auth/refresh")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["access_token"] == "new_access_token"
+            assert data["token_type"] == "bearer"
+            # For web clients, refresh_token is in cookie, not response body
+            assert data["refresh_token"] == ""
+            # Verify new refresh token cookie is set
+            assert "refresh_token" in response.cookies
+            assert response.cookies["refresh_token"] == "new_refresh_token"
+
+            # Verify refresh_access_token was called with correct params
+            mock_refresh.assert_called_once_with("valid_refresh_token")
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_success_mobile(self, client: AsyncClient):
+        """Test successful token refresh with valid refresh token (mobile client via body)."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.return_value = Token(
+                access_token="new_access_token",
+                token_type="bearer",
+                refresh_token="new_refresh_token",
+            )
+
+            # Mobile client: refresh token comes from request body
             response = await client.post(
                 "/auth/refresh",
                 json={"refresh_token": "valid_refresh_token"},
+                headers={"X-Client-Type": "mobile"},
             )
 
             assert response.status_code == 200
             data = response.json()
             assert data["access_token"] == "new_access_token"
             assert data["token_type"] == "bearer"
+            # For mobile clients, refresh_token is in response body
             assert data["refresh_token"] == "new_refresh_token"
 
             # Verify refresh_access_token was called with correct params
@@ -219,7 +258,7 @@ class TestRefreshEndpoint:
 
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self, client: AsyncClient):
-        """Test token refresh with invalid refresh token returns 401."""
+        """Test token refresh with invalid refresh token returns 401 (web client via cookie)."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
 
         with patch(
@@ -229,9 +268,38 @@ class TestRefreshEndpoint:
                 reason="Invalid or expired refresh token"
             )
 
+            # Web client: refresh token comes from cookie
+            # Set cookie on client instance to avoid deprecation warning
+            client.cookies["refresh_token"] = "invalid_token"
+            response = await client.post("/auth/refresh")
+
+            assert response.status_code == 401
+            data = response.json()
+            assert "Invalid or expired" in data["detail"]
+            assert response.headers.get("WWW-Authenticate") == "Bearer"
+            # Verify invalid cookie is cleared
+            assert (
+                "refresh_token" not in response.cookies
+                or response.cookies.get("refresh_token") == ""
+            )
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_invalid_mobile(self, client: AsyncClient):
+        """Test token refresh with invalid refresh token returns 401 (mobile client via body)."""
+        from app.core.exceptions.domain_exceptions import InvalidTokenException
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.side_effect = InvalidTokenException(
+                reason="Invalid or expired refresh token"
+            )
+
+            # Mobile client: refresh token comes from request body
             response = await client.post(
                 "/auth/refresh",
                 json={"refresh_token": "invalid_token"},
+                headers={"X-Client-Type": "mobile"},
             )
 
             assert response.status_code == 401
@@ -241,7 +309,7 @@ class TestRefreshEndpoint:
 
     @pytest.mark.asyncio
     async def test_refresh_token_expired(self, client: AsyncClient):
-        """Test token refresh with expired refresh token returns 401."""
+        """Test token refresh with expired refresh token returns 401 (web client via cookie)."""
         from app.core.exceptions.domain_exceptions import InvalidTokenException
 
         with patch(
@@ -251,23 +319,38 @@ class TestRefreshEndpoint:
                 reason="Invalid or expired refresh token"
             )
 
-            response = await client.post(
-                "/auth/refresh",
-                json={"refresh_token": "expired_token"},
-            )
+            # Web client: refresh token comes from cookie
+            # Set cookie on client instance to avoid deprecation warning
+            client.cookies["refresh_token"] = "expired_token"
+            response = await client.post("/auth/refresh")
 
             assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_refresh_token_missing(self, client: AsyncClient):
-        """Test token refresh without refresh token returns validation error."""
-        response = await client.post("/auth/refresh", json={})
+    async def test_refresh_token_missing_web(self, client: AsyncClient):
+        """Test token refresh without refresh token cookie returns 401 (web client)."""
+        response = await client.post("/auth/refresh")
 
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == 401
+        data = response.json()
+        assert "Refresh token missing from cookie" in data["detail"]
 
     @pytest.mark.asyncio
-    async def test_refresh_token_returns_new_tokens(self, client: AsyncClient):
-        """Test that refresh returns both new access and refresh tokens."""
+    async def test_refresh_token_missing_mobile(self, client: AsyncClient):
+        """Test token refresh without refresh token in body returns 400 (mobile client)."""
+        response = await client.post(
+            "/auth/refresh",
+            json={},
+            headers={"X-Client-Type": "mobile"},
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "Refresh token required in request body" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_returns_new_tokens_web(self, client: AsyncClient):
+        """Test that refresh returns new access token and sets new refresh token cookie (web client)."""
         from app.schemas.user import Token
 
         with patch(
@@ -279,9 +362,39 @@ class TestRefreshEndpoint:
                 refresh_token="new_refresh_token_xyz",
             )
 
+            # Web client: refresh token comes from cookie
+            # Set cookie on client instance to avoid deprecation warning
+            client.cookies["refresh_token"] = "old_refresh_token"
+            response = await client.post("/auth/refresh")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert "access_token" in data
+            assert data["access_token"] == "new_access_token_xyz"
+            # For web clients, refresh_token is empty in body but set in cookie
+            assert data["refresh_token"] == ""
+            assert "refresh_token" in response.cookies
+            assert response.cookies["refresh_token"] == "new_refresh_token_xyz"
+
+    @pytest.mark.asyncio
+    async def test_refresh_token_returns_new_tokens_mobile(self, client: AsyncClient):
+        """Test that refresh returns both new access and refresh tokens (mobile client)."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.refresh_access_token", new_callable=AsyncMock
+        ) as mock_refresh:
+            mock_refresh.return_value = Token(
+                access_token="new_access_token_xyz",
+                token_type="bearer",
+                refresh_token="new_refresh_token_xyz",
+            )
+
+            # Mobile client: refresh token comes from request body
             response = await client.post(
                 "/auth/refresh",
                 json={"refresh_token": "old_refresh_token"},
+                headers={"X-Client-Type": "mobile"},
             )
 
             assert response.status_code == 200
@@ -290,3 +403,141 @@ class TestRefreshEndpoint:
             assert "refresh_token" in data
             assert data["access_token"] == "new_access_token_xyz"
             assert data["refresh_token"] == "new_refresh_token_xyz"
+
+
+class TestLogoutEndpoint:
+    """Test suite for POST /auth/logout endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_logout_web_client(self, client: AsyncClient):
+        """Test logout clears refresh token cookie for web clients."""
+        response = await client.post("/auth/logout")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "Logged out successfully"
+        # Cookie deletion is handled by FastAPI's delete_cookie method
+        # The endpoint successfully executes the logout logic
+
+    @pytest.mark.asyncio
+    async def test_logout_mobile_client(self, client: AsyncClient):
+        """Test logout for mobile clients (no cookie clearing)."""
+        response = await client.post(
+            "/auth/logout",
+            headers={"X-Client-Type": "mobile"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "Logged out successfully"
+        # Mobile clients don't have cookies, so no cookie clearing happens
+
+
+class TestMobileClientDetection:
+    """Test suite for mobile client detection logic."""
+
+    @pytest.mark.asyncio
+    async def test_mobile_client_detection_via_header(self, client: AsyncClient):
+        """Test mobile client detection via X-Client-Type header."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_access_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
+            )
+
+            # Test with X-Client-Type: mobile
+            response = await client.post(
+                "/auth/login",
+                data={"username": "testuser", "password": "testpassword"},
+                headers={"X-Client-Type": "mobile"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            # Mobile clients get refresh_token in body
+            assert data["refresh_token"] == "test_refresh_token"
+
+    @pytest.mark.asyncio
+    async def test_mobile_client_detection_via_user_agent(self, client: AsyncClient):
+        """Test mobile client detection via User-Agent fallback."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_access_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
+            )
+
+            # Test with OkHttp User-Agent (Android)
+            response = await client.post(
+                "/auth/login",
+                data={"username": "testuser", "password": "testpassword"},
+                headers={"User-Agent": "okhttp/4.9.1"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            # Mobile clients get refresh_token in body
+            assert data["refresh_token"] == "test_refresh_token"
+
+    @pytest.mark.asyncio
+    async def test_mobile_client_detection_ios_user_agent(self, client: AsyncClient):
+        """Test mobile client detection with iOS User-Agent."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_access_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
+            )
+
+            # Test with Alamofire User-Agent (iOS)
+            response = await client.post(
+                "/auth/login",
+                data={"username": "testuser", "password": "testpassword"},
+                headers={"User-Agent": "MyApp/1.0 Alamofire/5.0"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            # Mobile clients get refresh_token in body
+            assert data["refresh_token"] == "test_refresh_token"
+
+    @pytest.mark.asyncio
+    async def test_mobile_client_detection_cfnetwork_user_agent(
+        self, client: AsyncClient
+    ):
+        """Test mobile client detection with CFNetwork User-Agent."""
+        from app.schemas.user import Token
+
+        with patch(
+            "app.logic.auth.perform_login", new_callable=AsyncMock
+        ) as mock_login:
+            mock_login.return_value = Token(
+                access_token="test_access_token",
+                token_type="bearer",
+                refresh_token="test_refresh_token",
+            )
+
+            # Test with CFNetwork User-Agent (iOS)
+            response = await client.post(
+                "/auth/login",
+                data={"username": "testuser", "password": "testpassword"},
+                headers={"User-Agent": "CFNetwork/1234 Darwin/20.0.0"},
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            # Mobile clients get refresh_token in body
+            assert data["refresh_token"] == "test_refresh_token"

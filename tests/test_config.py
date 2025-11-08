@@ -185,3 +185,26 @@ class TestSettingsDefaults:
         assert settings.rp_origin == "http://localhost:8000"
         assert settings.fido2_timeout == 60000
         assert settings.fido2_require_resident_key is False
+
+
+class TestSettingsModelValidator:
+    """Test Settings model validators."""
+
+    def test_cookie_secure_auto_set_to_false_when_debug_true(self):
+        """Test that cookie_secure is automatically set to False when debug=True."""
+        # When debug=True and cookie_secure=True (default), it should be set to False
+        settings = Settings(debug=True, cookie_secure=True)
+        assert settings.debug is True
+        assert settings.cookie_secure is False
+
+    def test_cookie_secure_not_changed_when_debug_false(self):
+        """Test that cookie_secure is not changed when debug=False."""
+        settings = Settings(debug=False, cookie_secure=True)
+        assert settings.debug is False
+        assert settings.cookie_secure is True
+
+    def test_cookie_secure_not_changed_when_already_false(self):
+        """Test that cookie_secure is not changed when already False."""
+        settings = Settings(debug=True, cookie_secure=False)
+        assert settings.debug is True
+        assert settings.cookie_secure is False
