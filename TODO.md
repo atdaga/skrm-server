@@ -1,5 +1,7 @@
 # TODO
 
+* For this particular application, use the "deleted" field for domain entities (not relationships). For history, Temporal database: create shadow tables. No foreign keys.
+
 * contextvars middleware:
 ```
 from contextvars import ContextVar
@@ -23,21 +25,9 @@ async def get_profile():
     return {"user_id": user_id}
 ```
 
-* For this particular application, use the "deleted" field for domain entities (not relationships). For history, Temporal database: create shadow tables. No foreign keys.
+* CORS Middleware (and other middleware needed for security or logging or context)
 
 * Return refresh token in cookie
-
-* Don't share the same session with more than one request.
-```
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
-```
-
-* Chain exception on usage by default.
-
-* Use `ExceptionGroup`s for multiple concurrent exceptions.
-
-* CORS Middleware (and other middleware needed for security or logging or context)
 
 * Alembic
 
@@ -48,3 +38,9 @@ engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
 	4.	When the access token expires, the SPA requests a new access token by calling the refresh endpoint; the refresh token is sent automatically via the cookie.
 	5.	The server returns a new access token and a new refresh token cookie (rotation).
 This approach balances security and usability for SPAs, protecting the refresh token while enabling seamless token renewal without exposing sensitive tokens to JavaScript
+
+* Use `ExceptionGroup`s for multiple concurrent exceptions.
+
+* Use all-mpnet-base-v2 for local embeddings model. (Right now, there's no wheels for python 3.13, so using remote model to create embeddings for now).
+
+* Upgrade library versions.

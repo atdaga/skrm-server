@@ -345,7 +345,12 @@ async def complete_fido2_registration(
 
         return credential_id_to_base64(credential.credential_id)
 
+    except InvalidTokenException:
+        # Re-raise domain exceptions as-is (they're already properly typed)
+        await db.rollback()
+        raise
     except Exception as e:  # pragma: no cover
+        # Chain non-domain exceptions with InvalidTokenException
         await db.rollback()
         raise InvalidTokenException(
             reason=f"Registration verification failed: {str(e)}"
@@ -517,7 +522,12 @@ async def complete_fido2_authentication(
 
         return user, credential
 
+    except (InvalidCredentialsException, InvalidTokenException):
+        # Re-raise domain exceptions as-is (they're already properly typed)
+        await db.rollback()
+        raise
     except Exception as e:  # pragma: no cover
+        # Chain non-domain exceptions with InvalidTokenException
         await db.rollback()
         raise InvalidTokenException(
             reason=f"Authentication verification failed: {str(e)}"
