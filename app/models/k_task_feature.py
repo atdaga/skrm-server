@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_feature import KFeature
+    from .k_organization import KOrganization
     from .k_task import KTask
 
 
@@ -30,6 +31,7 @@ class KTaskFeature(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     task: "KTask" = Relationship(
         back_populates="task_features",
         sa_relationship_kwargs={"passive_deletes": True},

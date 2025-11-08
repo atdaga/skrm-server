@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Text, UniqueConstraint
@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_feature_doc import KFeatureDoc
+    from .k_organization import KOrganization
     from .k_project_feature import KProjectFeature
     from .k_task_feature import KTaskFeature
 
@@ -51,6 +52,10 @@ class KFeature(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
+    parent_feature: Optional["KFeature"] = Relationship(
+        sa_relationship_kwargs={"remote_side": "KFeature.id"}
+    )
     feature_docs: list["KFeatureDoc"] = Relationship(
         back_populates="feature",
         sa_relationship_kwargs={"passive_deletes": True},

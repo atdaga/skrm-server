@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from .k_organization import KOrganization
     from .k_principal import KPrincipal
     from .k_task import KTask
 
@@ -30,6 +31,7 @@ class KTaskOwner(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     task: "KTask" = Relationship(
         back_populates="task_owners",
         sa_relationship_kwargs={"passive_deletes": True},

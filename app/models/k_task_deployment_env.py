@@ -7,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .k_deployment_env import KDeploymentEnv
+    from .k_organization import KOrganization
     from .k_task import KTask
 
 
@@ -30,6 +31,7 @@ class KTaskDeploymentEnv(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     task: "KTask" = Relationship(
         back_populates="task_deployment_envs",
         sa_relationship_kwargs={"passive_deletes": True},

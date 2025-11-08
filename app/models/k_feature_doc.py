@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 if TYPE_CHECKING:
     from .k_doc import KDoc
     from .k_feature import KFeature
+    from .k_organization import KOrganization
 
 
 class KFeatureDoc(SQLModel, table=True):
@@ -30,6 +31,7 @@ class KFeatureDoc(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     feature: "KFeature" = Relationship(
         back_populates="feature_docs",
         sa_relationship_kwargs={"passive_deletes": True},

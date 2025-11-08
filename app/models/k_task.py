@@ -9,10 +9,12 @@ from sqlmodel import Field, Relationship, SQLModel
 from .k_feature import ReviewResult
 
 if TYPE_CHECKING:
+    from .k_organization import KOrganization
     from .k_task_deployment_env import KTaskDeploymentEnv
     from .k_task_feature import KTaskFeature
     from .k_task_owner import KTaskOwner
     from .k_task_reviewer import KTaskReviewer
+    from .k_team import KTeam
 
 
 class TaskStatus(str, Enum):
@@ -48,6 +50,8 @@ class KTask(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
+    team: "KTeam" = Relationship()
     task_deployment_envs: list["KTaskDeploymentEnv"] = Relationship(
         back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
     )

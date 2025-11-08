@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from .k_organization import KOrganization
     from .k_project import KProject
     from .k_team import KTeam
 
@@ -30,6 +31,7 @@ class KProjectTeam(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     project: "KProject" = Relationship(
         back_populates="project_teams", sa_relationship_kwargs={"passive_deletes": True}
     )

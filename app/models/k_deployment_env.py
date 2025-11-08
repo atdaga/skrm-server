@@ -6,6 +6,7 @@ from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from .k_organization import KOrganization
     from .k_task_deployment_env import KTaskDeploymentEnv
 
 
@@ -23,6 +24,7 @@ class KDeploymentEnv(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    organization: "KOrganization" = Relationship()
     task_deployment_envs: list["KTaskDeploymentEnv"] = Relationship(
         back_populates="deployment_env",
         sa_relationship_kwargs={"passive_deletes": True},
