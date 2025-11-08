@@ -647,13 +647,12 @@ class TestOrganizationPrincipalDataInconsistency:
         # test_principal fixture already creates the test_user_id principal if needed
         # Just create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
-        from sqlalchemy import text
         from datetime import datetime
 
+        from sqlalchemy import text
+
         fake_org_id = uuid4()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = OFF")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
                 "INSERT INTO k_organization_principal "
@@ -667,12 +666,10 @@ class TestOrganizationPrincipalDataInconsistency:
                 "created_by": str(test_user_id).replace("-", ""),
                 "last_modified": datetime.now(),
                 "last_modified_by": str(test_user_id).replace("-", ""),
-            }
+            },
         )
         await async_session.commit()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = ON")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = ON"))
         await async_session.commit()
 
         principal_data = {"principal_id": str(test_principal.id)}
@@ -692,8 +689,9 @@ class TestOrganizationPrincipalDataInconsistency:
     ):
         """Test listing principals when user is member but org doesn't exist."""
         # Create principal first
-        from sqlalchemy import text
         from datetime import datetime
+
+        from sqlalchemy import text
 
         principal = KPrincipal(
             id=test_user_id,
@@ -711,9 +709,7 @@ class TestOrganizationPrincipalDataInconsistency:
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
         fake_org_id = uuid4()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = OFF")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
                 "INSERT INTO k_organization_principal "
@@ -727,12 +723,10 @@ class TestOrganizationPrincipalDataInconsistency:
                 "created_by": str(test_user_id).replace("-", ""),
                 "last_modified": datetime.now(),
                 "last_modified_by": str(test_user_id).replace("-", ""),
-            }
+            },
         )
         await async_session.commit()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = ON")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = ON"))
         await async_session.commit()
 
         response = await client.get(f"/organizations/{fake_org_id}/principals")

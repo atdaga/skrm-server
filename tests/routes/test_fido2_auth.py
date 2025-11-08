@@ -21,9 +21,8 @@ from app.schemas.user import Token, UserDetail
 
 
 @pytest.fixture
-def app_with_overrides(mock_user: UserDetail) -> FastAPI:
+def app(app, mock_user: UserDetail) -> FastAPI:
     """Create a FastAPI app with auth router and dependency overrides."""
-    app = FastAPI()
     app.include_router(router)
 
     # Override the authentication dependency
@@ -33,60 +32,19 @@ def app_with_overrides(mock_user: UserDetail) -> FastAPI:
 
 
 @pytest.fixture
-def app_without_auth() -> FastAPI:
+def app_without_auth(app_without_auth):
     """Create a FastAPI app without authentication overrides for testing auth failures."""
-    app = FastAPI()
-    app.include_router(router)
-    return app
+    app_without_auth.include_router(router)
+    return app_without_auth
 
 
 @pytest.fixture
-async def client(app_with_overrides: FastAPI) -> AsyncClient:
+async def client(app: FastAPI) -> AsyncClient:
     """Create an async HTTP client for testing with authentication."""
     async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
-
-
-@pytest.fixture
-async def client_no_auth(app_without_auth: FastAPI) -> AsyncClient:
-    """Create an async HTTP client for testing without authentication."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app_without_auth), base_url="http://test"
-    ) as ac:
-        yield ac
-
-
-@pytest.fixture
-def mock_user() -> UserDetail:
-    """Create a mock user for testing."""
-    user_id = uuid4()
-    now = datetime.now()
-    return UserDetail(
-        id=user_id,
-        scope="global",
-        username="testuser",
-        primary_email="test@example.com",
-        primary_email_verified=True,
-        primary_phone=None,
-        primary_phone_verified=False,
-        enabled=True,
-        time_zone="UTC",
-        name_prefix=None,
-        first_name="Test",
-        middle_name=None,
-        last_name="User",
-        name_suffix=None,
-        display_name="Test User",
-        default_locale="en",
-        system_role="system_user",
-        meta={},
-        created=now,
-        created_by=user_id,
-        last_modified=now,
-        last_modified_by=user_id,
-    )
 
 
 class TestFido2RegisterBeginEndpoint:

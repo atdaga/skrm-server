@@ -6,18 +6,22 @@ from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from .k_project import KProject
     from .k_feature import KFeature
+    from .k_project import KProject
 
 
 class KProjectFeature(SQLModel, table=True):
     __tablename__ = "k_project_feature"
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True)
+        sa_column=Column(
+            ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True
+        )
     )
     feature_id: UUID = Field(
-        sa_column=Column(ForeignKey("k_feature.id", ondelete="CASCADE"), primary_key=True)
+        sa_column=Column(
+            ForeignKey("k_feature.id", ondelete="CASCADE"), primary_key=True
+        )
     )
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     role: str | None = Field(default=None, max_length=255)

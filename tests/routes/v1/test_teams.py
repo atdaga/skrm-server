@@ -3,84 +3,18 @@
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganization, KTeam
-from app.routes.deps import get_current_token
 from app.routes.v1.teams import router
-from app.schemas.user import TokenData
-from tests.conftest import add_user_to_organization
 
 
 @pytest.fixture
-def app_with_overrides(
-    async_session: AsyncSession, mock_token_data: TokenData
-) -> FastAPI:
-    """Create a FastAPI app with dependency overrides for testing."""
-    app = FastAPI()
-    app.include_router(router)
-
-    # Override dependencies
-    async def override_get_db():
-        yield async_session
-
-    async def override_get_current_token():
-        return mock_token_data
-
-    from app.core.db.database import get_db
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_token] = override_get_current_token
-
-    return app
-
-
-@pytest.fixture
-async def client(app_with_overrides: FastAPI) -> AsyncClient:
-    """Create an async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
-    ) as ac:
-        yield ac
-
-
-@pytest.fixture
-async def test_organization(
-    async_session: AsyncSession, test_user_id: UUID
-) -> KOrganization:
-    """Create a test organization with the test user as a member."""
-    from app.models import KPrincipal
-
-    # Create a principal for the test user
-    principal = KPrincipal(
-        id=test_user_id,
-        username="testuser",
-        primary_email="test@example.com",
-        first_name="Test",
-        last_name="User",
-        display_name="Test User",
-        created_by=test_user_id,
-        last_modified_by=test_user_id,
-    )
-    async_session.add(principal)
-    await async_session.commit()
-
-    organization = KOrganization(
-        name="Test Organization",
-        alias="test_org",
-        created_by=test_user_id,
-        last_modified_by=test_user_id,
-    )
-    async_session.add(organization)
-    await async_session.commit()
-    await async_session.refresh(organization)
-
-    # Add user to organization
-    await add_user_to_organization(async_session, organization.id, test_user_id)
-
-    return organization
+def app_with_overrides(app_with_overrides):
+    """Create a FastAPI app with teams router included."""
+    app_with_overrides.include_router(router)
+    return app_with_overrides
 
 
 class TestCreateTeam:

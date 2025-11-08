@@ -3,46 +3,18 @@
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KPrincipal, KTeam, KTeamMember
-from app.routes.deps import get_current_token
 from app.routes.v1.team_members import router
-from app.schemas.user import TokenData
 
 
 @pytest.fixture
-def app_with_overrides(
-    async_session: AsyncSession, mock_token_data: TokenData
-) -> FastAPI:
-    """Create a FastAPI app with dependency overrides for testing."""
-    app = FastAPI()
-    app.include_router(router)
-
-    # Override dependencies
-    async def override_get_db():
-        yield async_session
-
-    async def override_get_current_token():
-        return mock_token_data
-
-    from app.core.db.database import get_db
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_current_token] = override_get_current_token
-
-    return app
-
-
-@pytest.fixture
-async def client(app_with_overrides: FastAPI) -> AsyncClient:
-    """Create an async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app_with_overrides), base_url="http://test"
-    ) as ac:
-        yield ac
+def app_with_overrides(app_with_overrides):
+    """Create a FastAPI app with team_members router included."""
+    app_with_overrides.include_router(router)
+    return app_with_overrides
 
 
 @pytest.fixture
@@ -60,24 +32,6 @@ async def team(
     await async_session.commit()
     await async_session.refresh(team)
     return team
-
-
-@pytest.fixture
-async def principal(async_session: AsyncSession, test_user_id: UUID) -> KPrincipal:
-    """Create a test principal."""
-    principal = KPrincipal(
-        username="testuser",
-        primary_email="test@example.com",
-        first_name="Test",
-        last_name="User",
-        display_name="Test User",
-        created_by=test_user_id,
-        last_modified_by=test_user_id,
-    )
-    async_session.add(principal)
-    await async_session.commit()
-    await async_session.refresh(principal)
-    return principal
 
 
 class TestAddTeamMember:

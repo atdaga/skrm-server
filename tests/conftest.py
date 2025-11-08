@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 import pytest
@@ -10,6 +11,9 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
 from app.schemas.user import TokenData
+
+if TYPE_CHECKING:
+    from app.schemas.user import UserDetail
 
 # Pytest hooks for cleanup
 
@@ -230,10 +234,10 @@ async def test_organization_without_membership(
     Use this for testing unauthorized access scenarios where the user
     is NOT a member of the organization.
     """
-    from app.models import KOrganization, KPrincipal
-
     # Create a principal for the test user if it doesn't exist
     from sqlmodel import select
+
+    from app.models import KOrganization, KPrincipal
 
     result = await async_session.execute(
         select(KPrincipal).where(KPrincipal.id == test_user_id)
@@ -275,8 +279,9 @@ async def test_principal(async_session: AsyncSession, test_user_id: UUID):
     This creates a separate principal (not the test_user_id) that can be
     added to organizations, teams, etc.
     """
-    from app.models import KPrincipal
     from sqlmodel import select
+
+    from app.models import KPrincipal
 
     # Create or get the test_user principal first (for created_by/last_modified_by)
     result = await async_session.execute(
@@ -357,3 +362,80 @@ async def client(app_with_overrides):
         transport=ASGITransport(app=app_with_overrides), base_url="http://test"
     ) as ac:
         yield ac
+
+
+# Mock user fixtures for authentication testing
+
+
+@pytest.fixture
+def mock_user(test_user_id: UUID) -> "UserDetail":
+    """Create a mock UserDetail object for testing.
+
+    This is useful for testing endpoints that require authentication
+    without going through the full authentication flow.
+    """
+    from datetime import datetime
+
+    from app.schemas.user import UserDetail
+
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="testuser",
+        primary_email="test@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Test",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Test User",
+        default_locale="en",
+        system_role="system_user",
+        meta={},
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
+    """Create a mock UserDetail object with custom scope for testing.
+
+    Similar to mock_user but allows custom scope configuration.
+    """
+    from datetime import datetime
+
+    from app.schemas.user import UserDetail
+
+    return UserDetail(
+        id=test_user_id,
+        scope=test_scope,
+        username="testuser",
+        primary_email="testuser@example.com",
+        primary_email_verified=True,
+        primary_phone="+1234567890",
+        primary_phone_verified=True,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Test",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Test User",
+        default_locale="en_US",
+        system_role="user",
+        meta={"department": "Engineering"},
+        created=datetime.now(),
+        created_by=test_user_id,
+        last_modified=datetime.now(),
+        last_modified_by=test_user_id,
+    )

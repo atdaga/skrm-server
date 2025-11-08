@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models import KFeature, KProject, KProjectFeature
-from app.models.k_feature import FeatureType, ReviewResult
+from app.models.k_feature import FeatureType
 
 
 class TestKProjectFeatureModel:

@@ -14,7 +14,9 @@ class KProjectTeam(SQLModel, table=True):
     __tablename__ = "k_project_team"
 
     project_id: UUID = Field(
-        sa_column=Column(ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True)
+        sa_column=Column(
+            ForeignKey("k_project.id", ondelete="CASCADE"), primary_key=True
+        )
     )
     team_id: UUID = Field(
         sa_column=Column(ForeignKey("k_team.id", ondelete="CASCADE"), primary_key=True)

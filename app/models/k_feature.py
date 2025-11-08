@@ -1,10 +1,10 @@
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .k_project_feature import KProjectFeature

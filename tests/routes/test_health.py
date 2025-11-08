@@ -1,27 +1,16 @@
 """Unit tests for health check endpoint."""
 
 import pytest
-from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 
 from app.routes.health import router
 
 
 @pytest.fixture
-def app() -> FastAPI:
+def app(app):
     """Create a FastAPI app with health router."""
-    app = FastAPI()
     app.include_router(router)
     return app
-
-
-@pytest.fixture
-async def client(app: FastAPI) -> AsyncClient:
-    """Create an async HTTP client for testing."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
-        yield ac
 
 
 class TestHealthCheck:

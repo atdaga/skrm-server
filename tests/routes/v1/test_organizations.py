@@ -6,7 +6,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KOrganization, KOrganizationPrincipal
+from app.models import KOrganization
 from app.routes.v1.organizations import router
 from tests.conftest import add_user_to_organization
 
@@ -74,6 +74,7 @@ class TestCreateOrganization:
         """Test that creating an organization with duplicate name fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -115,6 +116,7 @@ class TestCreateOrganization:
         """Test that creating an organization with duplicate alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -294,6 +296,7 @@ class TestListOrganizations:
         """Test listing multiple organizations."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -382,6 +385,7 @@ class TestUpdateOrganization:
         """Test updating organization name."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -428,6 +432,7 @@ class TestUpdateOrganization:
         """Test updating organization alias."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -474,6 +479,7 @@ class TestUpdateOrganization:
         """Test updating organization metadata."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -520,6 +526,7 @@ class TestUpdateOrganization:
         """Test updating all organization fields."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -585,6 +592,7 @@ class TestUpdateOrganization:
         """Test updating organization to a duplicate name fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -635,6 +643,7 @@ class TestUpdateOrganization:
         """Test updating organization to a duplicate alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -685,6 +694,7 @@ class TestUpdateOrganization:
         """Test updating organization with None alias is allowed (no change)."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -730,6 +740,7 @@ class TestUpdateOrganization:
         """Test updating organization with empty alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -770,6 +781,7 @@ class TestUpdateOrganization:
         """Test updating organization with special characters in alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -810,6 +822,7 @@ class TestUpdateOrganization:
         """Test updating organization with uppercase alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -850,6 +863,7 @@ class TestUpdateOrganization:
         """Test updating organization with mixed case alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -892,6 +906,7 @@ class TestUpdateOrganization:
         """Test updating organization with invalid alias fails."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -936,6 +951,7 @@ class TestDeleteOrganization:
         """Test successfully deleting an organization."""
         # Create principal first
         from app.models import KPrincipal
+
         principal = KPrincipal(
             id=test_user_id,
             username="testuser",
@@ -1047,9 +1063,11 @@ class TestOrganizationDataInconsistency:
     ):
         """Test getting an organization when user is a member but org doesn't exist."""
         # Create principal first
-        from app.models import KPrincipal
-        from sqlalchemy import text
         from datetime import datetime
+
+        from sqlalchemy import text
+
+        from app.models import KPrincipal
 
         principal = KPrincipal(
             id=test_user_id,
@@ -1067,9 +1085,7 @@ class TestOrganizationDataInconsistency:
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
         fake_org_id = uuid4()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = OFF")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
                 "INSERT INTO k_organization_principal "
@@ -1083,12 +1099,10 @@ class TestOrganizationDataInconsistency:
                 "created_by": str(test_user_id).replace("-", ""),
                 "last_modified": datetime.now(),
                 "last_modified_by": str(test_user_id).replace("-", ""),
-            }
+            },
         )
         await async_session.commit()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = ON")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = ON"))
         await async_session.commit()
 
         response = await client.get(f"/organizations/{fake_org_id}")
@@ -1105,9 +1119,11 @@ class TestOrganizationDataInconsistency:
     ):
         """Test updating an organization when user is a member but org doesn't exist."""
         # Create principal first
-        from app.models import KPrincipal
-        from sqlalchemy import text
         from datetime import datetime
+
+        from sqlalchemy import text
+
+        from app.models import KPrincipal
 
         principal = KPrincipal(
             id=test_user_id,
@@ -1125,9 +1141,7 @@ class TestOrganizationDataInconsistency:
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
         fake_org_id = uuid4()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = OFF")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
                 "INSERT INTO k_organization_principal "
@@ -1141,12 +1155,10 @@ class TestOrganizationDataInconsistency:
                 "created_by": str(test_user_id).replace("-", ""),
                 "last_modified": datetime.now(),
                 "last_modified_by": str(test_user_id).replace("-", ""),
-            }
+            },
         )
         await async_session.commit()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = ON")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = ON"))
         await async_session.commit()
 
         update_data = {"name": "New Name"}
@@ -1164,9 +1176,11 @@ class TestOrganizationDataInconsistency:
     ):
         """Test deleting an organization when user is a member but org doesn't exist."""
         # Create principal first
-        from app.models import KPrincipal
-        from sqlalchemy import text
         from datetime import datetime
+
+        from sqlalchemy import text
+
+        from app.models import KPrincipal
 
         principal = KPrincipal(
             id=test_user_id,
@@ -1184,9 +1198,7 @@ class TestOrganizationDataInconsistency:
         # Create a fake org_id and add user as member WITHOUT creating the org
         # Use raw SQL to bypass foreign key constraint
         fake_org_id = uuid4()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = OFF")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = OFF"))
         await async_session.execute(
             text(
                 "INSERT INTO k_organization_principal "
@@ -1200,12 +1212,10 @@ class TestOrganizationDataInconsistency:
                 "created_by": str(test_user_id).replace("-", ""),
                 "last_modified": datetime.now(),
                 "last_modified_by": str(test_user_id).replace("-", ""),
-            }
+            },
         )
         await async_session.commit()
-        await async_session.execute(
-            text("PRAGMA foreign_keys = ON")
-        )
+        await async_session.execute(text("PRAGMA foreign_keys = ON"))
         await async_session.commit()
 
         response = await client.delete(f"/organizations/{fake_org_id}")

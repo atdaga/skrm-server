@@ -13,35 +13,6 @@ from app.schemas.user import UserDetail
 
 
 @pytest.fixture
-def mock_user_detail(test_user_id: UUID, test_scope: str) -> UserDetail:
-    """Create a mock UserDetail object for testing."""
-    return UserDetail(
-        id=test_user_id,
-        scope=test_scope,
-        username="testuser",
-        primary_email="testuser@example.com",
-        primary_email_verified=True,
-        primary_phone="+1234567890",
-        primary_phone_verified=True,
-        enabled=True,
-        time_zone="UTC",
-        name_prefix=None,
-        first_name="Test",
-        middle_name=None,
-        last_name="User",
-        name_suffix=None,
-        display_name="Test User",
-        default_locale="en_US",
-        system_role="user",
-        meta={"department": "Engineering"},
-        created=datetime.now(),
-        created_by=test_user_id,
-        last_modified=datetime.now(),
-        last_modified_by=test_user_id,
-    )
-
-
-@pytest.fixture
 def app_with_overrides(mock_user_detail: UserDetail) -> FastAPI:
     """Create a FastAPI app with dependency overrides for testing."""
     app = FastAPI()
