@@ -1,0 +1,221 @@
+"""Business logic for task management operations."""
+
+from datetime import datetime
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ...core.exceptions.domain_exceptions import (
+    TaskAlreadyExistsException,
+    TaskNotFoundException,
+    TaskUpdateConflictException,
+)
+from ...models import KTask
+from ...schemas.task import TaskCreate, TaskUpdate
+from ..deps import verify_organization_membership
+
+
+async def create_task(
+    task_data: TaskCreate,
+    user_id: UUID,
+    org_id: UUID,
+    db: AsyncSession,
+) -> KTask:
+    """Create a new task.
+
+    Args:
+        task_data: Task creation data
+        user_id: ID of the user creating the task
+        org_id: Organization ID for the task
+        db: Database session
+
+    Returns:
+        The created task model
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        TaskAlreadyExistsException: If a task with the same name already exists in the organization
+    """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
+    # Create new task with audit fields
+    new_task = KTask(
+        name=task_data.name,
+        org_id=org_id,
+        summary=task_data.summary,
+        description=task_data.description,
+        team_id=task_data.team_id,
+        guestimate=task_data.guestimate,
+        status=task_data.status,
+        review_result=task_data.review_result,
+        meta=task_data.meta,
+        created_by=user_id,
+        last_modified_by=user_id,
+    )
+
+    db.add(new_task)
+
+    try:
+        await db.commit()
+        await db.refresh(new_task)
+    except IntegrityError as e:
+        await db.rollback()
+        raise TaskAlreadyExistsException(name=task_data.name, scope=str(org_id)) from e
+
+    return new_task
+
+
+async def list_tasks(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTask]:
+    """List all tasks in the given organization.
+
+    Args:
+        org_id: Organization ID to filter tasks by
+        user_id: ID of the user making the request
+        db: Database session
+
+    Returns:
+        List of task models
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+    """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
+    stmt = select(KTask).where(KTask.org_id == org_id)  # type: ignore[arg-type]
+    result = await db.execute(stmt)
+    tasks = result.scalars().all()
+    return list(tasks)
+
+
+async def get_task(
+    task_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+) -> KTask:
+    """Get a single task by ID.
+
+    Args:
+        task_id: ID of the task to retrieve
+        org_id: Organization ID to filter by
+        user_id: ID of the user making the request
+        db: Database session
+
+    Returns:
+        The task model
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        TaskNotFoundException: If the task is not found in the given organization
+    """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise TaskNotFoundException(task_id=task_id, scope=str(org_id))
+
+    return task
+
+
+async def update_task(
+    task_id: UUID,
+    task_data: TaskUpdate,
+    user_id: UUID,
+    org_id: UUID,
+    db: AsyncSession,
+) -> KTask:
+    """Update a task.
+
+    Args:
+        task_id: ID of the task to update
+        task_data: Task update data
+        user_id: ID of the user performing the update
+        org_id: Organization ID to filter by
+        db: Database session
+
+    Returns:
+        The updated task model
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        TaskNotFoundException: If the task is not found
+        TaskUpdateConflictException: If updating causes a name conflict
+    """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise TaskNotFoundException(task_id=task_id, scope=str(org_id))
+
+    # Update only provided fields
+    if task_data.name is not None:
+        task.name = task_data.name
+    if task_data.summary is not None:
+        task.summary = task_data.summary
+    if task_data.description is not None:
+        task.description = task_data.description
+    if task_data.team_id is not None:
+        task.team_id = task_data.team_id
+    if task_data.guestimate is not None:
+        task.guestimate = task_data.guestimate
+    if task_data.status is not None:
+        task.status = task_data.status
+    if task_data.review_result is not None:
+        task.review_result = task_data.review_result
+    if task_data.meta is not None:
+        task.meta = task_data.meta
+
+    # Update audit fields
+    task.last_modified = datetime.now()
+    task.last_modified_by = user_id
+
+    try:
+        await db.commit()
+        await db.refresh(task)
+    except IntegrityError as e:
+        await db.rollback()
+        raise TaskUpdateConflictException(
+            task_id=task_id,
+            name=task_data.name or task.name,
+            scope=str(org_id),
+        ) from e
+
+    return task
+
+
+async def delete_task(
+    task_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+) -> None:
+    """Delete a task.
+
+    Args:
+        task_id: ID of the task to delete
+        org_id: Organization ID to filter by
+        user_id: ID of the user making the request
+        db: Database session
+
+    Raises:
+        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        TaskNotFoundException: If the task is not found
+    """
+    # Verify user has access to this organization
+    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise TaskNotFoundException(task_id=task_id, scope=str(org_id))
+
+    await db.delete(task)
+    await db.commit()

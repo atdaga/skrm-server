@@ -17,7 +17,7 @@ class FeatureCreate(BaseModel):
     notes: str | None = None
     guestimate: float | None = Field(None, gt=0)
     derived_guestimate: float | None = Field(None, gt=0)
-    review_result: ReviewResult = ReviewResult.QUEUED
+    review_result: ReviewResult | None = None
     meta: dict = {}
 
 
@@ -49,7 +49,7 @@ class Feature(BaseModel):
     notes: str | None
     guestimate: float | None
     derived_guestimate: float | None
-    review_result: ReviewResult
+    review_result: ReviewResult | None
     meta: dict
 
     model_config = ConfigDict(from_attributes=True)

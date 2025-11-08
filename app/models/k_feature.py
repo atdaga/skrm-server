@@ -42,7 +42,7 @@ class KFeature(SQLModel, table=True):
     notes: str | None = Field(default=None, sa_type=Text)
     guestimate: float | None = Field(default=None, gt=0)
     derived_guestimate: float | None = Field(default=None, gt=0)
-    review_result: ReviewResult = Field(default=ReviewResult.QUEUED)
+    review_result: ReviewResult | None = Field(default=None)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID

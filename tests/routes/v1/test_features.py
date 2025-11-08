@@ -49,7 +49,7 @@ class TestCreateFeature:
         assert data["summary"] == "Implement user authentication system"
         assert data["notes"] == "Use OAuth 2.0"
         assert data["guestimate"] == 5.0
-        assert data["review_result"] == "Queued"
+        assert data["review_result"] is None
         assert data["meta"] == {"priority": "high"}
         assert "id" in data
         assert UUID(data["id"])  # Validates it's a proper UUID
@@ -81,7 +81,7 @@ class TestCreateFeature:
         assert data["notes"] is None
         assert data["guestimate"] is None
         assert data["derived_guestimate"] is None
-        assert data["review_result"] == "Queued"
+        assert data["review_result"] is None
         assert data["meta"] == {}
 
     @pytest.mark.asyncio

@@ -12,6 +12,7 @@ from .k_principal_identity import KPrincipalIdentity
 from .k_project import KProject
 from .k_project_feature import KProjectFeature
 from .k_project_team import KProjectTeam
+from .k_task import KTask, TaskStatus
 from .k_team import KTeam
 from .k_team_member import KTeamMember
 from .k_team_reviewer import KTeamReviewer
@@ -30,8 +31,10 @@ __all__ = [
     "KProject",
     "KProjectFeature",
     "KProjectTeam",
+    "KTask",
     "KTeam",
     "KTeamMember",
     "KTeamReviewer",
     "ReviewResult",
+    "TaskStatus",
 ]

@@ -485,6 +485,44 @@ class FeatureUpdateConflictException(DomainException):
 
 
 # ============================================================================
+# Task-related exceptions
+# ============================================================================
+
+
+class TaskNotFoundException(DomainException):
+    """Raised when a task cannot be found."""
+
+    def __init__(self, task_id: UUID, scope: str | None = None):
+        message = f"Task with id '{task_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="task", entity_id=task_id)
+        self.task_id = task_id
+        self.scope = scope
+
+
+class TaskAlreadyExistsException(DomainException):
+    """Raised when attempting to create a task that already exists."""
+
+    def __init__(self, name: str, scope: str):
+        message = f"Task with name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="task", entity_id=name)
+        self.name = name
+        self.scope = scope
+
+
+class TaskUpdateConflictException(DomainException):
+    """Raised when updating a task causes a naming conflict."""
+
+    def __init__(self, task_id: UUID, name: str, scope: str):
+        message = f"Cannot update task '{task_id}': name '{name}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="task", entity_id=task_id)
+        self.task_id = task_id
+        self.name = name
+        self.scope = scope
+
+
+# ============================================================================
 # Feature Doc-related exceptions
 # ============================================================================
 

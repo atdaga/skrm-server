@@ -60,7 +60,7 @@ class TestKFeatureModel:
         assert feature.notes is None
         assert feature.guestimate is None
         assert feature.derived_guestimate is None
-        assert feature.review_result == ReviewResult.QUEUED
+        assert feature.review_result is None
         assert feature.meta == {}
         assert isinstance(feature.created, datetime)
         assert isinstance(feature.last_modified, datetime)
