@@ -260,11 +260,11 @@ class TestSetupLogging:
     @patch("app.core.logging.structlog.configure")
     @patch("app.core.logging.logging.basicConfig")
     @patch("app.core.logging.settings")
-    def test_setup_logging_debug_mode(
+    def test_setup_logging_console_format(
         self, mock_settings, mock_basic_config, mock_configure
     ):
-        """Test setup_logging in debug mode."""
-        mock_settings.debug = True
+        """Test setup_logging with console format."""
+        mock_settings.log_format = "console"
         mock_settings.log_level = "DEBUG"
 
         setup_logging()
@@ -280,11 +280,11 @@ class TestSetupLogging:
     @patch("app.core.logging.structlog.configure")
     @patch("app.core.logging.logging.basicConfig")
     @patch("app.core.logging.settings")
-    def test_setup_logging_production_mode(
+    def test_setup_logging_json_format(
         self, mock_settings, mock_basic_config, mock_configure
     ):
-        """Test setup_logging in production mode."""
-        mock_settings.debug = False
+        """Test setup_logging with JSON format."""
+        mock_settings.log_format = "json"
         mock_settings.log_level = "INFO"
 
         setup_logging()
@@ -304,7 +304,7 @@ class TestSetupLogging:
         self, mock_settings, mock_basic_config, mock_configure
     ):
         """Test that setup_logging includes timestamper in processors."""
-        mock_settings.debug = True
+        mock_settings.log_format = "console"
         mock_settings.log_level = "DEBUG"
 
         setup_logging()
@@ -326,7 +326,7 @@ class TestSetupLogging:
         log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
         for level in log_levels:
-            mock_settings.debug = False
+            mock_settings.log_format = "json"
             mock_settings.log_level = level
             mock_basic_config.reset_mock()
 
@@ -334,6 +334,54 @@ class TestSetupLogging:
 
             call_kwargs = mock_basic_config.call_args[1]
             assert call_kwargs["level"] == getattr(logging, level)
+
+    @patch("app.core.logging.structlog.dev.ConsoleRenderer")
+    @patch("app.core.logging.structlog.processors.JSONRenderer")
+    @patch("app.core.logging.structlog.configure")
+    @patch("app.core.logging.logging.basicConfig")
+    @patch("app.core.logging.settings")
+    def test_setup_logging_console_renderer(
+        self,
+        mock_settings,
+        mock_basic_config,
+        mock_configure,
+        mock_json_renderer,
+        mock_console_renderer,
+    ):
+        """Test that console renderer is used when log_format is 'console'."""
+        mock_settings.log_format = "console"
+        mock_settings.log_level = "DEBUG"
+
+        setup_logging()
+
+        # Verify ConsoleRenderer was instantiated
+        mock_console_renderer.assert_called_once_with(colors=True)
+        # Verify JSONRenderer was NOT used
+        mock_json_renderer.assert_not_called()
+
+    @patch("app.core.logging.structlog.dev.ConsoleRenderer")
+    @patch("app.core.logging.structlog.processors.JSONRenderer")
+    @patch("app.core.logging.structlog.configure")
+    @patch("app.core.logging.logging.basicConfig")
+    @patch("app.core.logging.settings")
+    def test_setup_logging_json_renderer(
+        self,
+        mock_settings,
+        mock_basic_config,
+        mock_configure,
+        mock_json_renderer,
+        mock_console_renderer,
+    ):
+        """Test that JSON renderer is used when log_format is 'json'."""
+        mock_settings.log_format = "json"
+        mock_settings.log_level = "DEBUG"
+
+        setup_logging()
+
+        # Verify JSONRenderer was instantiated
+        mock_json_renderer.assert_called_once()
+        # Verify ConsoleRenderer was NOT used
+        mock_console_renderer.assert_not_called()
 
 
 class TestGetLogger:
@@ -391,7 +439,7 @@ class TestLoggingIntegration:
     @patch("app.core.logging.settings")
     def test_full_logging_setup_and_use(self, mock_settings):
         """Test full logging setup and logger usage."""
-        mock_settings.debug = True
+        mock_settings.log_format = "console"
         mock_settings.log_level = "DEBUG"
 
         # Setup logging
@@ -426,7 +474,7 @@ class TestLoggingIntegration:
     @patch("app.core.logging.settings")
     def test_logging_configuration_persistence(self, mock_settings):
         """Test that logging configuration persists across logger creations."""
-        mock_settings.debug = False
+        mock_settings.log_format = "json"
         mock_settings.log_level = "INFO"
 
         setup_logging()

@@ -1,7 +1,5 @@
 # TODO
 
-* CORS Middleware (and other middleware needed for security or logging or context)
-
 * Return refresh token in cookie
 
 * Alembic
@@ -14,10 +12,13 @@
 	5.	The server returns a new access token and a new refresh token cookie (rotation).
 This approach balances security and usability for SPAs, protecting the refresh token while enabling seamless token renewal without exposing sensitive tokens to JavaScript
 
+* Create `txs` endpoint.
+  
+* Upgrade library versions.
+  
+
 * Use `ExceptionGroup`s for multiple concurrent exceptions.
 
 * Use all-mpnet-base-v2 for local embeddings model. (Right now, there's no wheels for python 3.13, so using remote model to create embeddings for now).
-
-* Upgrade library versions.
 
 * Not needed for this app, but for history, Temporal database: create shadow tables. No foreign keys.

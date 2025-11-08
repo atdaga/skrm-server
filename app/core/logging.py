@@ -66,7 +66,7 @@ def setup_logging() -> None:
         structlog.processors.UnicodeDecoder(),
     ]
 
-    if settings.debug:
+    if settings.log_format == "console":
         processors.append(structlog.dev.ConsoleRenderer(colors=True))
     else:
         processors.append(structlog.processors.JSONRenderer())

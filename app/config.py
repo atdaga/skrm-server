@@ -1,4 +1,6 @@
-from pydantic import Field
+from typing import List, Literal
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,10 +8,20 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     app_name: str = Field(default="sKrm Server", description="Application name")
-    debug: bool = Field(default=False, description="Debug mode")
+    debug: bool = Field(
+        default=False,
+        description="Debug mode (enables FastAPI debug mode, auto-reload, and SQL query logging)",
+    )
     host: str = Field(default="0.0.0.0", description="Host to bind to")
     port: int = Field(default=8000, description="Port to bind to")
-    log_level: str = Field(default="DEBUG", description="Logging level")
+    log_level: str = Field(
+        default="DEBUG",
+        description="Logging level. Valid values: DEBUG, INFO, WARNING, ERROR, CRITICAL (case-insensitive)",
+    )
+    log_format: Literal["console", "json"] = Field(
+        default="json",
+        description="Log output format. Valid values: 'console' (human-readable with colors) or 'json' (structured JSON)",
+    )
 
     # Database configuration
     db_host: str = Field(default="127.0.0.1", description="Database host")
@@ -51,6 +63,50 @@ class Settings(BaseSettings):
         default=False,
         description="Require resident key (discoverable credential) for registration",
     )
+
+    # CORS configuration
+    cors_origins: List[str] = Field(
+        default=["http://localhost:3000"],
+        description="Allowed CORS origins (comma-separated string in env)",
+    )
+    cors_allow_credentials: bool = Field(
+        default=True,
+        description="Allow credentials (cookies, authorization headers) in CORS requests",
+    )
+    cors_allow_methods: List[str] = Field(
+        default=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        description="Allowed HTTP methods for CORS requests",
+    )
+    cors_allow_headers: List[str] = Field(
+        default=["*"], description="Allowed headers for CORS requests"
+    )
+    cors_max_age: int = Field(
+        default=600, description="Maximum age (in seconds) for CORS preflight cache"
+    )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
+        """Parse comma-separated origins string into list."""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("cors_allow_methods", mode="before")
+    @classmethod
+    def parse_cors_methods(cls, v: str | List[str]) -> List[str]:
+        """Parse comma-separated methods string into list."""
+        if isinstance(v, str):
+            return [method.strip().upper() for method in v.split(",") if method.strip()]
+        return v
+
+    @field_validator("cors_allow_headers", mode="before")
+    @classmethod
+    def parse_cors_headers(cls, v: str | List[str]) -> List[str]:
+        """Parse comma-separated headers string into list."""
+        if isinstance(v, str):
+            return [header.strip() for header in v.split(",") if header.strip()]
+        return v
 
     @property
     def database_url(self) -> str:
