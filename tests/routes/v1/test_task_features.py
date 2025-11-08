@@ -41,7 +41,7 @@ async def task(
 ) -> KTask:
     """Create a test task."""
     task = KTask(
-        name="Test Task",
+        summary="Test task summary",
         team_id=team.id,
         org_id=test_org_id,
         created_by=test_user_id,

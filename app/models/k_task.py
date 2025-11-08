@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Text, UniqueConstraint
+from sqlalchemy import JSON, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 from .k_feature import ReviewResult
@@ -32,11 +32,9 @@ class TaskStatus(str, Enum):
 
 class KTask(SQLModel, table=True):
     __tablename__ = "k_task"
-    __table_args__ = (UniqueConstraint("org_id", "name"),)
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
-    name: str = Field(..., max_length=255)
     summary: str | None = Field(default=None, sa_type=Text)
     description: str | None = Field(default=None, sa_type=Text)
     team_id: UUID = Field(foreign_key="k_team.id", index=True)

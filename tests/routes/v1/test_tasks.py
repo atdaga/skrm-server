@@ -50,7 +50,6 @@ class TestCreateTask:
     ):
         """Test successfully creating a new task."""
         task_data = {
-            "name": "Implement Authentication",
             "summary": "Build user authentication system",
             "description": "Implement OAuth 2.0 based authentication",
             "team_id": str(test_team.id),
@@ -65,7 +64,6 @@ class TestCreateTask:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "Implement Authentication"
         assert data["summary"] == "Build user authentication system"
         assert data["description"] == "Implement OAuth 2.0 based authentication"
         assert data["team_id"] == str(test_team.id)
@@ -89,7 +87,6 @@ class TestCreateTask:
     ):
         """Test creating a task with only required fields."""
         task_data = {
-            "name": "Setup Database",
             "team_id": str(test_team.id),
         }
 
@@ -99,7 +96,6 @@ class TestCreateTask:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "Setup Database"
         assert data["team_id"] == str(test_team.id)
         assert data["summary"] is None
         assert data["description"] is None
@@ -117,7 +113,6 @@ class TestCreateTask:
     ):
         """Test creating a task with a review result."""
         task_data = {
-            "name": "Code Review Task",
             "team_id": str(test_team.id),
             "status": "Review",
             "review_result": "Passed",
@@ -133,39 +128,12 @@ class TestCreateTask:
         assert data["review_result"] == "Passed"
 
     @pytest.mark.asyncio
-    async def test_create_task_duplicate_name(
-        self,
-        client: AsyncClient,
-        test_organization: KOrganization,
-        test_team: KTeam,
-    ):
-        """Test that creating a task with duplicate name fails."""
-        task_data = {
-            "name": "Duplicate Task",
-            "team_id": str(test_team.id),
-        }
-
-        # Create first task
-        response = await client.post(
-            f"/tasks?org_id={test_organization.id}", json=task_data
-        )
-        assert response.status_code == 201
-
-        # Try to create second task with same name
-        response = await client.post(
-            f"/tasks?org_id={test_organization.id}", json=task_data
-        )
-        assert response.status_code == 409
-        assert "already exists" in response.json()["detail"]
-
-    @pytest.mark.asyncio
     async def test_create_task_unauthorized_org(
         self, client: AsyncClient, test_team: KTeam
     ):
         """Test that creating a task in unauthorized org fails."""
         unauthorized_org_id = uuid4()
         task_data = {
-            "name": "Test Task",
             "team_id": str(test_team.id),
         }
 
@@ -202,7 +170,7 @@ class TestListTasks:
         # Create multiple tasks
         tasks = [
             KTask(
-                name="Task 1",
+                summary="First task summary",
                 org_id=test_organization.id,
                 team_id=test_team.id,
                 status=TaskStatus.BACKLOG,
@@ -210,7 +178,7 @@ class TestListTasks:
                 last_modified_by=test_user_id,
             ),
             KTask(
-                name="Task 2",
+                summary="Second task summary",
                 org_id=test_organization.id,
                 team_id=test_team.id,
                 status=TaskStatus.IN_PROGRESS,
@@ -228,9 +196,9 @@ class TestListTasks:
         assert response.status_code == 200
         data = response.json()
         assert len(data["tasks"]) == 2
-        task_names = [t["name"] for t in data["tasks"]]
-        assert "Task 1" in task_names
-        assert "Task 2" in task_names
+        task_summaries = [t["summary"] for t in data["tasks"]]
+        assert "First task summary" in task_summaries
+        assert "Second task summary" in task_summaries
 
     @pytest.mark.asyncio
     async def test_list_tasks_unauthorized_org(self, client: AsyncClient):
@@ -255,7 +223,6 @@ class TestGetTask:
     ):
         """Test successfully retrieving a task."""
         task = KTask(
-            name="Test Task",
             summary="Test summary",
             org_id=test_organization.id,
             team_id=test_team.id,
@@ -272,7 +239,6 @@ class TestGetTask:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(task.id)
-        assert data["name"] == "Test Task"
         assert data["summary"] == "Test summary"
         assert data["status"] == "InProgress"
 
@@ -308,7 +274,7 @@ class TestGetTask:
         await async_session.refresh(other_org)
 
         task = KTask(
-            name="Secret Task",
+            summary="Secret task summary",
             org_id=other_org.id,
             team_id=test_team.id,
             created_by=test_user_id,
@@ -338,7 +304,7 @@ class TestUpdateTask:
     ):
         """Test successfully updating a task."""
         task = KTask(
-            name="Old Name",
+            summary="Old summary",
             org_id=test_organization.id,
             team_id=test_team.id,
             status=TaskStatus.BACKLOG,
@@ -350,7 +316,6 @@ class TestUpdateTask:
         await async_session.refresh(task)
 
         update_data = {
-            "name": "New Name",
             "summary": "Updated summary",
             "status": "InProgress",
             "review_result": "Passed",
@@ -364,7 +329,6 @@ class TestUpdateTask:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "New Name"
         assert data["summary"] == "Updated summary"
         assert data["status"] == "InProgress"
         assert data["review_result"] == "Passed"
@@ -381,7 +345,6 @@ class TestUpdateTask:
     ):
         """Test updating only some fields of a task."""
         task = KTask(
-            name="Original Task",
             summary="Original summary",
             guestimate=3.0,
             org_id=test_organization.id,
@@ -403,7 +366,6 @@ class TestUpdateTask:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "Original Task"  # Unchanged
         assert data["summary"] == "Original summary"  # Unchanged
         assert data["guestimate"] == 5.0  # Changed
         assert data["status"] == "InProgress"  # Changed
@@ -437,7 +399,6 @@ class TestUpdateTask:
 
         # Create a task with initial values
         task = KTask(
-            name="Initial Task",
             summary="Initial summary",
             description="Initial description",
             team_id=team1.id,
@@ -453,7 +414,6 @@ class TestUpdateTask:
 
         # Update all fields
         update_data = {
-            "name": "Updated Task",
             "summary": "Updated summary",
             "description": "Updated description with more details",
             "team_id": str(team2.id),
@@ -470,7 +430,6 @@ class TestUpdateTask:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["name"] == "Updated Task"
         assert data["summary"] == "Updated summary"
         assert data["description"] == "Updated description with more details"
         assert data["team_id"] == str(team2.id)
@@ -485,50 +444,13 @@ class TestUpdateTask:
     ):
         """Test updating a non-existent task."""
         non_existent_id = uuid4()
-        update_data = {"name": "New Name"}
+        update_data = {"summary": "New summary"}
 
         response = await client.patch(
             f"/tasks/{non_existent_id}?org_id={test_organization.id}",
             json=update_data,
         )
         assert response.status_code == 404
-
-    @pytest.mark.asyncio
-    async def test_update_task_duplicate_name(
-        self,
-        client: AsyncClient,
-        test_organization: KOrganization,
-        test_team: KTeam,
-        async_session: AsyncSession,
-        test_user_id: UUID,
-    ):
-        """Test that updating to a duplicate name fails."""
-        task1 = KTask(
-            name="Task One",
-            org_id=test_organization.id,
-            team_id=test_team.id,
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-        task2 = KTask(
-            name="Task Two",
-            org_id=test_organization.id,
-            team_id=test_team.id,
-            created_by=test_user_id,
-            last_modified_by=test_user_id,
-        )
-
-        async_session.add_all([task1, task2])
-        await async_session.commit()
-        await async_session.refresh(task2)
-
-        # Try to update task2 to have the same name as task1
-        update_data = {"name": "Task One"}
-        response = await client.patch(
-            f"/tasks/{task2.id}?org_id={test_organization.id}",
-            json=update_data,
-        )
-        assert response.status_code == 409
 
     @pytest.mark.asyncio
     async def test_update_task_unauthorized_org(
@@ -551,7 +473,7 @@ class TestUpdateTask:
         await async_session.refresh(other_org)
 
         task = KTask(
-            name="Other Task",
+            summary="Other task summary",
             org_id=other_org.id,
             team_id=test_team.id,
             created_by=test_user_id,
@@ -562,7 +484,7 @@ class TestUpdateTask:
         await async_session.refresh(task)
 
         # Try to update with unauthorized org (user is not member of other_org)
-        update_data = {"name": "Updated Name"}
+        update_data = {"summary": "Updated summary"}
         response = await client.patch(
             f"/tasks/{task.id}?org_id={other_org.id}",
             json=update_data,
@@ -584,7 +506,7 @@ class TestDeleteTask:
     ):
         """Test successfully deleting a task."""
         task = KTask(
-            name="To Delete",
+            summary="Task to delete",
             org_id=test_organization.id,
             team_id=test_team.id,
             created_by=test_user_id,
@@ -639,7 +561,7 @@ class TestDeleteTask:
         await async_session.refresh(other_org)
 
         task = KTask(
-            name="Other Task",
+            summary="Other task summary",
             org_id=other_org.id,
             team_id=test_team.id,
             created_by=test_user_id,

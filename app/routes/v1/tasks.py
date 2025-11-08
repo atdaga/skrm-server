@@ -8,9 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
-    TaskAlreadyExistsException,
     TaskNotFoundException,
-    TaskUpdateConflictException,
     UnauthorizedOrganizationAccessException,
 )
 from ...logic.v1 import tasks as tasks_logic
@@ -39,11 +37,6 @@ async def create_task(
             db=db,
         )
         return TaskDetail.model_validate(task)
-    except TaskAlreadyExistsException as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=e.message,
-        ) from e
     except UnauthorizedOrganizationAccessException as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -123,11 +116,6 @@ async def update_task(
     except TaskNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        ) from e
-    except TaskUpdateConflictException as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
     except UnauthorizedOrganizationAccessException as e:

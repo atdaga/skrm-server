@@ -4,14 +4,9 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions.domain_exceptions import (
-    TaskAlreadyExistsException,
-    TaskNotFoundException,
-    TaskUpdateConflictException,
-)
+from ...core.exceptions.domain_exceptions import TaskNotFoundException
 from ...models import KTask
 from ...schemas.task import TaskCreate, TaskUpdate
 from ..deps import verify_organization_membership
@@ -36,14 +31,12 @@ async def create_task(
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
-        TaskAlreadyExistsException: If a task with the same name already exists in the organization
     """
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
     # Create new task with audit fields
     new_task = KTask(
-        name=task_data.name,
         org_id=org_id,
         summary=task_data.summary,
         description=task_data.description,
@@ -57,13 +50,8 @@ async def create_task(
     )
 
     db.add(new_task)
-
-    try:
-        await db.commit()
-        await db.refresh(new_task)
-    except IntegrityError as e:
-        await db.rollback()
-        raise TaskAlreadyExistsException(name=task_data.name, scope=str(org_id)) from e
+    await db.commit()
+    await db.refresh(new_task)
 
     return new_task
 
@@ -144,7 +132,6 @@ async def update_task(
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TaskNotFoundException: If the task is not found
-        TaskUpdateConflictException: If updating causes a name conflict
     """
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
@@ -157,8 +144,6 @@ async def update_task(
         raise TaskNotFoundException(task_id=task_id, scope=str(org_id))
 
     # Update only provided fields
-    if task_data.name is not None:
-        task.name = task_data.name
     if task_data.summary is not None:
         task.summary = task_data.summary
     if task_data.description is not None:
@@ -178,16 +163,8 @@ async def update_task(
     task.last_modified = datetime.now()
     task.last_modified_by = user_id
 
-    try:
-        await db.commit()
-        await db.refresh(task)
-    except IntegrityError as e:
-        await db.rollback()
-        raise TaskUpdateConflictException(
-            task_id=task_id,
-            name=task_data.name or task.name,
-            scope=str(org_id),
-        ) from e
+    await db.commit()
+    await db.refresh(task)
 
     return task
 
