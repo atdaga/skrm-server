@@ -31,6 +31,8 @@ from app.core.exceptions.domain_exceptions import (
     ProjectTeamAlreadyExistsException,
     ProjectTeamNotFoundException,
     ProjectUpdateConflictException,
+    TaskDeploymentEnvAlreadyExistsException,
+    TaskDeploymentEnvNotFoundException,
     TeamAlreadyExistsException,
     TeamMemberAlreadyExistsException,
     TeamMemberNotFoundException,
@@ -842,3 +844,52 @@ class TestFeatureDocExceptions:
         assert str(doc_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "feature_doc"
+
+
+class TestTaskDeploymentEnvExceptions:
+    """Test suite for task deployment environment-related exceptions."""
+
+    def test_task_deployment_env_not_found_exception_with_scope(self):
+        """Test TaskDeploymentEnvNotFoundException with scope."""
+        task_id = uuid4()
+        deployment_env_id = uuid4()
+        exception = TaskDeploymentEnvNotFoundException(
+            task_id=task_id, deployment_env_id=deployment_env_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(deployment_env_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_deployment_env"
+
+    def test_task_deployment_env_not_found_exception_without_scope(self):
+        """Test TaskDeploymentEnvNotFoundException without scope."""
+        task_id = uuid4()
+        deployment_env_id = uuid4()
+        exception = TaskDeploymentEnvNotFoundException(
+            task_id=task_id, deployment_env_id=deployment_env_id
+        )
+
+        assert exception.task_id == task_id
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_task_deployment_env_already_exists_exception(self):
+        """Test TaskDeploymentEnvAlreadyExistsException."""
+        task_id = uuid4()
+        deployment_env_id = uuid4()
+        exception = TaskDeploymentEnvAlreadyExistsException(
+            task_id=task_id, deployment_env_id=deployment_env_id, scope="test-scope"
+        )
+
+        assert exception.task_id == task_id
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.scope == "test-scope"
+        assert str(task_id) in exception.message
+        assert str(deployment_env_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "task_deployment_env"

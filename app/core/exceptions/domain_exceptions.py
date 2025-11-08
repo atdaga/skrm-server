@@ -549,3 +549,38 @@ class FeatureDocAlreadyExistsException(DomainException):
         self.feature_id = feature_id
         self.doc_id = doc_id
         self.scope = scope
+
+
+# ============================================================================
+# Task Deployment Environment-related exceptions
+# ============================================================================
+
+
+class TaskDeploymentEnvNotFoundException(DomainException):
+    """Raised when a task deployment environment relationship cannot be found."""
+
+    def __init__(
+        self, task_id: UUID, deployment_env_id: UUID, scope: str | None = None
+    ):
+        message = f"Task deployment environment with task_id '{task_id}' and deployment_env_id '{deployment_env_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(
+            message, entity_type="task_deployment_env", entity_id=deployment_env_id
+        )
+        self.task_id = task_id
+        self.deployment_env_id = deployment_env_id
+        self.scope = scope
+
+
+class TaskDeploymentEnvAlreadyExistsException(DomainException):
+    """Raised when attempting to add a task deployment environment relationship that already exists."""
+
+    def __init__(self, task_id: UUID, deployment_env_id: UUID, scope: str):
+        message = f"Task deployment environment with task_id '{task_id}' and deployment_env_id '{deployment_env_id}' already exists in scope '{scope}'"
+        super().__init__(
+            message, entity_type="task_deployment_env", entity_id=deployment_env_id
+        )
+        self.task_id = task_id
+        self.deployment_env_id = deployment_env_id
+        self.scope = scope

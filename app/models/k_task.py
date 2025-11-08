@@ -1,11 +1,15 @@
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Text, UniqueConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 from .k_feature import ReviewResult
+
+if TYPE_CHECKING:
+    from .k_task_deployment_env import KTaskDeploymentEnv
 
 
 class TaskStatus(str, Enum):
@@ -39,6 +43,11 @@ class KTask(SQLModel, table=True):
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
     last_modified_by: UUID
+
+    # Relationships
+    task_deployment_envs: list["KTaskDeploymentEnv"] = Relationship(
+        back_populates="task", sa_relationship_kwargs={"passive_deletes": True}
+    )
 
 
 __all__ = ["KTask", "TaskStatus"]
