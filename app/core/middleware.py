@@ -55,6 +55,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 # Extract the 'sub' claim which contains the principal/user ID
                 principal_id = payload.get("sub")
 
+                # Cache the validated token and payload for reuse in dependencies
+                # This eliminates duplicate JWT validation in protected endpoints
+                request.state.jwt_token = token
+                request.state.jwt_payload = payload
+
         # Set context variables
         request_id_var.set(request_id)
         principal_id_var.set(principal_id)

@@ -17,21 +17,79 @@ from ..schemas.user import TokenData, UserDetail
 
 
 async def get_current_token(
+    request: Request,
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> TokenData:
-    """Get current token from Authorization header."""
+    """Get current token from Authorization header.
+
+    Checks request.state for cached validated token to avoid duplicate validation.
+    Falls back to full validation if cache miss or token mismatch.
+    """
     try:
+        # Check if middleware already validated this token
+        cached_token = getattr(request.state, "jwt_token", None)
+        cached_payload = getattr(request.state, "jwt_payload", None)
+
+        if cached_token == token and cached_payload is not None:
+            # Use cached payload to avoid duplicate validation
+            # Convert Unix timestamps to datetime objects (same as get_token_data)
+            from datetime import UTC, datetime
+
+            iat = datetime.fromtimestamp(cached_payload["iat"], tz=UTC).replace(
+                tzinfo=None
+            )
+            exp = datetime.fromtimestamp(cached_payload["exp"], tz=UTC).replace(
+                tzinfo=None
+            )
+            ss = datetime.fromtimestamp(cached_payload["ss"], tz=UTC).replace(
+                tzinfo=None
+            )
+
+            return TokenData(
+                sub=cached_payload["sub"],
+                scope=cached_payload["scope"],
+                iss=cached_payload["iss"],
+                aud=cached_payload["aud"],
+                jti=cached_payload["jti"],
+                iat=iat,
+                exp=exp,
+                ss=ss,
+            )
+
+        # Cache miss or token mismatch - perform full validation
         return await deps_logic.get_token_data(token)
     except InvalidTokenException as e:
         raise UnauthorizedException(e.message) from e
 
 
 async def get_current_user(
+    request: Request,
     token: Annotated[str, Depends(oauth2_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
-    """Get current authenticated user from token."""
+    """Get current authenticated user from token.
+
+    Checks request.state for cached validated token to avoid duplicate validation.
+    Falls back to full validation if cache miss or token mismatch.
+    """
     try:
+        # Check if middleware already validated this token
+        cached_token = getattr(request.state, "jwt_token", None)
+        cached_payload = getattr(request.state, "jwt_payload", None)
+
+        if cached_token == token and cached_payload is not None:
+            # Use cached payload to extract user ID and fetch from database
+            from uuid import UUID
+
+            user_id_str = cached_payload.get("sub")
+            try:
+                user_id = UUID(user_id_str)
+            except (ValueError, TypeError) as e:
+                raise InvalidUserIdException(user_id_str=str(user_id_str)) from e
+
+            return await deps_logic.get_user_by_id(user_id, db)
+
+        # Cache miss or token mismatch - perform full validation
         return await deps_logic.get_user_from_token(token, db)
     except (InvalidTokenException, InvalidUserIdException, UserNotFoundException) as e:
         raise UnauthorizedException(e.message) from e
@@ -40,7 +98,10 @@ async def get_current_user(
 async def get_optional_user(
     request: Request, db: AsyncSession = Depends(get_db)
 ) -> UserDetail | None:
-    """Get optional user from Authorization header."""
+    """Get optional user from Authorization header.
+
+    Checks request.state for cached validated token to avoid duplicate validation.
+    """
     token = request.headers.get("Authorization")
     if not token:
         return None
@@ -50,6 +111,19 @@ async def get_optional_user(
         if token_type.lower() != "bearer" or not token_value:
             return None
 
+        # Check if middleware already validated this token
+        cached_token = getattr(request.state, "jwt_token", None)
+        cached_payload = getattr(request.state, "jwt_payload", None)
+
+        if cached_token == token_value and cached_payload is not None:
+            # Use cached payload to extract user ID and fetch from database
+            from uuid import UUID
+
+            user_id_str = cached_payload.get("sub")
+            user_id = UUID(user_id_str)
+            return await deps_logic.get_user_by_id(user_id, db)
+
+        # Cache miss or token mismatch - perform full validation
         return await deps_logic.get_user_from_token(token_value, db)
 
     except Exception:

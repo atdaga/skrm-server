@@ -1,28 +1,5 @@
 # TODO
 
-* contextvars middleware:
-```
-from contextvars import ContextVar
-from fastapi import FastAPI, Request
-
-user_id_var: ContextVar[str] = ContextVar('user_id')
-
-app = FastAPI()
-
-@app.middleware("http")
-async def add_user_id_to_context(request: Request, call_next):
-    user_id = request.headers.get("X-User-ID", "anonymous")
-    token = user_id_var.set(user_id)
-    response = await call_next(request)
-    user_id_var.reset(token)
-    return response
-
-@app.get("/profile")
-async def get_profile():
-    user_id = user_id_var.get()
-    return {"user_id": user_id}
-```
-
 * CORS Middleware (and other middleware needed for security or logging or context)
 
 * Return refresh token in cookie

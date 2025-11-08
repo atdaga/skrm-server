@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid7
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from httpx import ASGITransport, AsyncClient
 
 from app.core.auth import create_access_token
@@ -371,6 +371,106 @@ class TestRequestContextMiddleware:
 
         # Token without sub should result in None (verify_token will reject it)
         assert data["principal_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_middleware_caches_valid_token_in_request_state(self, test_app):
+        """Test that middleware caches validated token and payload in request.state."""
+        # Create a valid token
+        user_id = str(uuid7())
+        token_data = {"sub": user_id, "scope": "global"}
+        now = datetime.now(UTC).replace(tzinfo=None)
+        token = await create_access_token(token_data, now)
+
+        # Route that checks request.state
+        @test_app.get("/test-cache")
+        async def test_cache(request: Request):  # noqa: F841 (used as route handler)
+            return {
+                "has_jwt_token": hasattr(request.state, "jwt_token"),
+                "has_jwt_payload": hasattr(request.state, "jwt_payload"),
+                "token_matches": (
+                    getattr(request.state, "jwt_token", None) == token.split()[0]
+                    if hasattr(request.state, "jwt_token")
+                    else False
+                ),
+                "payload_has_sub": (
+                    "sub" in getattr(request.state, "jwt_payload", {})
+                    if hasattr(request.state, "jwt_payload")
+                    else False
+                ),
+                "principal_id_matches": (
+                    getattr(request.state, "jwt_payload", {}).get("sub") == user_id
+                    if hasattr(request.state, "jwt_payload")
+                    else False
+                ),
+            }
+
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/test-cache", headers={"Authorization": f"Bearer {token}"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify caching behavior
+        assert data["has_jwt_token"] is True
+        assert data["has_jwt_payload"] is True
+        assert data["payload_has_sub"] is True
+        assert data["principal_id_matches"] is True
+
+    @pytest.mark.asyncio
+    async def test_middleware_no_cache_without_token(self, test_app):
+        """Test that middleware doesn't cache when no token is provided."""
+
+        # Route that checks request.state
+        @test_app.get("/test-no-cache")
+        async def test_no_cache(request: Request):  # noqa: F841 (used as route handler)
+            return {
+                "has_jwt_token": hasattr(request.state, "jwt_token"),
+                "has_jwt_payload": hasattr(request.state, "jwt_payload"),
+            }
+
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get("/test-no-cache")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # No token means no caching
+        assert data["has_jwt_token"] is False
+        assert data["has_jwt_payload"] is False
+
+    @pytest.mark.asyncio
+    async def test_middleware_no_cache_for_invalid_token(self, test_app):
+        """Test that middleware doesn't cache invalid token."""
+
+        # Route that checks request.state
+        @test_app.get("/test-invalid-cache")
+        async def test_invalid_cache(
+            request: Request,
+        ):  # noqa: F841 (used as route handler)
+            return {
+                "has_jwt_token": hasattr(request.state, "jwt_token"),
+                "has_jwt_payload": hasattr(request.state, "jwt_payload"),
+            }
+
+        async with AsyncClient(
+            transport=ASGITransport(app=test_app), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/test-invalid-cache", headers={"Authorization": "Bearer invalid.token"}
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Invalid token means no caching
+        assert data["has_jwt_token"] is False
+        assert data["has_jwt_payload"] is False
 
 
 class TestRequestContextGetters:
