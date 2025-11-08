@@ -153,6 +153,7 @@ async def authenticate_user(
         KPrincipal.human == True,  # type: ignore[arg-type]  # noqa: E712
         KPrincipal.enabled == True,  # type: ignore[arg-type]  # noqa: E712
         KPrincipal.username == username,  # type: ignore[arg-type]
+        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
     )
     result = await db.execute(stmt)
     principal = result.scalar_one_or_none()

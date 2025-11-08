@@ -192,7 +192,9 @@ class TestKPrincipalModel:
         await session.commit()
 
         # Both should exist
-        result = await session.execute(select(KPrincipal))
+        result = await session.execute(
+            select(KPrincipal).where(KPrincipal.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         principals = result.scalars().all()
         assert len(principals) == 2
 
@@ -213,7 +215,10 @@ class TestKPrincipalModel:
         await session.commit()
 
         # Query by username
-        stmt = select(KPrincipal).where(KPrincipal.username == "querytest")
+        stmt = select(KPrincipal).where(
+            KPrincipal.username == "querytest",
+            KPrincipal.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         result_exec = await session.execute(stmt)
         result = result_exec.scalar_one_or_none()
 

@@ -79,7 +79,7 @@ async def list_teams(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTea
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     teams = result.scalars().all()
     return list(teams)
@@ -106,7 +106,7 @@ async def get_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -143,7 +143,7 @@ async def update_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -192,7 +192,7 @@ async def delete_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 

@@ -1,6 +1,6 @@
 # TODO
 
-* For this particular application, use the "deleted" field for domain entities (not relationships). For history, Temporal database: create shadow tables. No foreign keys.
+* For this particular application, use the "deleted" field for domain entities (not relationships).
 
 * contextvars middleware:
 ```
@@ -44,3 +44,5 @@ This approach balances security and usability for SPAs, protecting the refresh t
 * Use all-mpnet-base-v2 for local embeddings model. (Right now, there's no wheels for python 3.13, so using remote model to create embeddings for now).
 
 * Upgrade library versions.
+
+* Not needed for this app, but for history, Temporal database: create shadow tables. No foreign keys.

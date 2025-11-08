@@ -255,7 +255,10 @@ async def test_organization_without_membership(
     from app.models import KOrganization, KPrincipal
 
     result = await async_session.execute(
-        select(KPrincipal).where(KPrincipal.id == test_user_id)
+        select(KPrincipal).where(
+            KPrincipal.id == test_user_id,
+            KPrincipal.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+        )
     )
     existing_principal = result.scalar_one_or_none()
 
@@ -300,7 +303,10 @@ async def test_principal(async_session: AsyncSession, test_user_id: UUID):
 
     # Create or get the test_user principal first (for created_by/last_modified_by)
     result = await async_session.execute(
-        select(KPrincipal).where(KPrincipal.id == test_user_id)
+        select(KPrincipal).where(
+            KPrincipal.id == test_user_id,
+            KPrincipal.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+        )
     )
     test_user_principal = result.scalar_one_or_none()
 

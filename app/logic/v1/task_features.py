@@ -40,7 +40,7 @@ async def add_task_feature(
         TaskFeatureAlreadyExistsException: If the feature already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -54,6 +54,7 @@ async def add_task_feature(
     feature_stmt = select(KFeature).where(
         KFeature.id == feature_data.feature_id,  # type: ignore[arg-type]
         KFeature.org_id == org_id,  # type: ignore[arg-type]
+        KFeature.deleted == False,  # type: ignore[arg-type]  # noqa: E712
     )
     result = await db.execute(feature_stmt)
     feature = result.scalar_one_or_none()
@@ -104,7 +105,7 @@ async def list_task_features(task_id: UUID, db: AsyncSession) -> list[KTaskFeatu
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 

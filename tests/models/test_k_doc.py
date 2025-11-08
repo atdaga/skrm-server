@@ -310,7 +310,10 @@ python main.py
         await session.commit()
 
         # Query docs for test_org_id
-        stmt = select(KDoc).where(KDoc.org_id == test_org_id)  # type: ignore[arg-type]
+        stmt = select(KDoc).where(
+            KDoc.org_id == test_org_id,  # type: ignore[arg-type]
+            KDoc.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         result = await session.execute(stmt)
         docs = result.scalars().all()
 

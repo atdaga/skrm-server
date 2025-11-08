@@ -43,7 +43,7 @@ async def add_task_deployment_env(
         TaskDeploymentEnvAlreadyExistsException: If the deployment environment already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -57,6 +57,7 @@ async def add_task_deployment_env(
     deployment_env_stmt = select(KDeploymentEnv).where(
         KDeploymentEnv.id == deployment_env_data.deployment_env_id,  # type: ignore[arg-type]
         KDeploymentEnv.org_id == org_id,  # type: ignore[arg-type]
+        KDeploymentEnv.deleted == False,  # type: ignore[arg-type]  # noqa: E712
     )
     result = await db.execute(deployment_env_stmt)
     deployment_env = result.scalar_one_or_none()
@@ -109,7 +110,7 @@ async def list_task_deployment_envs(
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 

@@ -78,7 +78,7 @@ async def list_organizations(scope: str, db: AsyncSession) -> list[KOrganization
     Returns:
         List of organization models
     """
-    stmt = select(KOrganization)
+    stmt = select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     organizations = result.scalars().all()
     return list(organizations)
@@ -105,7 +105,7 @@ async def get_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -142,7 +142,7 @@ async def update_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -203,7 +203,7 @@ async def delete_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 

@@ -38,7 +38,7 @@ async def add_team_member(
         TeamMemberAlreadyExistsException: If the member already exists in the team
     """
     # Verify team exists and get its org_id
-    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -87,7 +87,7 @@ async def list_team_members(team_id: UUID, db: AsyncSession) -> list[KTeamMember
         TeamNotFoundException: If the team is not found
     """
     # Verify team exists and get its org_id
-    stmt = select(KTeam).where(KTeam.id == team_id)  # type: ignore[arg-type]
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 

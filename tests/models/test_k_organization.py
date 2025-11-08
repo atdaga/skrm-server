@@ -180,7 +180,9 @@ class TestKOrganizationModel:
         await session.commit()
 
         # Both should exist
-        result_exec = await session.execute(select(KOrganization))
+        result_exec = await session.execute(
+            select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         organizations = result_exec.scalars().all()
         assert len(organizations) == 2
 
@@ -208,7 +210,9 @@ class TestKOrganizationModel:
         await session.commit()
 
         # Both should exist
-        result_exec = await session.execute(select(KOrganization))
+        result_exec = await session.execute(
+            select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         organizations = result_exec.scalars().all()
         assert len(organizations) == 2
 
@@ -227,7 +231,10 @@ class TestKOrganizationModel:
 
         # Query by name
         result_exec = await session.execute(
-            select(KOrganization).where(KOrganization.name == "Product Corp")
+            select(KOrganization).where(
+                KOrganization.name == "Product Corp",
+                KOrganization.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         result = result_exec.scalar_one_or_none()
 
@@ -252,7 +259,10 @@ class TestKOrganizationModel:
 
         # Query by alias
         result_exec = await session.execute(
-            select(KOrganization).where(KOrganization.alias == "data_corp")
+            select(KOrganization).where(
+                KOrganization.alias == "data_corp",
+                KOrganization.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         result = result_exec.scalar_one_or_none()
 
@@ -293,7 +303,10 @@ class TestKOrganizationModel:
 
         # Query specific organization by name
         result_exec = await session.execute(
-            select(KOrganization).where(KOrganization.name == "Org A")
+            select(KOrganization).where(
+                KOrganization.name == "Org A",
+                KOrganization.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         result = result_exec.scalar_one_or_none()
 
@@ -405,7 +418,9 @@ class TestKOrganizationModel:
         await session.commit()
 
         # List all organizations
-        result_exec = await session.execute(select(KOrganization))
+        result_exec = await session.execute(
+            select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         all_orgs = result_exec.scalars().all()
         assert len(all_orgs) == 3
 
@@ -427,7 +442,9 @@ class TestKOrganizationModel:
         await session.commit()
 
         # Count all organizations
-        result_exec = await session.execute(select(KOrganization))
+        result_exec = await session.execute(
+            select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         all_orgs = result_exec.scalars().all()
         assert len(all_orgs) == 5
 
@@ -477,6 +494,8 @@ class TestKOrganizationModel:
         await session.commit()
 
         # All should be created successfully
-        result_exec = await session.execute(select(KOrganization))
+        result_exec = await session.execute(
+            select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         all_orgs = result_exec.scalars().all()
         assert len(all_orgs) == len(valid_aliases)

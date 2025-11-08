@@ -46,7 +46,7 @@ async def add_organization_principal(
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
     # Verify organization exists
-    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     organization = result.scalar_one_or_none()
 
@@ -98,7 +98,7 @@ async def list_organization_principals(
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
     # Verify organization exists
-    stmt = select(KOrganization).where(KOrganization.id == org_id)  # type: ignore[arg-type]
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     organization = result.scalar_one_or_none()
 

@@ -38,7 +38,7 @@ async def add_project_team(
         ProjectTeamAlreadyExistsException: If the team already exists in the project
     """
     # Verify project exists and get its org_id
-    stmt = select(KProject).where(KProject.id == project_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -87,7 +87,7 @@ async def list_project_teams(project_id: UUID, db: AsyncSession) -> list[KProjec
         ProjectNotFoundException: If the project is not found
     """
     # Verify project exists and get its org_id
-    stmt = select(KProject).where(KProject.id == project_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 

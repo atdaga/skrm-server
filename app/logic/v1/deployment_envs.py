@@ -83,7 +83,7 @@ async def list_deployment_envs(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     deployment_envs = result.scalars().all()
     return list(deployment_envs)
@@ -110,7 +110,7 @@ async def get_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 
@@ -149,7 +149,7 @@ async def update_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 
@@ -200,7 +200,7 @@ async def delete_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 

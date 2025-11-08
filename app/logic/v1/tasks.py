@@ -73,7 +73,7 @@ async def list_tasks(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTas
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     tasks = result.scalars().all()
     return list(tasks)
@@ -100,7 +100,7 @@ async def get_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -136,7 +136,7 @@ async def update_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -187,7 +187,7 @@ async def delete_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 

@@ -20,6 +20,7 @@ class KProject(SQLModel, table=True):
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
+    deleted: bool = Field(default=False)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)

@@ -36,6 +36,7 @@ class KPrincipal(SQLModel, table=True):
     default_locale: str = Field(default="en", max_length=255)
     system_role: str = Field(default="system_user")
     meta: dict = Field(default_factory=dict, sa_type=JSON)
+    deleted: bool = Field(default=False)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)

@@ -81,7 +81,7 @@ async def list_docs(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KDoc]
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDoc).where(KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     docs = result.scalars().all()
     return list(docs)
@@ -106,7 +106,7 @@ async def get_doc(doc_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession) -
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 
@@ -143,7 +143,7 @@ async def update_doc(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 
@@ -196,7 +196,7 @@ async def delete_doc(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 

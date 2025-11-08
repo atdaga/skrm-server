@@ -173,7 +173,9 @@ class TestKTeamModel:
         await session.commit()
 
         # Both should exist
-        result_exec = await session.execute(select(KTeam))
+        result_exec = await session.execute(
+            select(KTeam).where(KTeam.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         teams = result_exec.scalars().all()
         assert len(teams) == 2
 
@@ -194,7 +196,10 @@ class TestKTeamModel:
 
         # Query by name
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.name == "Product Team")
+            select(KTeam).where(
+                KTeam.name == "Product Team",
+                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         result = result_exec.scalar_one_or_none()
 
@@ -252,7 +257,10 @@ class TestKTeamModel:
 
         # Query teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org1.id)
+            select(KTeam).where(
+                KTeam.org_id == org1.id,
+                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         results = result_exec.scalars().all()
 
@@ -383,7 +391,9 @@ class TestKTeamModel:
         await session.commit()
 
         # List all teams
-        result_exec = await session.execute(select(KTeam))
+        result_exec = await session.execute(
+            select(KTeam).where(KTeam.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         all_teams = result_exec.scalars().all()
         assert len(all_teams) == 3
 
@@ -433,14 +443,20 @@ class TestKTeamModel:
 
         # Count teams in org_id_1
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org1.id)
+            select(KTeam).where(
+                KTeam.org_id == org1.id,
+                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         org1_teams = result_exec.scalars().all()
         assert len(org1_teams) == 3
 
         # Count teams in org_id_2
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.org_id == org2.id)
+            select(KTeam).where(
+                KTeam.org_id == org2.id,
+                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            )
         )
         org2_teams = result_exec.scalars().all()
         assert len(org2_teams) == 2

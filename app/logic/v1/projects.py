@@ -84,7 +84,7 @@ async def list_projects(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     projects = result.scalars().all()
     return list(projects)
@@ -111,7 +111,7 @@ async def get_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -148,7 +148,7 @@ async def update_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -199,7 +199,7 @@ async def delete_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 

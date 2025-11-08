@@ -40,7 +40,7 @@ async def add_feature_doc(
         FeatureDocAlreadyExistsException: If the doc already exists for the feature
     """
     # Verify feature exists and get its org_id
-    stmt = select(KFeature).where(KFeature.id == feature_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -54,6 +54,7 @@ async def add_feature_doc(
     doc_stmt = select(KDoc).where(
         KDoc.id == doc_data.doc_id,  # type: ignore[arg-type]
         KDoc.org_id == org_id,  # type: ignore[arg-type]
+        KDoc.deleted == False,  # type: ignore[arg-type]  # noqa: E712
     )
     result = await db.execute(doc_stmt)
     doc = result.scalar_one_or_none()
@@ -100,7 +101,7 @@ async def list_feature_docs(feature_id: UUID, db: AsyncSession) -> list[KFeature
         FeatureNotFoundException: If the feature is not found
     """
     # Verify feature exists
-    stmt = select(KFeature).where(KFeature.id == feature_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 

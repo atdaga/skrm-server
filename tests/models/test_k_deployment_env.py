@@ -222,7 +222,10 @@ class TestKDeploymentEnvModel:
         await session.commit()
 
         # Query deployment environments for test_org_id
-        stmt = select(KDeploymentEnv).where(KDeploymentEnv.org_id == test_org_id)  # type: ignore[arg-type]
+        stmt = select(KDeploymentEnv).where(
+            KDeploymentEnv.org_id == test_org_id,  # type: ignore[arg-type]
+            KDeploymentEnv.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+        )
         result = await session.execute(stmt)
         deployment_envs = result.scalars().all()
 

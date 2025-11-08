@@ -91,7 +91,7 @@ async def list_features(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     features = result.scalars().all()
     return list(features)
@@ -118,7 +118,7 @@ async def get_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -155,7 +155,7 @@ async def update_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -220,7 +220,7 @@ async def delete_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id)  # type: ignore[arg-type]
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
