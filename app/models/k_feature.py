@@ -7,6 +7,7 @@ from sqlalchemy import JSON, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
+    from .k_feature_doc import KFeatureDoc
     from .k_project_feature import KProjectFeature
 
 
@@ -49,6 +50,10 @@ class KFeature(SQLModel, table=True):
     last_modified_by: UUID
 
     # Relationships
+    feature_docs: list["KFeatureDoc"] = Relationship(
+        back_populates="feature",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
     feature_projects: list["KProjectFeature"] = Relationship(
         back_populates="feature",
         sa_relationship_kwargs={"passive_deletes": True},

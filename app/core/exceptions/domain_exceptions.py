@@ -482,3 +482,32 @@ class FeatureUpdateConflictException(DomainException):
         self.feature_id = feature_id
         self.name = name
         self.scope = scope
+
+
+# ============================================================================
+# Feature Doc-related exceptions
+# ============================================================================
+
+
+class FeatureDocNotFoundException(DomainException):
+    """Raised when a feature doc relationship cannot be found."""
+
+    def __init__(self, feature_id: UUID, doc_id: UUID, scope: str | None = None):
+        message = f"Feature doc with feature_id '{feature_id}' and doc_id '{doc_id}' not found"
+        if scope:
+            message += f" in scope '{scope}'"
+        super().__init__(message, entity_type="feature_doc", entity_id=doc_id)
+        self.feature_id = feature_id
+        self.doc_id = doc_id
+        self.scope = scope
+
+
+class FeatureDocAlreadyExistsException(DomainException):
+    """Raised when attempting to add a feature doc relationship that already exists."""
+
+    def __init__(self, feature_id: UUID, doc_id: UUID, scope: str):
+        message = f"Feature doc with feature_id '{feature_id}' and doc_id '{doc_id}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="feature_doc", entity_id=doc_id)
+        self.feature_id = feature_id
+        self.doc_id = doc_id
+        self.scope = scope

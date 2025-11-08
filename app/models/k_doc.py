@@ -1,8 +1,12 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Text, UniqueConstraint
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from .k_feature_doc import KFeatureDoc
 
 
 class KDoc(SQLModel, table=True):
@@ -19,6 +23,12 @@ class KDoc(SQLModel, table=True):
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)
     last_modified_by: UUID
+
+    # Relationships
+    feature_docs: list["KFeatureDoc"] = Relationship(
+        back_populates="doc",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
 
 
 __all__ = ["KDoc"]

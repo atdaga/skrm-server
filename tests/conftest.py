@@ -56,7 +56,22 @@ def pytest_sessionfinish(session, exitstatus):
 @pytest.fixture
 async def async_engine():
     """Create an async in-memory SQLite engine for testing."""
+    import sqlite3
+
     from sqlalchemy import event
+
+    # Register datetime adapters for Python 3.12+ compatibility
+    # These prevent deprecation warnings about default datetime adapters
+    def adapt_datetime_iso(val):
+        """Adapt datetime.datetime to ISO 8601 string."""
+        return val.isoformat()
+
+    def convert_datetime(val):
+        """Convert ISO 8601 string to datetime.datetime."""
+        return datetime.fromisoformat(val.decode())
+
+    sqlite3.register_adapter(datetime, adapt_datetime_iso)
+    sqlite3.register_converter("datetime", convert_datetime)
 
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",

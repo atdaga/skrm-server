@@ -5,7 +5,18 @@ from uuid import uuid4
 import pytest
 
 from app.core.exceptions.domain_exceptions import (
+    DeploymentEnvAlreadyExistsException,
+    DeploymentEnvNotFoundException,
+    DeploymentEnvUpdateConflictException,
+    DocAlreadyExistsException,
+    DocNotFoundException,
+    DocUpdateConflictException,
     DomainException,
+    FeatureAlreadyExistsException,
+    FeatureDocAlreadyExistsException,
+    FeatureDocNotFoundException,
+    FeatureNotFoundException,
+    FeatureUpdateConflictException,
     InsufficientPrivilegesException,
     InvalidCredentialsException,
     InvalidTokenException,
@@ -625,3 +636,209 @@ class TestProjectTeamExceptions:
         assert str(team_id) in exception.message
         assert "test-scope" in exception.message
         assert exception.entity_type == "project_team"
+
+
+class TestDocExceptions:
+    """Test suite for doc-related exceptions."""
+
+    def test_doc_not_found_exception_with_scope(self):
+        """Test DocNotFoundException with scope."""
+        doc_id = uuid4()
+        exception = DocNotFoundException(doc_id=doc_id, scope="test-scope")
+
+        assert exception.doc_id == doc_id
+        assert exception.scope == "test-scope"
+        assert str(doc_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "doc"
+        assert exception.entity_id == doc_id
+
+    def test_doc_not_found_exception_without_scope(self):
+        """Test DocNotFoundException without scope."""
+        doc_id = uuid4()
+        exception = DocNotFoundException(doc_id=doc_id)
+
+        assert exception.doc_id == doc_id
+        assert exception.scope is None
+        assert str(doc_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_doc_already_exists_exception(self):
+        """Test DocAlreadyExistsException."""
+        exception = DocAlreadyExistsException(name="TestDoc", scope="test-scope")
+
+        assert exception.name == "TestDoc"
+        assert exception.scope == "test-scope"
+        assert "TestDoc" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "doc"
+
+    def test_doc_update_conflict_exception(self):
+        """Test DocUpdateConflictException."""
+        doc_id = uuid4()
+        exception = DocUpdateConflictException(
+            doc_id=doc_id, name="ConflictName", scope="test-scope"
+        )
+
+        assert exception.doc_id == doc_id
+        assert exception.name == "ConflictName"
+        assert exception.scope == "test-scope"
+        assert str(doc_id) in exception.message
+        assert "ConflictName" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "doc"
+
+
+class TestDeploymentEnvExceptions:
+    """Test suite for deployment environment-related exceptions."""
+
+    def test_deployment_env_not_found_exception_with_scope(self):
+        """Test DeploymentEnvNotFoundException with scope."""
+        deployment_env_id = uuid4()
+        exception = DeploymentEnvNotFoundException(
+            deployment_env_id=deployment_env_id, scope="test-scope"
+        )
+
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.scope == "test-scope"
+        assert str(deployment_env_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "deployment_env"
+        assert exception.entity_id == deployment_env_id
+
+    def test_deployment_env_not_found_exception_without_scope(self):
+        """Test DeploymentEnvNotFoundException without scope."""
+        deployment_env_id = uuid4()
+        exception = DeploymentEnvNotFoundException(deployment_env_id=deployment_env_id)
+
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.scope is None
+        assert str(deployment_env_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_deployment_env_already_exists_exception(self):
+        """Test DeploymentEnvAlreadyExistsException."""
+        exception = DeploymentEnvAlreadyExistsException(
+            name="production", scope="test-scope"
+        )
+
+        assert exception.name == "production"
+        assert exception.scope == "test-scope"
+        assert "production" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "deployment_env"
+
+    def test_deployment_env_update_conflict_exception(self):
+        """Test DeploymentEnvUpdateConflictException."""
+        deployment_env_id = uuid4()
+        exception = DeploymentEnvUpdateConflictException(
+            deployment_env_id=deployment_env_id, name="staging", scope="test-scope"
+        )
+
+        assert exception.deployment_env_id == deployment_env_id
+        assert exception.name == "staging"
+        assert exception.scope == "test-scope"
+        assert str(deployment_env_id) in exception.message
+        assert "staging" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "deployment_env"
+
+
+class TestFeatureExceptions:
+    """Test suite for feature-related exceptions."""
+
+    def test_feature_not_found_exception_with_scope(self):
+        """Test FeatureNotFoundException with scope."""
+        feature_id = uuid4()
+        exception = FeatureNotFoundException(feature_id=feature_id, scope="test-scope")
+
+        assert exception.feature_id == feature_id
+        assert exception.scope == "test-scope"
+        assert str(feature_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "feature"
+        assert exception.entity_id == feature_id
+
+    def test_feature_not_found_exception_without_scope(self):
+        """Test FeatureNotFoundException without scope."""
+        feature_id = uuid4()
+        exception = FeatureNotFoundException(feature_id=feature_id)
+
+        assert exception.feature_id == feature_id
+        assert exception.scope is None
+        assert str(feature_id) in exception.message
+        assert "in scope" not in exception.message
+
+    def test_feature_already_exists_exception(self):
+        """Test FeatureAlreadyExistsException."""
+        exception = FeatureAlreadyExistsException(
+            name="TestFeature", scope="test-scope"
+        )
+
+        assert exception.name == "TestFeature"
+        assert exception.scope == "test-scope"
+        assert "TestFeature" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "feature"
+
+    def test_feature_update_conflict_exception(self):
+        """Test FeatureUpdateConflictException."""
+        feature_id = uuid4()
+        exception = FeatureUpdateConflictException(
+            feature_id=feature_id, name="ConflictName", scope="test-scope"
+        )
+
+        assert exception.feature_id == feature_id
+        assert exception.name == "ConflictName"
+        assert exception.scope == "test-scope"
+        assert str(feature_id) in exception.message
+        assert "ConflictName" in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "feature"
+
+
+class TestFeatureDocExceptions:
+    """Test suite for feature doc-related exceptions."""
+
+    def test_feature_doc_not_found_exception_with_scope(self):
+        """Test FeatureDocNotFoundException with scope."""
+        feature_id = uuid4()
+        doc_id = uuid4()
+        exception = FeatureDocNotFoundException(
+            feature_id=feature_id, doc_id=doc_id, scope="test-scope"
+        )
+
+        assert exception.feature_id == feature_id
+        assert exception.doc_id == doc_id
+        assert exception.scope == "test-scope"
+        assert str(feature_id) in exception.message
+        assert str(doc_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "feature_doc"
+
+    def test_feature_doc_not_found_exception_without_scope(self):
+        """Test FeatureDocNotFoundException without scope."""
+        feature_id = uuid4()
+        doc_id = uuid4()
+        exception = FeatureDocNotFoundException(feature_id=feature_id, doc_id=doc_id)
+
+        assert exception.feature_id == feature_id
+        assert exception.doc_id == doc_id
+        assert exception.scope is None
+        assert "in scope" not in exception.message
+
+    def test_feature_doc_already_exists_exception(self):
+        """Test FeatureDocAlreadyExistsException."""
+        feature_id = uuid4()
+        doc_id = uuid4()
+        exception = FeatureDocAlreadyExistsException(
+            feature_id=feature_id, doc_id=doc_id, scope="test-scope"
+        )
+
+        assert exception.feature_id == feature_id
+        assert exception.doc_id == doc_id
+        assert exception.scope == "test-scope"
+        assert str(feature_id) in exception.message
+        assert str(doc_id) in exception.message
+        assert "test-scope" in exception.message
+        assert exception.entity_type == "feature_doc"
