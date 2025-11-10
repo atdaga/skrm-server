@@ -13,28 +13,6 @@ ${imports if imports else ""}
 # Import sqlmodel for SQLModel-specific types (AutoString, etc.)
 import sqlmodel
 
-# Helper function to create enum types safely (check if they exist first)
-def create_enum_if_not_exists(enum_type):
-    """Create a PostgreSQL enum type only if it doesn't already exist."""
-    from sqlalchemy.dialects import postgresql
-    if isinstance(enum_type, postgresql.ENUM):
-        # Check if enum type exists
-        conn = op.get_bind()
-        enum_name = enum_type.name
-        result = conn.execute(
-            sa.text(
-                "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = :name)"
-            ),
-            {"name": enum_name}
-        )
-        exists = result.scalar()
-        if not exists:
-            enum_type.create(conn, checkfirst=False)
-    elif hasattr(enum_type, 'create'):
-        # For other enum types, use checkfirst
-        conn = op.get_bind()
-        enum_type.create(conn, checkfirst=True)
-
 # revision identifiers, used by Alembic.
 revision: str = ${repr(up_revision)}
 down_revision: Union[str, Sequence[str], None] = ${repr(down_revision)}
