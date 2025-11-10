@@ -88,15 +88,11 @@ class TestLifespanManager:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_lifespan_startup_success(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_lifespan_startup_success(self, mock_init_db, mock_cleanup_db):
         """Test successful application startup."""
         from app.main import lifespan
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         app = MagicMock(spec=FastAPI)
@@ -104,18 +100,14 @@ class TestLifespanManager:
         async with lifespan(app):
             # Verify startup actions were called
             mock_init_db.assert_called_once()
-            mock_create_tables.assert_called_once()
 
         # Verify cleanup was called on shutdown
         mock_cleanup_db.assert_called_once()
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_lifespan_startup_database_error(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_lifespan_startup_database_error(self, mock_init_db, mock_cleanup_db):
         """Test that database initialization errors are raised."""
         from app.main import lifespan
 
@@ -129,33 +121,11 @@ class TestLifespanManager:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_lifespan_startup_table_creation_error(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
-        """Test that table creation errors are raised."""
-        from app.main import lifespan
-
-        mock_create_tables.side_effect = Exception("Failed to create tables")
-
-        app = MagicMock(spec=FastAPI)
-
-        with pytest.raises(Exception, match="Failed to create tables"):
-            async with lifespan(app):
-                pass
-
-    @pytest.mark.asyncio
-    @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
-    @patch("app.main.initialize_database")
-    async def test_lifespan_cleanup_errors_handled(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_lifespan_cleanup_errors_handled(self, mock_init_db, mock_cleanup_db):
         """Test that cleanup errors are caught and logged."""
         from app.main import lifespan
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.side_effect = Exception("Cleanup failed")
 
         app = MagicMock(spec=FastAPI)
@@ -170,15 +140,11 @@ class TestApplicationEndpoints:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_health_endpoint_accessible(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_health_endpoint_accessible(self, mock_init_db, mock_cleanup_db):
         """Test that health endpoint is accessible."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         async with AsyncClient(
@@ -189,15 +155,11 @@ class TestApplicationEndpoints:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_openapi_schema_accessible(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_openapi_schema_accessible(self, mock_init_db, mock_cleanup_db):
         """Test that OpenAPI schema is accessible."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         async with AsyncClient(
@@ -212,15 +174,11 @@ class TestApplicationEndpoints:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_docs_endpoint_accessible(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_docs_endpoint_accessible(self, mock_init_db, mock_cleanup_db):
         """Test that API docs endpoint is accessible."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         async with AsyncClient(
@@ -337,15 +295,11 @@ class TestApplicationIntegration:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_app_lifecycle(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_app_lifecycle(self, mock_init_db, mock_cleanup_db):
         """Test complete application lifecycle."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         # Simulate startup and make a request
@@ -362,15 +316,11 @@ class TestApplicationIntegration:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_app_handles_404(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_app_handles_404(self, mock_init_db, mock_cleanup_db):
         """Test that app returns 404 for non-existent routes."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         async with AsyncClient(
@@ -381,15 +331,11 @@ class TestApplicationIntegration:
 
     @pytest.mark.asyncio
     @patch("app.main.cleanup_database")
-    @patch("app.main.create_all_tables")
     @patch("app.main.initialize_database")
-    async def test_multiple_requests(
-        self, mock_init_db, mock_create_tables, mock_cleanup_db
-    ):
+    async def test_multiple_requests(self, mock_init_db, mock_cleanup_db):
         """Test that app handles multiple sequential requests."""
         from app.main import app
 
-        mock_create_tables.return_value = AsyncMock()
         mock_cleanup_db.return_value = AsyncMock()
 
         async with AsyncClient(

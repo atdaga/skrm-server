@@ -102,7 +102,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def create_all_tables() -> None:
-    """Create all database tables. Call this during application startup."""
+    """Create all database tables. Called during application startup. This should be done by Alembic."""
     if not db_config._initialized:
         db_config.initialize()
 

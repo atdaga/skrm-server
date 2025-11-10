@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .core.db.database import cleanup_database, create_all_tables, initialize_database
+from .core.db.database import cleanup_database, initialize_database
 from .core.logging import get_logger, setup_logging
 from .core.middleware import RequestContextMiddleware
 from .routes import auth, health, v1
@@ -40,9 +40,10 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
         logger.debug("Initializing database")
         initialize_database()
         logger.debug("Database initialized successfully")
-        logger.debug("Creating all tables")
-        await create_all_tables()
-        logger.debug("Tables created successfully")
+        # Table creation should be done by Alembic.
+        # logger.debug("Creating all tables")
+        # await create_all_tables()
+        # logger.debug("Tables created successfully")
         logger.info("Database initialization completed successfully")
     except Exception as e:
         logger.error("Failed to initialize database", error=str(e))

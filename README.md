@@ -30,28 +30,29 @@ uv sync
 cp .env.example .env
 ```
 
-
 ### Database
-```
+
+```sql
 postgres=# CREATE DATABASE skrm_local;
 postgres=# CREATE USER skrm_user WITH ENCRYPTED PASSWORD 'P@ssword12';
 postgres=# GRANT ALL PRIVILEGES ON DATABASE skrm_local TO skrm_user;
 postgres=# \c skrm_local;
 postgres=# GRANT ALL PRIVILEGES ON SCHEMA public TO skrm_user;
 postgres=# \q
+```
 
 #### Initial User
-```
+
 Username: ***super***
 
 Password: ***P@ssword12***
-```
+
+```sql
 INSERT INTO k_principal (id,"scope",username,primary_email,primary_email_verified,primary_phone,primary_phone_verified,human,enabled,time_zone,name_prefix,first_name,middle_name,last_name,name_suffix,display_name,default_locale,system_role,meta,created,created_by,last_modified,last_modified_by) VALUES
-	 ('00000000-0000-0000-0000-000000000000'::uuid,'global','super','super@global.scope',false,NULL,false,true,true,'UTC',NULL,'Super',NULL,'User',NULL,'Super User','en','system_user','{}','2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid);
+ ('00000000-0000-0000-0000-000000000000'::uuid,'global','super','super@global.scope',false,NULL,false,true,true,'UTC',NULL,'Super',NULL,'User',NULL,'Super User','en','system_user','{}','2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid);
 
 INSERT INTO k_principal_identity (id,principal_id,"password",public_key,device_id,expires,details,created,created_by,last_modified,last_modified_by) VALUES
-	 ('0199b6d7-a94f-75e9-a466-fa51620e7181'::uuid,'00000000-0000-0000-0000-000000000000'::uuid,'$2b$12$rdK6qPYTy0OEmjrHSlqsv.GSkqqi2gcJJyMIsMma.SeQS1HwqG002',NULL,NULL,NULL,'{}','2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid);
-
+ ('0199b6d7-a94f-75e9-a466-fa51620e7181'::uuid,'00000000-0000-0000-0000-000000000000'::uuid,'$2b$12$rdK6qPYTy0OEmjrHSlqsv.GSkqqi2gcJJyMIsMma.SeQS1HwqG002',NULL,NULL,NULL,'{}','2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid);
 ```
 
 ## Database Migrations
@@ -69,6 +70,7 @@ Database migrations are scripts that describe changes to your database schema (t
 - **Deployment**: Automate schema updates during deployments
 
 Each migration file contains:
+
 - **Upgrade function**: Applies the changes (e.g., creates a table, adds a column)
 - **Downgrade function**: Reverses the changes (e.g., drops a table, removes a column)
 
@@ -81,11 +83,13 @@ Alembic is configured to use separate environment variables from your applicatio
 Set these in your `.env` file or export them in your shell:
 
 **Option 1: Full Database URL**
+
 ```bash
 ALEMBIC_DATABASE_URL=postgresql+asyncpg://skrm_user:P@ssword12@127.0.0.1:5432/skrm_local
 ```
 
 **Option 2: Individual Components**
+
 ```bash
 ALEMBIC_DB_HOST=127.0.0.1
 ALEMBIC_DB_PORT=5432
@@ -103,6 +107,7 @@ For different environments, use environment-specific `.env` files or set variabl
 Before running migrations, validate your configuration.
 
 **1. Check current database connection:**
+
 ```bash
 uv run alembic current
 ```
@@ -110,12 +115,14 @@ uv run alembic current
 This will show the current migration version if connected successfully, or an error if the database is unreachable.
 
 **2. Test connection without running migrations:**
+
 ```bash
 # This will attempt to connect and show any connection errors
 uv run python -c "from alembic import context; from alembic.config import Config; config = Config('alembic.ini'); print('Config loaded successfully')"
 ```
 
-**4. View migration history:**
+**3. View migration history:**
+
 ```bash
 uv run alembic history
 ```
@@ -135,6 +142,7 @@ Alembic can automatically detect changes to your SQLModel models and generate mi
 1. **Modify or add models** in `app/models/` (e.g., add a new column, create a new table, change a data type)
 
 2. **Run autogenerate** with a descriptive name for the migration:
+
    ```bash
    # Using the helper script (uses timestamp-based naming)
    uv run scripts/alembic_revision.py "descriptive_name" --autogenerate
@@ -204,6 +212,7 @@ This creates an empty migration file that you can edit manually.
    - Column defaults or nullable settings
 
 **Example migration file:**
+
 ```python
 """add_user_email_index
 
@@ -231,21 +240,25 @@ def downgrade() -> None:
 #### Applying Migrations
 
 **Apply all pending migrations:**
+
 ```bash
 uv run alembic upgrade head
 ```
 
 **Apply migrations one at a time:**
+
 ```bash
 uv run alembic upgrade +1
 ```
 
 **Apply migrations to a specific revision:**
+
 ```bash
 uv run alembic upgrade abc123
 ```
 
 **Check current migration version:**
+
 ```bash
 uv run alembic current
 ```
@@ -253,16 +266,19 @@ uv run alembic current
 #### Rolling Back Migrations
 
 **Rollback one migration:**
+
 ```bash
 uv run alembic downgrade -1
 ```
 
 **Rollback to a specific revision:**
+
 ```bash
 uv run alembic downgrade abc123
 ```
 
 **Rollback all migrations:**
+
 ```bash
 uv run alembic downgrade base
 ```
@@ -283,10 +299,11 @@ When you add or modify SQLModel models, Alembic automatically detects all change
    - Add indexes or constraints
 
 2. **Generate migration automatically** - Alembic detects all changes:
+
    ```bash
    uv run scripts/alembic_revision.py "descriptive_name" --autogenerate
    ```
-   
+
    **You don't need to specify what changed** - Alembic compares your models with the database schema and automatically includes all differences in the migration.
 
 3. **Review the generated migration** in `alembic/versions/`
@@ -295,6 +312,7 @@ When you add or modify SQLModel models, Alembic automatically detects all change
    - Look for any missing changes that Alembic might have missed
 
 4. **Test the migration:**
+
    ```bash
    # Apply to development database
    uv run alembic upgrade head
@@ -304,6 +322,7 @@ When you add or modify SQLModel models, Alembic automatically detects all change
    ```
 
 5. **Test rollback (optional but recommended):**
+
    ```bash
    uv run alembic downgrade -1
    uv run alembic upgrade head
@@ -332,6 +351,7 @@ Sometimes you need to perform operations that Alembic can't autogenerate:
 #### Adding Custom DDL (Data Definition Language)
 
 **Example: Creating a custom index**
+
 ```python
 """add_partial_index_active_users
 
@@ -362,6 +382,7 @@ def downgrade() -> None:
 ```
 
 **Example: Adding a check constraint**
+
 ```python
 def upgrade() -> None:
     op.execute("""
@@ -377,6 +398,7 @@ def downgrade() -> None:
 #### Adding Custom DML (Data Manipulation Language)
 
 **Example: Data migration**
+
 ```python
 """migrate_legacy_user_data
 
@@ -416,6 +438,7 @@ def downgrade() -> None:
 ```
 
 **Example: Using connection for complex operations**
+
 ```python
 def upgrade() -> None:
     conn = op.get_bind()
@@ -517,20 +540,24 @@ uv run alembic upgrade head --sql
 ### Troubleshooting
 
 **Connection Errors:**
+
 - Verify database is running: `psql -h 127.0.0.1 -U skrm_user -d skrm_local`
 - Check environment variables are set correctly
 - Verify database credentials match your `.env` file
 
 **Migration Conflicts:**
+
 - If multiple developers create migrations simultaneously, you may need to merge them
 - Use `alembic merge` to combine multiple migration branches
 
 **Autogenerate Issues:**
+
 - Alembic may not detect all changes (especially complex relationships)
 - Always review autogenerated migrations
 - Manually add missing operations if needed
 
 **Rollback Failures:**
+
 - Some migrations cannot be automatically reversed
 - Implement custom downgrade logic for complex migrations
 - Test rollbacks in development before production
@@ -612,10 +639,12 @@ The API implements a dual-strategy refresh token system that supports both web S
 ### Overview
 
 **Refresh Token Strategy:**
+
 - **Web Clients (SPAs)**: Refresh tokens are stored in HTTP-only cookies (XSS protection)
 - **Mobile Clients (iOS/Android)**: Refresh tokens are returned in response body (stored securely in Keychain/Keystore)
 
 **Client Detection:**
+
 - Preferred: `X-Client-Type: mobile` header
 - Fallback: User-Agent patterns (OkHttp, Alamofire, CFNetwork)
 
@@ -629,9 +658,10 @@ The API implements a dual-strategy refresh token system that supports both web S
 4. **Token Rotation**: Both access and refresh tokens are rotated on refresh
 5. **Path Restriction**: Cookies only sent to `/api/auth` endpoints
 
-### Configuration
+### Cookie Configuration
 
 The `cookie_secure` setting automatically adjusts based on the `debug` flag:
+
 - When `debug=True`: `cookie_secure` is set to `False` (allows HTTP cookies for local development)
 - When `debug=False`: `cookie_secure` defaults to `True` (requires HTTPS)
 
@@ -640,6 +670,7 @@ The `cookie_secure` setting automatically adjusts based on the `debug` flag:
 #### Web SPA (JavaScript)
 
 **Login:**
+
 ```javascript
 // Login - cookie set automatically
 const formData = new FormData();
@@ -658,6 +689,7 @@ const { access_token, token_type } = await response.json();
 ```
 
 **Refresh Token:**
+
 ```javascript
 // Refresh - cookie sent automatically
 const refreshResponse = await fetch('http://localhost:8000/api/auth/refresh', {
@@ -670,6 +702,7 @@ const { access_token } = await refreshResponse.json();
 ```
 
 **Logout:**
+
 ```javascript
 // Logout - clears refresh token cookie
 await fetch('http://localhost:8000/api/auth/logout', {
@@ -679,6 +712,7 @@ await fetch('http://localhost:8000/api/auth/logout', {
 ```
 
 **Using Access Token:**
+
 ```javascript
 // Include access token in Authorization header for API requests
 const apiResponse = await fetch('http://localhost:8000/api/v1/some-endpoint', {
@@ -692,6 +726,7 @@ const apiResponse = await fetch('http://localhost:8000/api/v1/some-endpoint', {
 #### Mobile iOS (Swift)
 
 **Login:**
+
 ```swift
 import Foundation
 
@@ -713,6 +748,7 @@ KeychainHelper.store(tokenResponse.refresh_token, forKey: "refresh_token")
 ```
 
 **Refresh Token:**
+
 ```swift
 // Refresh - send token in request body
 var refreshRequest = URLRequest(url: URL(string: "http://localhost:8000/api/auth/refresh")!)
@@ -732,6 +768,7 @@ KeychainHelper.store(tokenResponse.refresh_token, forKey: "refresh_token")
 ```
 
 **Token Response Model:**
+
 ```swift
 struct TokenResponse: Codable {
     let access_token: String
@@ -743,6 +780,7 @@ struct TokenResponse: Codable {
 #### Mobile Android (Kotlin)
 
 **Login:**
+
 ```kotlin
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -770,6 +808,7 @@ SecureStorage.store("refresh_token", refreshToken)
 ```
 
 **Refresh Token:**
+
 ```kotlin
 // Refresh - send token in request body
 val refreshToken = SecureStorage.retrieve("refresh_token")
@@ -793,6 +832,7 @@ SecureStorage.store("refresh_token", newTokenResponse.getString("refresh_token")
 ### API Endpoints
 
 **Authentication:**
+
 - `POST /api/auth/login` - Authenticate user and get tokens
 - `POST /api/auth/refresh` - Exchange refresh token for new tokens
 - `POST /api/auth/logout` - Clear refresh token cookie (web clients)
@@ -800,6 +840,7 @@ SecureStorage.store("refresh_token", newTokenResponse.getString("refresh_token")
 **Request/Response Format:**
 
 **Login (Web):**
+
 ```bash
 # Request
 POST /api/auth/login
@@ -817,6 +858,7 @@ username=user@example.com&password=password123
 ```
 
 **Login (Mobile):**
+
 ```bash
 # Request
 POST /api/auth/login
@@ -834,6 +876,7 @@ username=user@example.com&password=password123
 ```
 
 **Refresh (Web):**
+
 ```bash
 # Request
 POST /api/auth/refresh
@@ -849,6 +892,7 @@ Cookie: refresh_token=eyJ...
 ```
 
 **Refresh (Mobile):**
+
 ```bash
 # Request
 POST /api/auth/refresh

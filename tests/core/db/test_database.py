@@ -265,7 +265,7 @@ class TestGetDb:
 
 
 class TestCreateAllTables:
-    """Test suite for create_all_tables function."""
+    """Test suite for create_all_tables function (deprecated, but kept for backward compatibility)."""
 
     @pytest.mark.asyncio
     @patch("app.core.db.database.db_config")
