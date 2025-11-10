@@ -1,8 +1,8 @@
-"""initial schema
+"""initial_schema
 
-Revision ID: eb37385884c3
+Revision ID: b8d7cdbf5c73
 Revises: 
-Create Date: 2025-11-09 17:16:40.046340
+Create Date: 2025-11-09 17:55:23.629075
 
 """
 from typing import Sequence, Union
@@ -36,7 +36,7 @@ def create_enum_if_not_exists(enum_type):
         enum_type.create(conn, checkfirst=True)
 
 # revision identifiers, used by Alembic.
-revision: str = 'eb37385884c3'
+revision: str = 'b8d7cdbf5c73'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -125,12 +125,12 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('parent', sa.Uuid(), nullable=True),
     sa.Column('parent_path', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('feature_type', sa.Enum('PRODUCT', 'ENGINEERING', name='featuretype'), nullable=False),
+    sa.Column('feature_type', sa.String(), nullable=True),
     sa.Column('summary', sa.Text(), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('guestimate', sa.Float(), nullable=True),
     sa.Column('derived_guestimate', sa.Float(), nullable=True),
-    sa.Column('review_result', sa.Enum('QUEUED', 'REVIEWING', 'PASSED', 'FAILED', 'SKIPPED', name='reviewresult'), nullable=True),
+    sa.Column('review_result', sa.String(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
     sa.Column('deleted', sa.Boolean(), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),
@@ -312,8 +312,8 @@ def upgrade() -> None:
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('team_id', sa.Uuid(), nullable=False),
     sa.Column('guestimate', sa.Float(), nullable=True),
-    sa.Column('status', sa.Enum('BACKLOG', 'ON_DECK', 'IN_PROGRESS', 'COMPLETED', 'DEPLOYED', 'REVIEW', 'DONE', 'ARCHIVED', name='taskstatus'), nullable=False),
-    sa.Column('review_result', sa.Enum('QUEUED', 'REVIEWING', 'PASSED', 'FAILED', 'SKIPPED', name='reviewresult'), nullable=True),
+    sa.Column('status', sa.String(), nullable=True),
+    sa.Column('review_result', sa.String(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
     sa.Column('deleted', sa.Boolean(), nullable=False),
     sa.Column('created', sa.DateTime(), nullable=False),

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, Text
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 from .k_feature import ReviewResult
 
@@ -40,8 +40,8 @@ class KTask(SQLModel, table=True):
     description: str | None = Field(default=None, sa_type=Text)
     team_id: UUID = Field(foreign_key="k_team.id", index=True)
     guestimate: float | None = Field(default=None, gt=0)
-    status: TaskStatus = Field(default=TaskStatus.BACKLOG)
-    review_result: ReviewResult | None = Field(default=None)
+    status: TaskStatus = Field(default=TaskStatus.BACKLOG, sa_column=Column(String))
+    review_result: ReviewResult | None = Field(default=None, sa_column=Column(String))
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     deleted: bool = Field(default=False)
     created: datetime = Field(default_factory=datetime.now)

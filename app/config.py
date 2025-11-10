@@ -112,6 +112,15 @@ class Settings(BaseSettings):
             return [header.strip() for header in v.split(",") if header.strip()]
         return v
 
+    @model_validator(mode="before")
+    @classmethod
+    def filter_alembic_fields(cls, data: dict) -> dict:
+        """Remove alembic-specific fields from environment variables.
+
+        Alembic fields are only used by migration tooling and should be ignored by the app.
+        """
+        return {k: v for k, v in data.items() if not k.startswith("alembic_")}
+
     @model_validator(mode="after")
     def set_cookie_secure_from_debug(self) -> "Settings":
         """Auto-set cookie_secure to False when in debug mode (for HTTP development)."""

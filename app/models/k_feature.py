@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, Text, UniqueConstraint
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 if TYPE_CHECKING:
     from .k_feature_doc import KFeatureDoc
@@ -39,12 +39,12 @@ class KFeature(SQLModel, table=True):
     name: str = Field(..., max_length=255)
     parent: UUID | None = Field(default=None, foreign_key="k_feature.id", index=True)
     parent_path: str | None = Field(default=None, max_length=None)
-    feature_type: FeatureType = Field(...)
+    feature_type: FeatureType = Field(sa_column=Column(String))
     summary: str | None = Field(default=None, sa_type=Text)
     notes: str | None = Field(default=None, sa_type=Text)
     guestimate: float | None = Field(default=None, gt=0)
     derived_guestimate: float | None = Field(default=None, gt=0)
-    review_result: ReviewResult | None = Field(default=None)
+    review_result: ReviewResult | None = Field(default=None, sa_column=Column(String))
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     deleted: bool = Field(default=False)
     created: datetime = Field(default_factory=datetime.now)
