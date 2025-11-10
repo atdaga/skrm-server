@@ -20,8 +20,8 @@ from ...schemas.organization import (
     OrganizationList,
     OrganizationUpdate,
 )
-from ...schemas.user import TokenData
-from ..deps import get_current_token
+from ...schemas.user import TokenData, UserDetail
+from ..deps import get_current_token, get_system_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -29,17 +29,20 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 @router.post("", response_model=OrganizationDetail, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     org_data: OrganizationCreate,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_system_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
-    """Create a new organization."""
-    user_id = UUID(token_data.sub)
+    """Create a new organization.
+
+    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    """
+    user_id = current_user.id
 
     try:
         org = await organizations_logic.create_organization(
             org_data=org_data,
             user_id=user_id,
-            scope=token_data.scope,
+            scope=current_user.scope,
             db=db,
         )
         return OrganizationDetail.model_validate(org)
@@ -97,18 +100,21 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     org_data: OrganizationUpdate,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_system_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
-    """Update an organization."""
-    user_id = UUID(token_data.sub)
+    """Update an organization.
+
+    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    """
+    user_id = current_user.id
 
     try:
         org = await organizations_logic.update_organization(
             org_id=org_id,
             org_data=org_data,
             user_id=user_id,
-            scope=token_data.scope,
+            scope=current_user.scope,
             db=db,
         )
         return OrganizationDetail.model_validate(org)
@@ -132,16 +138,19 @@ async def update_organization(
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(
     org_id: UUID,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_system_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> None:
-    """Delete an organization."""
-    user_id = UUID(token_data.sub)
+    """Delete an organization.
+
+    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    """
+    user_id = current_user.id
 
     try:
         await organizations_logic.delete_organization(
             org_id=org_id,
-            scope=token_data.scope,
+            scope=current_user.scope,
             user_id=user_id,
             db=db,
         )

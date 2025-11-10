@@ -16,6 +16,7 @@ from app.routes.deps import (
     get_current_token,
     get_current_user,
     get_optional_user,
+    get_system_user,
 )
 from app.schemas.user import TokenData, UserDetail
 
@@ -664,3 +665,183 @@ class TestGetCurrentSuperuser:
             await get_current_superuser(user)
 
         assert exc_info.value.status_code == 403
+
+
+class TestGetSystemUser:
+    """Test suite for get_system_user dependency."""
+
+    @pytest.mark.asyncio
+    async def test_get_system_user_system_user_success(self, creator_id):
+        """Test that SYSTEM_USER role is allowed."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await get_system_user(user)
+
+        assert result == user
+        assert result.system_role == SystemRole.SYSTEM_USER
+
+    @pytest.mark.asyncio
+    async def test_get_system_user_system_admin_success(self, creator_id):
+        """Test that SYSTEM_ADMIN role is allowed."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemadmin",
+            primary_email="systemadmin@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Admin",
+            name_suffix=None,
+            display_name="System Admin",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ADMIN,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await get_system_user(user)
+
+        assert result == user
+        assert result.system_role == SystemRole.SYSTEM_ADMIN
+
+    @pytest.mark.asyncio
+    async def test_get_system_user_system_root_success(self, creator_id):
+        """Test that SYSTEM_ROOT role is allowed."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemroot",
+            primary_email="systemroot@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Root",
+            name_suffix=None,
+            display_name="System Root",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ROOT,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await get_system_user(user)
+
+        assert result == user
+        assert result.system_role == SystemRole.SYSTEM_ROOT
+
+    @pytest.mark.asyncio
+    async def test_get_system_user_system_success(self, creator_id):
+        """Test that SYSTEM role is allowed."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="system",
+            primary_email="system@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Account",
+            name_suffix=None,
+            display_name="System Account",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await get_system_user(user)
+
+        assert result == user
+        assert result.system_role == SystemRole.SYSTEM
+
+    @pytest.mark.asyncio
+    async def test_get_system_user_system_client_denied(self, creator_id):
+        """Test that SYSTEM_CLIENT role is denied."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemclient",
+            primary_email="systemclient@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Client",
+            name_suffix=None,
+            display_name="System Client",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_CLIENT,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await get_system_user(user)
+
+        assert exc_info.value.status_code == 403
+        assert "insufficient privileges" in exc_info.value.detail.lower()

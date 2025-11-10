@@ -43,16 +43,16 @@ postgres=# \q
 
 #### Initial User
 
-Username: ***super***
+Username: ***root***
 
 Password: ***P@ssword12***
 
 ```sql
 INSERT INTO k_principal (id,"scope",username,primary_email,primary_email_verified,primary_phone,primary_phone_verified,human,enabled,time_zone,name_prefix,first_name,middle_name,last_name,name_suffix,display_name,default_locale,system_role,meta,created,created_by,last_modified,last_modified_by) VALUES
- ('00000000-0000-0000-0000-000000000000'::uuid,'global','super','super@global.scope',false,NULL,false,true,true,'UTC',NULL,'Super',NULL,'User',NULL,'Super User','en','system_user','{}','2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid);
+ ('00000000-0000-0000-0000-000000000000'::uuid,'global','root','root@global.scope',false,NULL,false,true,true,'UTC',NULL,'Root',NULL,'User',NULL,'Root User','en','systemRoot','{}','2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid);
 
 INSERT INTO k_principal_identity (id,principal_id,"password",public_key,device_id,expires,details,created,created_by,last_modified,last_modified_by) VALUES
- ('0199b6d7-a94f-75e9-a466-fa51620e7181'::uuid,'00000000-0000-0000-0000-000000000000'::uuid,'$2b$12$rdK6qPYTy0OEmjrHSlqsv.GSkqqi2gcJJyMIsMma.SeQS1HwqG002',NULL,NULL,NULL,'{}','2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid);
+ ('00000000-0000-0000-0000-000000000000'::uuid,'00000000-0000-0000-0000-000000000000'::uuid,'$2b$12$rdK6qPYTy0OEmjrHSlqsv.GSkqqi2gcJJyMIsMma.SeQS1HwqG002',NULL,NULL,NULL,'{}','2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid);
 ```
 
 ## Database Migrations

@@ -12,10 +12,55 @@ from tests.conftest import add_user_to_organization
 
 
 @pytest.fixture
-def app_with_overrides(app_with_overrides):
+def app_with_overrides(
+    async_session: AsyncSession, mock_token_data, mock_user, test_user_id: UUID
+):
     """Create a FastAPI app with organization router included."""
-    app_with_overrides.include_router(router)
-    return app_with_overrides
+    from fastapi import FastAPI
+
+    from app.core.db.database import get_db
+    from app.routes.deps import get_current_token, get_current_user
+
+    app = FastAPI()
+    app.include_router(router)
+
+    # Override dependencies
+    async def override_get_db():
+        yield async_session
+
+    async def override_get_current_token():
+        return mock_token_data
+
+    async def override_get_current_user():
+        # Ensure the user exists in the database
+        from sqlmodel import select
+
+        from app.models import KPrincipal
+
+        result = await async_session.execute(
+            select(KPrincipal).where(KPrincipal.id == test_user_id)
+        )
+        existing = result.scalar_one_or_none()
+        if not existing:
+            principal = KPrincipal(
+                id=test_user_id,
+                username="testuser",
+                primary_email="test@example.com",
+                first_name="Test",
+                last_name="User",
+                display_name="Test User",
+                created_by=test_user_id,
+                last_modified_by=test_user_id,
+            )
+            async_session.add(principal)
+            await async_session.commit()
+        return mock_user
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_token] = override_get_current_token
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    return app
 
 
 class TestCreateOrganization:
@@ -1222,3 +1267,189 @@ class TestOrganizationDataInconsistency:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+
+class TestSystemRoleAuthorization:
+    """Test suite for system role authorization on organization management endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_create_organization_without_system_role(
+        self,
+        async_session: AsyncSession,
+        mock_token_data,
+        mock_client_user,
+    ):
+        """Test that users without system user role cannot create organizations."""
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        from app.core.db.database import get_db
+        from app.routes.deps import get_current_token, get_current_user
+        from app.routes.v1.organizations import router
+
+        # Create app with client user (SYSTEM_CLIENT role)
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_token():
+            return mock_token_data
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_token] = override_get_current_token
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            org_data = {"name": "Test Org", "alias": "test_org"}
+            response = await client.post("/organizations", json=org_data)
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_organization_without_system_role(
+        self,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+        mock_token_data,
+        mock_client_user,
+    ):
+        """Test that users without system user role cannot update organizations."""
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        from app.core.db.database import get_db
+        from app.models import KOrganization, KPrincipal
+        from app.routes.deps import get_current_token, get_current_user
+        from app.routes.v1.organizations import router
+
+        # Create principal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create organization
+        org = KOrganization(
+            name="Test Org",
+            alias="test_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Add user as organization member
+        await add_user_to_organization(async_session, org.id, test_user_id)
+
+        # Create app with client user (SYSTEM_CLIENT role)
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_token():
+            return mock_token_data
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_token] = override_get_current_token
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"name": "Updated Name"}
+            response = await client.patch(f"/organizations/{org.id}", json=update_data)
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_organization_without_system_role(
+        self,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+        mock_token_data,
+        mock_client_user,
+    ):
+        """Test that users without system user role cannot delete organizations."""
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        from app.core.db.database import get_db
+        from app.models import KOrganization, KPrincipal
+        from app.routes.deps import get_current_token, get_current_user
+        from app.routes.v1.organizations import router
+
+        # Create principal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create organization
+        org = KOrganization(
+            name="Test Org",
+            alias="test_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Add user as organization member
+        await add_user_to_organization(async_session, org.id, test_user_id)
+
+        # Create app with client user (SYSTEM_CLIENT role)
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_token():
+            return mock_token_data
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_token] = override_get_current_token
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/organizations/{org.id}")
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()

@@ -344,7 +344,9 @@ async def test_principal(async_session: AsyncSession, test_user_id: UUID):
 
 
 @pytest.fixture
-def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData):
+def app_with_overrides(
+    async_session: AsyncSession, mock_token_data: TokenData, mock_user: "UserDetail"
+):
     """Create a FastAPI app with dependency overrides for testing.
 
     This fixture is meant to be used with parametrization or by including
@@ -353,7 +355,7 @@ def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData):
     from fastapi import FastAPI
 
     from app.core.db.database import get_db
-    from app.routes.deps import get_current_token
+    from app.routes.deps import get_current_token, get_current_user
 
     app = FastAPI()
 
@@ -364,8 +366,12 @@ def app_with_overrides(async_session: AsyncSession, mock_token_data: TokenData):
     async def override_get_current_token():
         return mock_token_data
 
+    async def override_get_current_user():
+        return mock_user
+
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_token] = override_get_current_token
+    app.dependency_overrides[get_current_user] = override_get_current_user
 
     return app
 
@@ -460,5 +466,43 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
         created=datetime.now(),
         created_by=test_user_id,
         last_modified=datetime.now(),
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def mock_client_user(test_user_id: UUID) -> "UserDetail":
+    """Create a mock UserDetail object with SYSTEM_CLIENT role for testing.
+
+    This user should NOT have access to organization management endpoints.
+    """
+    from datetime import datetime
+
+    from app.models.k_principal import SystemRole
+    from app.schemas.user import UserDetail
+
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="clientuser",
+        primary_email="client@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Client",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Client User",
+        default_locale="en",
+        system_role=SystemRole.SYSTEM_CLIENT,
+        meta={},
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
         last_modified_by=test_user_id,
     )

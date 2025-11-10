@@ -140,3 +140,27 @@ async def get_current_superuser(
         return current_user
     except InsufficientPrivilegesException as e:
         raise HTTPException(status_code=403, detail=e.message) from e
+
+
+async def get_system_user(
+    current_user: Annotated[UserDetail, Depends(get_current_user)]
+) -> UserDetail:
+    """Get current user with system user role or higher.
+
+    This dependency ensures the user has one of the following roles:
+    - SYSTEM
+    - SYSTEM_ROOT
+    - SYSTEM_ADMIN
+    - SYSTEM_USER
+
+    Returns:
+        The current user if they have the required role
+
+    Raises:
+        HTTPException: 403 if user does not have system user role or higher
+    """
+    try:
+        deps_logic.check_system_user_role(current_user)
+        return current_user
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(status_code=403, detail=e.message) from e

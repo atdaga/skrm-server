@@ -15,6 +15,7 @@ from ..core.exceptions.domain_exceptions import (
     UserNotFoundException,
 )
 from ..models import KOrganizationPrincipal, KPrincipal
+from ..models.k_principal import SystemRole
 from ..schemas.user import TokenData, UserDetail
 
 
@@ -117,6 +118,37 @@ def check_superuser_privileges(user: UserDetail) -> None:
     if not is_superuser:
         raise InsufficientPrivilegesException(
             required_privilege="superuser",
+            user_id=user.id,
+        )
+
+
+def check_system_user_role(user: UserDetail) -> None:
+    """Check if user has system user role or higher.
+
+    Allows users with the following roles:
+    - SYSTEM
+    - SYSTEM_ROOT
+    - SYSTEM_ADMIN
+    - SYSTEM_USER
+
+    Does not allow:
+    - SYSTEM_CLIENT
+
+    Args:
+        user: User to check role for
+
+    Raises:
+        InsufficientPrivilegesException: If user does not have system user role or higher
+    """
+    allowed_roles = {
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+        SystemRole.SYSTEM_USER,
+    }
+    if user.system_role not in allowed_roles:
+        raise InsufficientPrivilegesException(
+            required_privilege="system user or higher",
             user_id=user.id,
         )
 
