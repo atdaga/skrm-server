@@ -11,6 +11,7 @@ from app.core.exceptions.domain_exceptions import (
     InvalidTokenException,
 )
 from app.logic.auth import perform_login, refresh_access_token
+from app.models.k_principal import SystemRole
 from app.schemas.user import Token, UserDetail
 
 
@@ -39,7 +40,7 @@ class TestPerformLogin:
             name_suffix=None,
             display_name="Test User",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},
             created=now,
             created_by=uuid7(),

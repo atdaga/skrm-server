@@ -20,6 +20,7 @@ from app.logic.deps import (
     get_user_from_token,
 )
 from app.models import KPrincipal
+from app.models.k_principal import SystemRole
 from app.schemas.user import TokenData, UserDetail
 
 
@@ -270,7 +271,7 @@ class TestCheckSuperuserPrivileges:
             name_suffix=None,
             display_name="Regular User",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},
             created=now,
             created_by=creator_id,
@@ -300,7 +301,7 @@ class TestCheckSuperuserPrivileges:
             name_suffix=None,
             display_name="Super User",
             default_locale="en",
-            system_role="system_admin",
+            system_role=SystemRole.SYSTEM_ADMIN,
             meta={"is_superuser": True},
             created=now,
             created_by=creator_id,
@@ -342,7 +343,7 @@ class TestCheckSuperuserPrivileges:
             name_suffix=None,
             display_name="User Name",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={"is_superuser": False},
             created=now,
             created_by=creator_id,
@@ -374,7 +375,7 @@ class TestCheckSuperuserPrivileges:
             name_suffix=None,
             display_name="User Name",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},  # Empty dict instead of None
             created=now,
             created_by=creator_id,
@@ -406,7 +407,7 @@ class TestCheckSuperuserPrivileges:
             name_suffix=None,
             display_name="User Name",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={"other_field": "value"},  # No is_superuser field
             created=now,
             created_by=creator_id,

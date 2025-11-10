@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.models.k_principal import SystemRole
+
 
 class UserCreate(BaseModel):
     """Schema for creating a new user."""
@@ -80,7 +82,7 @@ class UserDetail(User):
     primary_email_verified: bool
     primary_phone: str | None = None
     primary_phone_verified: bool
-    system_role: str
+    system_role: SystemRole
     meta: dict
     created: datetime
     created_by: UUID

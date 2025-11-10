@@ -1,9 +1,10 @@
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid7
 
 from sqlalchemy import JSON, UniqueConstraint
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel, String
 
 if TYPE_CHECKING:
     from .k_organization_principal import KOrganizationPrincipal
@@ -11,6 +12,16 @@ if TYPE_CHECKING:
     from .k_task_reviewer import KTaskReviewer
     from .k_team_member import KTeamMember
     from .k_team_reviewer import KTeamReviewer
+
+
+class SystemRole(str, Enum):
+    """System role enumeration."""
+
+    SYSTEM = "system"
+    SYSTEM_ROOT = "systemRoot"
+    SYSTEM_ADMIN = "systemAdmin"
+    SYSTEM_USER = "systemUser"
+    SYSTEM_CLIENT = "systemClient"
 
 
 class KPrincipal(SQLModel, table=True):
@@ -34,7 +45,9 @@ class KPrincipal(SQLModel, table=True):
     name_suffix: str | None = Field(default=None, max_length=255)
     display_name: str = Field(..., max_length=255)
     default_locale: str = Field(default="en", max_length=255)
-    system_role: str = Field(default="system_user")
+    system_role: SystemRole = Field(
+        default=SystemRole.SYSTEM_USER, sa_column=Column(String)
+    )
     meta: dict = Field(default_factory=dict, sa_type=JSON)
     deleted: bool = Field(default=False)
     created: datetime = Field(default_factory=datetime.now)
@@ -65,4 +78,4 @@ class KPrincipal(SQLModel, table=True):
     )
 
 
-__all__ = ["KPrincipal"]
+__all__ = ["KPrincipal", "SystemRole"]

@@ -7,6 +7,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from app.models.k_principal import SystemRole
 from app.routes.deps import get_current_user
 from app.routes.v1.users import router
 from app.schemas.user import UserDetail
@@ -138,7 +139,7 @@ class TestGetCurrentUserInfo:
             name_suffix=None,
             display_name="Minimal User",
             default_locale="en_US",
-            system_role="user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},
             created=datetime.now(),
             created_by=uuid7(),
@@ -190,7 +191,7 @@ class TestGetCurrentUserInfo:
             name_suffix="Jr.",
             display_name="Dr. Complex Meta User Jr.",
             default_locale="en_US",
-            system_role="admin",
+            system_role=SystemRole.SYSTEM_ADMIN,
             meta={
                 "department": "Engineering",
                 "team": "Backend",
@@ -233,28 +234,33 @@ class TestGetCurrentUserInfo:
     @pytest.mark.asyncio
     async def test_get_current_user_different_roles(self):
         """Test getting current user with different system roles."""
-        roles = ["user", "admin", "superuser", "guest"]
+        roles = [
+            SystemRole.SYSTEM_USER,
+            SystemRole.SYSTEM_ADMIN,
+            SystemRole.SYSTEM_ROOT,
+            SystemRole.SYSTEM_CLIENT,
+        ]
 
         for role in roles:
             role_user = UserDetail(
                 id=uuid7(),
                 scope="test-scope",
-                username=f"{role}user",
-                primary_email=f"{role}@example.com",
+                username=f"{role.value}user",
+                primary_email=f"{role.value}@example.com",
                 primary_email_verified=True,
                 primary_phone=None,
                 primary_phone_verified=False,
                 enabled=True,
                 time_zone="UTC",
                 name_prefix=None,
-                first_name=role.capitalize(),
+                first_name=role.value.capitalize(),
                 middle_name=None,
                 last_name="User",
                 name_suffix=None,
-                display_name=f"{role.capitalize()} User",
+                display_name=f"{role.value.capitalize()} User",
                 default_locale="en_US",
                 system_role=role,
-                meta={"role": role},
+                meta={"role": role.value},
                 created=datetime.now(),
                 created_by=uuid7(),
                 last_modified=datetime.now(),
@@ -277,8 +283,8 @@ class TestGetCurrentUserInfo:
 
                 assert response.status_code == 200
                 data = response.json()
-                assert data["system_role"] == role
-                assert data["username"] == f"{role}user"
+                assert data["system_role"] == role.value
+                assert data["username"] == f"{role.value}user"
 
     @pytest.mark.asyncio
     async def test_get_current_user_disabled_user(self):
@@ -302,7 +308,7 @@ class TestGetCurrentUserInfo:
             name_suffix=None,
             display_name="Disabled User",
             default_locale="en_US",
-            system_role="user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},
             created=datetime.now(),
             created_by=uuid7(),
@@ -357,7 +363,7 @@ class TestGetCurrentUserInfo:
                 name_suffix=None,
                 display_name="TimeZone User",
                 default_locale="en_US",
-                system_role="user",
+                system_role=SystemRole.SYSTEM_USER,
                 meta={},
                 created=datetime.now(),
                 created_by=uuid7(),

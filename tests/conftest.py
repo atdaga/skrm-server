@@ -397,6 +397,7 @@ def mock_user(test_user_id: UUID) -> "UserDetail":
     """
     from datetime import datetime
 
+    from app.models.k_principal import SystemRole
     from app.schemas.user import UserDetail
 
     now = datetime.now()
@@ -417,7 +418,7 @@ def mock_user(test_user_id: UUID) -> "UserDetail":
         name_suffix=None,
         display_name="Test User",
         default_locale="en",
-        system_role="system_user",
+        system_role=SystemRole.SYSTEM_USER,
         meta={},
         created=now,
         created_by=test_user_id,
@@ -434,6 +435,7 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
     """
     from datetime import datetime
 
+    from app.models.k_principal import SystemRole
     from app.schemas.user import UserDetail
 
     return UserDetail(
@@ -453,7 +455,7 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
         name_suffix=None,
         display_name="Test User",
         default_locale="en_US",
-        system_role="user",
+        system_role=SystemRole.SYSTEM_USER,
         meta={"department": "Engineering"},
         created=datetime.now(),
         created_by=test_user_id,

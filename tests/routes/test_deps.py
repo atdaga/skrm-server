@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions.http_exceptions import UnauthorizedException
 from app.models import KPrincipal
+from app.models.k_principal import SystemRole
 from app.routes.deps import (
     get_current_superuser,
     get_current_token,
@@ -537,7 +538,7 @@ class TestGetCurrentSuperuser:
             name_suffix=None,
             display_name="Regular User",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={},
             created=now,
             created_by=creator_id,
@@ -567,7 +568,7 @@ class TestGetCurrentSuperuser:
             name_suffix=None,
             display_name="Super User",
             default_locale="en",
-            system_role="admin",
+            system_role=SystemRole.SYSTEM_ADMIN,
             meta={"is_superuser": True},
             created=now,
             created_by=creator_id,
@@ -616,7 +617,7 @@ class TestGetCurrentSuperuser:
             name_suffix=None,
             display_name="User Name",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={"other_field": "value"},  # No is_superuser field
             created=now,
             created_by=creator_id,
@@ -651,7 +652,7 @@ class TestGetCurrentSuperuser:
             name_suffix=None,
             display_name="User Name",
             default_locale="en",
-            system_role="system_user",
+            system_role=SystemRole.SYSTEM_USER,
             meta={"is_superuser": False},
             created=now,
             created_by=creator_id,

@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.models.k_principal import KPrincipal
+from app.models.k_principal import KPrincipal, SystemRole
 
 
 class TestKPrincipalModel:
@@ -71,7 +71,7 @@ class TestKPrincipalModel:
         assert principal.middle_name is None
         assert principal.name_suffix is None
         assert principal.default_locale == "en"
-        assert principal.system_role == "system_user"
+        assert principal.system_role == SystemRole.SYSTEM_USER
         assert principal.meta == {}
         assert isinstance(principal.created, datetime)
         assert isinstance(principal.last_modified, datetime)
