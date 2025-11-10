@@ -1,10 +1,10 @@
 # TODO
 
-* Create `txs` endpoint.
+* Soft delete.
   
 * Upgrade library versions.
 
-* Enforce authorizations on endpoints.
+* Enforce authorizations on domain object endpoints.
   
 
 * Use `ExceptionGroup`s for multiple concurrent exceptions.
