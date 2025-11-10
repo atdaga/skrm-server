@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
-    UnauthorizedUserUpdateException,
     UserAlreadyExistsException,
     UserNotFoundException,
     UserUpdateConflictException,
@@ -24,7 +23,11 @@ from ...schemas.user import (
     UserUpdatePrimaryPhone,
     UserUpdateUsername,
 )
-from ..deps import get_current_user, get_system_root_user
+from ..deps import (
+    get_current_user,
+    get_system_or_system_root_user,
+    get_system_root_user,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -98,12 +101,12 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user.
 
-    Only the user themselves can update their information.
+    Requires system or systemRoot role.
     """
     try:
         user = await users_logic.update_user(
@@ -119,23 +122,18 @@ async def update_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
-    except UnauthorizedUserUpdateException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        ) from e
 
 
 @router.patch("/{user_id}/username", response_model=UserDetail)
 async def update_user_username(
     user_id: UUID,
     user_data: UserUpdateUsername,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's username.
 
-    Only the user themselves can update their username.
+    Requires system or systemRoot role.
     """
     try:
         user = await users_logic.update_user_username(
@@ -151,11 +149,6 @@ async def update_user_username(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
-    except UnauthorizedUserUpdateException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        ) from e
     except UserUpdateConflictException as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -167,12 +160,12 @@ async def update_user_username(
 async def update_user_email(
     user_id: UUID,
     user_data: UserUpdateEmail,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's primary email.
 
-    Only the user themselves can update their email.
+    Requires system or systemRoot role.
     """
     try:
         user = await users_logic.update_user_email(
@@ -188,23 +181,18 @@ async def update_user_email(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
-    except UnauthorizedUserUpdateException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        ) from e
 
 
 @router.patch("/{user_id}/primary-phone", response_model=UserDetail)
 async def update_user_primary_phone(
     user_id: UUID,
     user_data: UserUpdatePrimaryPhone,
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's primary phone.
 
-    Only the user themselves can update their phone.
+    Requires system or systemRoot role.
     """
     try:
         user = await users_logic.update_user_primary_phone(
@@ -220,26 +208,21 @@ async def update_user_primary_phone(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,
         ) from e
-    except UnauthorizedUserUpdateException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        ) from e
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[bool, Query(description="Hard delete the user")] = False,
 ) -> None:
     """Delete a user.
 
-    Requires systemRoot role.
-    For hard delete, requires system or systemRoot role.
+    Requires system or systemRoot role.
+    For hard delete, requires system or systemRoot role (same as soft delete).
     """
-    # Check authorization for hard delete (systemRoot already required, but verify system/systemRoot)
+    # Check authorization for hard delete
     if hard_delete:
         from ...core.exceptions.domain_exceptions import InsufficientPrivilegesException
         from ...logic import deps as deps_logic

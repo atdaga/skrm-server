@@ -13,7 +13,10 @@ from tests.conftest import add_user_to_organization
 
 @pytest.fixture
 def app_with_overrides(
-    async_session: AsyncSession, mock_token_data, mock_user, test_user_id: UUID
+    async_session: AsyncSession,
+    mock_token_data,
+    mock_system_admin_user,
+    test_user_id: UUID,
 ):
     """Create a FastAPI app with organization router included."""
     from fastapi import FastAPI
@@ -44,17 +47,17 @@ def app_with_overrides(
         if not existing:
             principal = KPrincipal(
                 id=test_user_id,
-                username="testuser",
-                primary_email="test@example.com",
-                first_name="Test",
+                username="adminuser",
+                primary_email="admin@example.com",
+                first_name="Admin",
                 last_name="User",
-                display_name="Test User",
+                display_name="Admin User",
                 created_by=test_user_id,
                 last_modified_by=test_user_id,
             )
             async_session.add(principal)
             await async_session.commit()
-        return mock_user
+        return mock_system_admin_user
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_token] = override_get_current_token

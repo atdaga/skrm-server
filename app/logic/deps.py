@@ -172,6 +172,56 @@ def check_system_root_role(user: UserDetail) -> None:
         )
 
 
+def check_system_or_system_root_role(user: UserDetail) -> None:
+    """Check if user has system or system root role.
+
+    Allows users with the following roles:
+    - SYSTEM
+    - SYSTEM_ROOT
+
+    Args:
+        user: User to check role for
+
+    Raises:
+        InsufficientPrivilegesException: If user does not have system or systemRoot role
+    """
+    allowed_roles = {
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    }
+    if user.system_role not in allowed_roles:
+        raise InsufficientPrivilegesException(
+            required_privilege="system or systemRoot",
+            user_id=user.id,
+        )
+
+
+def check_system_admin_role(user: UserDetail) -> None:
+    """Check if user has system, system root, or system admin role.
+
+    Allows users with the following roles:
+    - SYSTEM
+    - SYSTEM_ROOT
+    - SYSTEM_ADMIN
+
+    Args:
+        user: User to check role for
+
+    Raises:
+        InsufficientPrivilegesException: If user does not have required role
+    """
+    allowed_roles = {
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    }
+    if user.system_role not in allowed_roles:
+        raise InsufficientPrivilegesException(
+            required_privilege="system, systemRoot, or systemAdmin",
+            user_id=user.id,
+        )
+
+
 def check_hard_delete_privileges(user: UserDetail) -> None:
     """Check if user has privileges to perform hard deletes.
 

@@ -239,18 +239,6 @@ class UserUpdateConflictException(DomainException):
         self.scope = scope
 
 
-class UnauthorizedUserUpdateException(DomainException):
-    """Raised when a user attempts to update another user's information."""
-
-    def __init__(self, user_id: UUID, requesting_user_id: UUID):
-        message = (
-            f"User '{requesting_user_id}' is not authorized to update user '{user_id}'"
-        )
-        super().__init__(message, entity_type="user", entity_id=user_id)
-        self.user_id = user_id
-        self.requesting_user_id = requesting_user_id
-
-
 class InvalidUserIdException(DomainException):
     """Raised when a user ID is invalid or malformed."""
 

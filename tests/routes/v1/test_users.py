@@ -47,6 +47,37 @@ def mock_root_user(test_user_id: UUID) -> UserDetail:
 
 
 @pytest.fixture
+def mock_user_detail(test_user_id: UUID) -> UserDetail:
+    """Override mock_user_detail to use SYSTEM role for user operations tests."""
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="test-tenant",
+        username="testuser",
+        primary_email="testuser@example.com",
+        primary_email_verified=True,
+        primary_phone="+1234567890",
+        primary_phone_verified=True,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Test",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Test User",
+        default_locale="en_US",
+        system_role=SystemRole.SYSTEM,
+        meta={"department": "Engineering"},
+        deleted_at=None,
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
 def app_with_overrides(
     async_session: AsyncSession, mock_user_detail: UserDetail
 ) -> FastAPI:
@@ -431,20 +462,49 @@ class TestUpdateUser:
         self,
         async_session: AsyncSession,
         mock_user_detail: UserDetail,
+        test_user_id: UUID,
     ):
-        """Test that users cannot update other users."""
+        """Test that users without system or systemRoot role cannot update users."""
         from app.core.db.database import get_db
 
-        # Create another user
+        # Create a user with insufficient privileges (SYSTEM_USER role)
+        now = datetime.now()
+        insufficient_user = UserDetail(
+            id=test_user_id,
+            scope="test-tenant",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en_US",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create another user to try to update
         other_user = KPrincipal(
-            scope=mock_user_detail.scope,
+            scope=insufficient_user.scope,
             username="otheruser",
             primary_email="other@example.com",
             first_name="Other",
             last_name="User",
             display_name="Other User",
-            created_by=mock_user_detail.id,
-            last_modified_by=mock_user_detail.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
         )
         async_session.add(other_user)
         await async_session.commit()
@@ -457,7 +517,7 @@ class TestUpdateUser:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return insufficient_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -470,7 +530,8 @@ class TestUpdateUser:
             response = await client.patch(f"/users/{other_user.id}", json=update_data)
 
             assert response.status_code == 403
-            assert "not authorized" in response.json()["detail"].lower()
+            assert "insufficient privileges" in response.json()["detail"].lower()
+            assert "system or systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_user_not_found(
@@ -690,21 +751,49 @@ class TestUpdateUserUsername:
     async def test_update_username_unauthorized(
         self,
         async_session: AsyncSession,
-        mock_user_detail: UserDetail,
+        test_user_id: UUID,
     ):
-        """Test that users cannot update another user's username."""
+        """Test that users without system or systemRoot role cannot update usernames."""
         from app.core.db.database import get_db
 
-        # Create another user
+        # Create a user with insufficient privileges (SYSTEM_USER role)
+        now = datetime.now()
+        insufficient_user = UserDetail(
+            id=test_user_id,
+            scope="test-tenant",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en_US",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create another user to try to update
         other_user = KPrincipal(
-            scope=mock_user_detail.scope,
+            scope=insufficient_user.scope,
             username="otheruser",
             primary_email="other@example.com",
             first_name="Other",
             last_name="User",
             display_name="Other User",
-            created_by=mock_user_detail.id,
-            last_modified_by=mock_user_detail.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
         )
         async_session.add(other_user)
         await async_session.commit()
@@ -717,7 +806,7 @@ class TestUpdateUserUsername:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return insufficient_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -732,7 +821,8 @@ class TestUpdateUserUsername:
             )
 
             assert response.status_code == 403
-            assert "not authorized" in response.json()["detail"].lower()
+            assert "insufficient privileges" in response.json()["detail"].lower()
+            assert "system or systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_username_not_found(
@@ -825,21 +915,49 @@ class TestUpdateUserEmail:
     async def test_update_email_unauthorized(
         self,
         async_session: AsyncSession,
-        mock_user_detail: UserDetail,
+        test_user_id: UUID,
     ):
-        """Test that users cannot update another user's email."""
+        """Test that users without system or systemRoot role cannot update emails."""
         from app.core.db.database import get_db
 
-        # Create another user
+        # Create a user with insufficient privileges (SYSTEM_USER role)
+        now = datetime.now()
+        insufficient_user = UserDetail(
+            id=test_user_id,
+            scope="test-tenant",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en_US",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create another user to try to update
         other_user = KPrincipal(
-            scope=mock_user_detail.scope,
+            scope=insufficient_user.scope,
             username="otheruser",
             primary_email="other@example.com",
             first_name="Other",
             last_name="User",
             display_name="Other User",
-            created_by=mock_user_detail.id,
-            last_modified_by=mock_user_detail.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
         )
         async_session.add(other_user)
         await async_session.commit()
@@ -852,7 +970,7 @@ class TestUpdateUserEmail:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return insufficient_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -867,7 +985,8 @@ class TestUpdateUserEmail:
             )
 
             assert response.status_code == 403
-            assert "not authorized" in response.json()["detail"].lower()
+            assert "insufficient privileges" in response.json()["detail"].lower()
+            assert "system or systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_email_not_found(
@@ -961,21 +1080,49 @@ class TestUpdateUserPrimaryPhone:
     async def test_update_phone_unauthorized(
         self,
         async_session: AsyncSession,
-        mock_user_detail: UserDetail,
+        test_user_id: UUID,
     ):
-        """Test that users cannot update another user's phone."""
+        """Test that users without system or systemRoot role cannot update phones."""
         from app.core.db.database import get_db
 
-        # Create another user
+        # Create a user with insufficient privileges (SYSTEM_USER role)
+        now = datetime.now()
+        insufficient_user = UserDetail(
+            id=test_user_id,
+            scope="test-tenant",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en_US",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create another user to try to update
         other_user = KPrincipal(
-            scope=mock_user_detail.scope,
+            scope=insufficient_user.scope,
             username="otheruser",
             primary_email="other@example.com",
             first_name="Other",
             last_name="User",
             display_name="Other User",
-            created_by=mock_user_detail.id,
-            last_modified_by=mock_user_detail.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
         )
         async_session.add(other_user)
         await async_session.commit()
@@ -988,7 +1135,7 @@ class TestUpdateUserPrimaryPhone:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return insufficient_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -1003,7 +1150,8 @@ class TestUpdateUserPrimaryPhone:
             )
 
             assert response.status_code == 403
-            assert "not authorized" in response.json()["detail"].lower()
+            assert "insufficient privileges" in response.json()["detail"].lower()
+            assert "system or systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_phone_not_found(
@@ -1302,15 +1450,17 @@ class TestDeleteUser:
             assert deleted_user is None
 
     @pytest.mark.asyncio
-    async def test_hard_delete_requires_root_role_for_endpoint_access(
+    async def test_hard_delete_with_system_role(
         self,
         async_session: AsyncSession,
         test_user_id: UUID,
     ):
-        """Test that delete endpoint requires systemRoot role (system role not allowed)."""
+        """Test that delete endpoint allows system role."""
+        from sqlalchemy import select
+
         from app.core.db.database import get_db
 
-        # Create mock system user (not systemRoot, so can't access endpoint)
+        # Create mock system user (should be allowed to delete)
         now = datetime.now()
         mock_system_user = UserDetail(
             id=test_user_id,
@@ -1372,9 +1522,15 @@ class TestDeleteUser:
         ) as client:
             response = await client.delete(f"/users/{user_id}?hard_delete=true")
 
-            # Should fail at dependency level because only systemRoot can access delete endpoint
-            assert response.status_code == 403
-            assert "systemroot" in response.json()["detail"].lower()
+            # Should succeed - SYSTEM role can now delete users
+            assert response.status_code == 204
+
+            # Verify user is permanently deleted from database
+            stmt = select(KPrincipal).where(KPrincipal.id == user_id)  # type: ignore[arg-type]
+            result = await async_session.execute(stmt)
+            deleted_user = result.scalar_one_or_none()
+
+            assert deleted_user is None
 
     @pytest.mark.asyncio
     async def test_hard_delete_endpoint_requires_system_root(
@@ -1450,24 +1606,52 @@ class TestDeleteUser:
             assert "systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
-    async def test_delete_user_without_root_role(
+    async def test_delete_user_without_system_or_root_role(
         self,
         async_session: AsyncSession,
-        mock_user_detail: UserDetail,
+        test_user_id: UUID,
     ):
-        """Test that non-root users cannot delete users."""
+        """Test that users without system or systemRoot role cannot delete users."""
         from app.core.db.database import get_db
 
-        # Create a user
+        # Create a user with insufficient privileges (SYSTEM_USER role)
+        now = datetime.now()
+        insufficient_user = UserDetail(
+            id=test_user_id,
+            scope="test-tenant",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en_US",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create a user to try to delete
         user = KPrincipal(
-            scope=mock_user_detail.scope,
+            scope=insufficient_user.scope,
             username="targetuser",
             primary_email="target@example.com",
             first_name="Target",
             last_name="User",
             display_name="Target User",
-            created_by=mock_user_detail.id,
-            last_modified_by=mock_user_detail.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
         )
         async_session.add(user)
         await async_session.commit()
@@ -1480,7 +1664,7 @@ class TestDeleteUser:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return insufficient_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user

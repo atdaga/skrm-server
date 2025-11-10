@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.auth import get_password_hash
 from ...core.exceptions.domain_exceptions import (
-    UnauthorizedUserUpdateException,
     UserAlreadyExistsException,
     UserNotFoundException,
     UserUpdateConflictException,
@@ -166,7 +165,7 @@ async def update_user(
     Args:
         user_id: ID of the user to update
         user_data: User update data
-        requesting_user_id: ID of the user performing the update (must be the user themselves)
+        requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
         db: Database session
 
@@ -175,14 +174,7 @@ async def update_user(
 
     Raises:
         UserNotFoundException: If the user is not found
-        UnauthorizedUserUpdateException: If requesting user is not the user being updated
     """
-    # Check authorization: only the user themselves can update
-    if user_id != requesting_user_id:
-        raise UnauthorizedUserUpdateException(
-            user_id=user_id, requesting_user_id=requesting_user_id
-        )
-
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -238,7 +230,7 @@ async def update_user_username(
     Args:
         user_id: ID of the user to update
         user_data: Username update data
-        requesting_user_id: ID of the user performing the update (must be the user themselves)
+        requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
         db: Database session
 
@@ -247,15 +239,8 @@ async def update_user_username(
 
     Raises:
         UserNotFoundException: If the user is not found
-        UnauthorizedUserUpdateException: If requesting user is not the user being updated
         UserUpdateConflictException: If the new username already exists
     """
-    # Check authorization: only the user themselves can update
-    if user_id != requesting_user_id:
-        raise UnauthorizedUserUpdateException(
-            user_id=user_id, requesting_user_id=requesting_user_id
-        )
-
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -298,7 +283,7 @@ async def update_user_email(
     Args:
         user_id: ID of the user to update
         user_data: Email update data
-        requesting_user_id: ID of the user performing the update (must be the user themselves)
+        requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
         db: Database session
 
@@ -307,14 +292,7 @@ async def update_user_email(
 
     Raises:
         UserNotFoundException: If the user is not found
-        UnauthorizedUserUpdateException: If requesting user is not the user being updated
     """
-    # Check authorization: only the user themselves can update
-    if user_id != requesting_user_id:
-        raise UnauthorizedUserUpdateException(
-            user_id=user_id, requesting_user_id=requesting_user_id
-        )
-
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -352,7 +330,7 @@ async def update_user_primary_phone(
     Args:
         user_id: ID of the user to update
         user_data: Phone update data
-        requesting_user_id: ID of the user performing the update (must be the user themselves)
+        requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
         db: Database session
 
@@ -361,14 +339,7 @@ async def update_user_primary_phone(
 
     Raises:
         UserNotFoundException: If the user is not found
-        UnauthorizedUserUpdateException: If requesting user is not the user being updated
     """
-    # Check authorization: only the user themselves can update
-    if user_id != requesting_user_id:
-        raise UnauthorizedUserUpdateException(
-            user_id=user_id, requesting_user_id=requesting_user_id
-        )
-
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]

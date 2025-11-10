@@ -70,3 +70,99 @@ async def root_client(app_with_root_user_overrides: FastAPI) -> AsyncClient:
         base_url="http://test",
     ) as ac:
         yield ac
+
+
+@pytest.fixture
+def app_with_system_user_overrides(
+    async_session: AsyncSession, mock_token_data, mock_system_user
+):
+    """Create a FastAPI app with system user overrides.
+
+    This fixture provides an app configured with a SYSTEM role user who can
+    perform user CUD operations.
+    """
+    from app.core.auth import oauth2_scheme
+    from app.core.db.database import get_db
+    from app.routes.deps import get_current_token, get_current_user
+
+    app = FastAPI()
+
+    async def override_get_db():
+        yield async_session
+
+    async def override_oauth2_scheme():
+        return "test-token"
+
+    async def override_get_current_token():
+        return mock_token_data
+
+    async def override_get_current_user():
+        return mock_system_user
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
+    app.dependency_overrides[get_current_token] = override_get_current_token
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    return app
+
+
+@pytest.fixture
+async def system_client(app_with_system_user_overrides: FastAPI) -> AsyncClient:
+    """Create an async HTTP client for testing with system user privileges.
+
+    This client can be used to test user CUD operations.
+    """
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_system_user_overrides),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+
+@pytest.fixture
+def app_with_system_admin_user_overrides(
+    async_session: AsyncSession, mock_token_data, mock_system_admin_user
+):
+    """Create a FastAPI app with system admin user overrides.
+
+    This fixture provides an app configured with a SYSTEM_ADMIN role user who can
+    perform organization and organization_principal CUD operations.
+    """
+    from app.core.auth import oauth2_scheme
+    from app.core.db.database import get_db
+    from app.routes.deps import get_current_token, get_current_user
+
+    app = FastAPI()
+
+    async def override_get_db():
+        yield async_session
+
+    async def override_oauth2_scheme():
+        return "test-token"
+
+    async def override_get_current_token():
+        return mock_token_data
+
+    async def override_get_current_user():
+        return mock_system_admin_user
+
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
+    app.dependency_overrides[get_current_token] = override_get_current_token
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    return app
+
+
+@pytest.fixture
+async def admin_client(app_with_system_admin_user_overrides: FastAPI) -> AsyncClient:
+    """Create an async HTTP client for testing with system admin user privileges.
+
+    This client can be used to test organization and organization_principal CUD operations.
+    """
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_system_admin_user_overrides),
+        base_url="http://test",
+    ) as ac:
+        yield ac

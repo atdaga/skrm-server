@@ -21,7 +21,7 @@ from ...schemas.organization import (
     OrganizationUpdate,
 )
 from ...schemas.user import TokenData, UserDetail
-from ..deps import get_current_token, get_system_user
+from ..deps import get_current_token, get_system_admin_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -29,12 +29,12 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 @router.post("", response_model=OrganizationDetail, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     org_data: OrganizationCreate,
-    current_user: Annotated[UserDetail, Depends(get_system_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
     """Create a new organization.
 
-    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    Requires system, systemRoot, or systemAdmin role.
     """
     user_id = current_user.id
 
@@ -100,12 +100,12 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     org_data: OrganizationUpdate,
-    current_user: Annotated[UserDetail, Depends(get_system_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
     """Update an organization.
 
-    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    Requires system, systemRoot, or systemAdmin role.
     """
     user_id = current_user.id
 
@@ -138,7 +138,7 @@ async def update_organization(
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(
     org_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_system_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[
         bool, Query(description="Hard delete the organization")
@@ -146,7 +146,7 @@ async def delete_organization(
 ) -> None:
     """Delete an organization.
 
-    Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    Requires system, systemRoot, or systemAdmin role.
     For hard delete, requires system or systemRoot role.
     """
     user_id = current_user.id

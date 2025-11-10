@@ -22,7 +22,7 @@ from ...schemas.organization_principal import (
     OrganizationPrincipalUpdate,
 )
 from ...schemas.user import TokenData, UserDetail
-from ..deps import get_current_token, get_current_user
+from ..deps import get_current_token, get_system_admin_user
 
 router = APIRouter(
     prefix="/organizations/{org_id}/principals", tags=["organization-principals"]
@@ -35,11 +35,14 @@ router = APIRouter(
 async def add_organization_principal(
     org_id: UUID,
     principal_data: OrganizationPrincipalCreate,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalDetail:
-    """Add a new principal to an organization."""
-    user_id = UUID(token_data.sub)
+    """Add a new principal to an organization.
+
+    Requires system, systemRoot, or systemAdmin role.
+    """
+    user_id = current_user.id
 
     try:
         principal = await organization_principals_logic.add_organization_principal(
@@ -132,11 +135,14 @@ async def update_organization_principal(
     org_id: UUID,
     principal_id: UUID,
     principal_data: OrganizationPrincipalUpdate,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalDetail:
-    """Update an organization principal."""
-    user_id = UUID(token_data.sub)
+    """Update an organization principal.
+
+    Requires system, systemRoot, or systemAdmin role.
+    """
+    user_id = current_user.id
 
     try:
         principal = await organization_principals_logic.update_organization_principal(
@@ -163,15 +169,18 @@ async def update_organization_principal(
 async def remove_organization_principal(
     org_id: UUID,
     principal_id: UUID,
-    token_data: Annotated[TokenData, Depends(get_current_token)],
-    current_user: Annotated[UserDetail, Depends(get_current_user)],
+    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[
         bool, Query(description="Hard delete the relationship")
     ] = False,
 ) -> None:
-    """Remove a principal from an organization."""
-    user_id = UUID(token_data.sub)
+    """Remove a principal from an organization.
+
+    Requires system, systemRoot, or systemAdmin role.
+    For hard delete, requires system or systemRoot role.
+    """
+    user_id = current_user.id
 
     # Check authorization for hard delete
     if hard_delete:  # pragma: no cover

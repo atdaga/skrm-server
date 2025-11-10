@@ -405,6 +405,10 @@ def mock_user(test_user_id: UUID) -> "UserDetail":
 
     This is useful for testing endpoints that require authentication
     without going through the full authentication flow.
+
+    Uses SYSTEM_ADMIN role by default to work with most endpoints.
+    Tests that need different roles should use specific fixtures like
+    mock_system_user, mock_client_user, etc.
     """
     from datetime import datetime
 
@@ -429,7 +433,7 @@ def mock_user(test_user_id: UUID) -> "UserDetail":
         name_suffix=None,
         display_name="Test User",
         default_locale="en",
-        system_role=SystemRole.SYSTEM_USER,
+        system_role=SystemRole.SYSTEM_ADMIN,
         meta={},
         deleted_at=None,
         created=now,
@@ -444,6 +448,9 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
     """Create a mock UserDetail object with custom scope for testing.
 
     Similar to mock_user but allows custom scope configuration.
+
+    Uses SYSTEM_ADMIN role by default to work with most endpoints.
+    Tests that need different roles should use specific fixtures.
     """
     from datetime import datetime
 
@@ -467,7 +474,7 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
         name_suffix=None,
         display_name="Test User",
         default_locale="en_US",
-        system_role=SystemRole.SYSTEM_USER,
+        system_role=SystemRole.SYSTEM_ADMIN,
         meta={"department": "Engineering"},
         deleted_at=None,
         created=datetime.now(),
@@ -546,6 +553,84 @@ def mock_system_root_user(test_user_id: UUID) -> "UserDetail":
         display_name="Root User",
         default_locale="en",
         system_role=SystemRole.SYSTEM_ROOT,
+        meta={},
+        deleted_at=None,
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def mock_system_user(test_user_id: UUID) -> "UserDetail":
+    """Create a mock UserDetail object with SYSTEM role for testing.
+
+    This user has permissions for user CUD operations.
+    """
+    from datetime import datetime
+
+    from app.models.k_principal import SystemRole
+    from app.schemas.user import UserDetail
+
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="systemuser",
+        primary_email="system@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="System",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="System User",
+        default_locale="en",
+        system_role=SystemRole.SYSTEM,
+        meta={},
+        deleted_at=None,
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def mock_system_admin_user(test_user_id: UUID) -> "UserDetail":
+    """Create a mock UserDetail object with SYSTEM_ADMIN role for testing.
+
+    This user can perform organization and organization_principal CUD operations.
+    """
+    from datetime import datetime
+
+    from app.models.k_principal import SystemRole
+    from app.schemas.user import UserDetail
+
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="adminuser",
+        primary_email="admin@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Admin",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Admin User",
+        default_locale="en",
+        system_role=SystemRole.SYSTEM_ADMIN,
         meta={},
         deleted_at=None,
         created=now,
