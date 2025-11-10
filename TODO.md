@@ -1,10 +1,10 @@
 # TODO
 
-* Alembic
-
 * Create `txs` endpoint.
   
 * Upgrade library versions.
+
+* Enforce authorizations on endpoints.
   
 
 * Use `ExceptionGroup`s for multiple concurrent exceptions.

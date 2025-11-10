@@ -1,4 +1,4 @@
-"""Unit tests for user endpoints."""
+"""Unit tests for user management endpoints."""
 
 from datetime import datetime
 from uuid import UUID, uuid7
@@ -6,7 +6,9 @@ from uuid import UUID, uuid7
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import KPrincipal
 from app.models.k_principal import SystemRole
 from app.routes.deps import get_current_user
 from app.routes.v1.users import router
@@ -14,15 +16,53 @@ from app.schemas.user import UserDetail
 
 
 @pytest.fixture
-def app_with_overrides(mock_user_detail: UserDetail) -> FastAPI:
+def mock_root_user(test_user_id: UUID) -> UserDetail:
+    """Create a mock UserDetail object with systemRoot role for testing."""
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="rootuser",
+        primary_email="root@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Root",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Root User",
+        default_locale="en",
+        system_role=SystemRole.SYSTEM_ROOT,
+        meta={},
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def app_with_overrides(
+    async_session: AsyncSession, mock_user_detail: UserDetail
+) -> FastAPI:
     """Create a FastAPI app with dependency overrides for testing."""
+    from app.core.db.database import get_db
+
     app = FastAPI()
     app.include_router(router)
 
     # Override dependencies
+    async def override_get_db():
+        yield async_session
+
     async def override_get_current_user():
         return mock_user_detail
 
+    app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = override_get_current_user
 
     return app
@@ -35,6 +75,214 @@ async def client(app_with_overrides: FastAPI) -> AsyncClient:
         transport=ASGITransport(app=app_with_overrides), base_url="http://test"
     ) as ac:
         yield ac
+
+
+class TestCreateUser:
+    """Test suite for POST /users endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_create_user_success(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test successfully creating a new user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            user_data = {
+                "username": "newuser",
+                "password": "SecurePassword123!",
+                "primary_email": "newuser@example.com",
+                "first_name": "New",
+                "last_name": "User",
+                "display_name": "New User",
+            }
+
+            response = await client.post("/users", json=user_data)
+
+            assert response.status_code == 201
+            data = response.json()
+            assert data["username"] == "newuser"
+            assert data["primary_email"] == "newuser@example.com"
+            assert data["first_name"] == "New"
+            assert data["last_name"] == "User"
+            assert "id" in data
+            assert UUID(data["id"])
+
+    @pytest.mark.asyncio
+    async def test_create_user_without_root_role(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that non-root users cannot create users."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            user_data = {
+                "username": "newuser",
+                "password": "SecurePassword123!",
+                "primary_email": "newuser@example.com",
+                "first_name": "New",
+                "last_name": "User",
+                "display_name": "New User",
+            }
+
+            response = await client.post("/users", json=user_data)
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_create_user_duplicate_username(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test that creating a user with duplicate username fails."""
+        from app.core.db.database import get_db
+
+        # Create existing user
+        existing_user = KPrincipal(
+            scope="global",
+            username="existinguser",
+            primary_email="existing@example.com",
+            first_name="Existing",
+            last_name="User",
+            display_name="Existing User",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+        )
+        async_session.add(existing_user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            user_data = {
+                "username": "existinguser",
+                "password": "SecurePassword123!",
+                "primary_email": "another@example.com",
+                "first_name": "Another",
+                "last_name": "User",
+                "display_name": "Another User",
+            }
+
+            response = await client.post("/users", json=user_data)
+
+            assert response.status_code == 409
+            assert "already exists" in response.json()["detail"]
+
+
+class TestListUsers:
+    """Test suite for GET /users endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_list_users_empty(self, client: AsyncClient):
+        """Test listing users when none exist in scope."""
+        response = await client.get("/users")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "users" in data
+        assert isinstance(data["users"], list)
+
+    @pytest.mark.asyncio
+    async def test_list_users_multiple(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test listing multiple users."""
+        from app.core.db.database import get_db
+
+        # Create multiple users in the same scope
+        for i in range(3):
+            user = KPrincipal(
+                scope=mock_user_detail.scope,
+                username=f"user{i}",
+                primary_email=f"user{i}@example.com",
+                first_name=f"User{i}",
+                last_name="Test",
+                display_name=f"User {i}",
+                created_by=mock_user_detail.id,
+                last_modified_by=mock_user_detail.id,
+            )
+            async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/users")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert len(data["users"]) == 3
+            # Verify User schema fields are present (not UserDetail audit fields)
+            for user in data["users"]:
+                assert "id" in user
+                assert "username" in user
+                assert "primary_email" in user
+                # User schema should not include audit fields
+                assert "scope" not in user
+                assert "created" not in user
+                assert "created_by" not in user
+                assert "last_modified" not in user
+                assert "last_modified_by" not in user
 
 
 class TestGetCurrentUserInfo:
@@ -51,398 +299,861 @@ class TestGetCurrentUserInfo:
 
         assert response.status_code == 200
         data = response.json()
-
-        # Verify all expected fields are present and correct
         assert data["id"] == str(mock_user_detail.id)
-        assert data["scope"] == mock_user_detail.scope
         assert data["username"] == mock_user_detail.username
-        assert data["primary_email"] == mock_user_detail.primary_email
-        assert data["primary_email_verified"] == mock_user_detail.primary_email_verified
-        assert data["primary_phone"] == mock_user_detail.primary_phone
-        assert data["primary_phone_verified"] == mock_user_detail.primary_phone_verified
-        assert data["enabled"] == mock_user_detail.enabled
-        assert data["time_zone"] == mock_user_detail.time_zone
-        assert data["name_prefix"] == mock_user_detail.name_prefix
-        assert data["first_name"] == mock_user_detail.first_name
-        assert data["middle_name"] == mock_user_detail.middle_name
-        assert data["last_name"] == mock_user_detail.last_name
-        assert data["name_suffix"] == mock_user_detail.name_suffix
-        assert data["display_name"] == mock_user_detail.display_name
-        assert data["default_locale"] == mock_user_detail.default_locale
-        assert data["system_role"] == mock_user_detail.system_role
-        assert data["meta"] == mock_user_detail.meta
-        assert "created" in data
-        assert "created_by" in data
-        assert "last_modified" in data
-        assert "last_modified_by" in data
+
+
+class TestGetUser:
+    """Test suite for GET /users/{user_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_get_current_user_response_model(
+    async def test_get_user_success(
         self,
-        client: AsyncClient,
-        test_user_id: UUID,
-    ):
-        """Test that response conforms to UserDetail schema."""
-        response = await client.get("/users/me")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        # Validate that all required UserDetail fields are present
-        required_fields = [
-            "id",
-            "scope",
-            "username",
-            "primary_email",
-            "primary_email_verified",
-            "primary_phone_verified",
-            "enabled",
-            "time_zone",
-            "first_name",
-            "last_name",
-            "display_name",
-            "default_locale",
-            "system_role",
-            "meta",
-            "created",
-            "created_by",
-            "last_modified",
-            "last_modified_by",
-        ]
-
-        for field in required_fields:
-            assert field in data, f"Missing required field: {field}"
-
-        # Validate UUID fields
-        assert UUID(data["id"])
-        assert UUID(data["created_by"])
-        assert UUID(data["last_modified_by"])
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_with_minimal_data(self):
-        """Test getting current user with minimal data (null optional fields)."""
-        # Create a minimal user detail
-        minimal_user = UserDetail(
-            id=uuid7(),
-            scope="test-scope",
-            username="minimaluser",
-            primary_email="minimal@example.com",
-            primary_email_verified=False,
-            primary_phone=None,
-            primary_phone_verified=False,
-            enabled=True,
-            time_zone="UTC",
-            name_prefix=None,
-            first_name="Minimal",
-            middle_name=None,
-            last_name="User",
-            name_suffix=None,
-            display_name="Minimal User",
-            default_locale="en_US",
-            system_role=SystemRole.SYSTEM_USER,
-            meta={},
-            created=datetime.now(),
-            created_by=uuid7(),
-            last_modified=datetime.now(),
-            last_modified_by=uuid7(),
-        )
-
-        # Create app with minimal user override
-        app = FastAPI()
-        app.include_router(router)
-
-        async def override_get_current_user():
-            return minimal_user
-
-        app.dependency_overrides[get_current_user] = override_get_current_user
-
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            response = await client.get("/users/me")
-
-            assert response.status_code == 200
-            data = response.json()
-
-            # Verify null fields are properly handled
-            assert data["primary_phone"] is None
-            assert data["name_prefix"] is None
-            assert data["middle_name"] is None
-            assert data["name_suffix"] is None
-            assert data["meta"] == {}
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_with_complex_meta(self):
-        """Test getting current user with complex nested metadata."""
-        complex_user = UserDetail(
-            id=uuid7(),
-            scope="test-scope",
-            username="complexuser",
-            primary_email="complex@example.com",
-            primary_email_verified=True,
-            primary_phone="+1234567890",
-            primary_phone_verified=True,
-            enabled=True,
-            time_zone="America/New_York",
-            name_prefix="Dr.",
-            first_name="Complex",
-            middle_name="Meta",
-            last_name="User",
-            name_suffix="Jr.",
-            display_name="Dr. Complex Meta User Jr.",
-            default_locale="en_US",
-            system_role=SystemRole.SYSTEM_ADMIN,
-            meta={
-                "department": "Engineering",
-                "team": "Backend",
-                "preferences": {
-                    "theme": "dark",
-                    "notifications": {"email": True, "push": False, "sms": True},
-                },
-                "tags": ["senior", "fullstack", "lead"],
-                "employee_id": 12345,
-            },
-            created=datetime.now(),
-            created_by=uuid7(),
-            last_modified=datetime.now(),
-            last_modified_by=uuid7(),
-        )
-
-        # Create app with complex user override
-        app = FastAPI()
-        app.include_router(router)
-
-        async def override_get_current_user():
-            return complex_user
-
-        app.dependency_overrides[get_current_user] = override_get_current_user
-
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            response = await client.get("/users/me")
-
-            assert response.status_code == 200
-            data = response.json()
-
-            # Verify complex metadata is properly returned
-            assert data["meta"] == complex_user.meta
-            assert data["meta"]["preferences"]["theme"] == "dark"
-            assert data["meta"]["preferences"]["notifications"]["email"] is True
-            assert "senior" in data["meta"]["tags"]
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_different_roles(self):
-        """Test getting current user with different system roles."""
-        roles = [
-            SystemRole.SYSTEM_USER,
-            SystemRole.SYSTEM_ADMIN,
-            SystemRole.SYSTEM_ROOT,
-            SystemRole.SYSTEM_CLIENT,
-        ]
-
-        for role in roles:
-            role_user = UserDetail(
-                id=uuid7(),
-                scope="test-scope",
-                username=f"{role.value}user",
-                primary_email=f"{role.value}@example.com",
-                primary_email_verified=True,
-                primary_phone=None,
-                primary_phone_verified=False,
-                enabled=True,
-                time_zone="UTC",
-                name_prefix=None,
-                first_name=role.value.capitalize(),
-                middle_name=None,
-                last_name="User",
-                name_suffix=None,
-                display_name=f"{role.value.capitalize()} User",
-                default_locale="en_US",
-                system_role=role,
-                meta={"role": role.value},
-                created=datetime.now(),
-                created_by=uuid7(),
-                last_modified=datetime.now(),
-                last_modified_by=uuid7(),
-            )
-
-            # Create app with role-specific user override
-            app = FastAPI()
-            app.include_router(router)
-
-            async def override_get_current_user(user=role_user):
-                return user
-
-            app.dependency_overrides[get_current_user] = override_get_current_user
-
-            async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-            ) as client:
-                response = await client.get("/users/me")
-
-                assert response.status_code == 200
-                data = response.json()
-                assert data["system_role"] == role.value
-                assert data["username"] == f"{role.value}user"
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_disabled_user(self):
-        """Test getting current user information when user is disabled."""
-        # Note: In a real scenario, a disabled user shouldn't be able to authenticate,
-        # but if they somehow do, the endpoint should still return their info
-        disabled_user = UserDetail(
-            id=uuid7(),
-            scope="test-scope",
-            username="disableduser",
-            primary_email="disabled@example.com",
-            primary_email_verified=True,
-            primary_phone=None,
-            primary_phone_verified=False,
-            enabled=False,  # User is disabled
-            time_zone="UTC",
-            name_prefix=None,
-            first_name="Disabled",
-            middle_name=None,
-            last_name="User",
-            name_suffix=None,
-            display_name="Disabled User",
-            default_locale="en_US",
-            system_role=SystemRole.SYSTEM_USER,
-            meta={},
-            created=datetime.now(),
-            created_by=uuid7(),
-            last_modified=datetime.now(),
-            last_modified_by=uuid7(),
-        )
-
-        # Create app with disabled user override
-        app = FastAPI()
-        app.include_router(router)
-
-        async def override_get_current_user():
-            return disabled_user
-
-        app.dependency_overrides[get_current_user] = override_get_current_user
-
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="http://test"
-        ) as client:
-            response = await client.get("/users/me")
-
-            assert response.status_code == 200
-            data = response.json()
-            assert data["enabled"] is False
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_different_time_zones(self):
-        """Test getting current user with different time zones."""
-        time_zones = [
-            "UTC",
-            "America/New_York",
-            "Europe/London",
-            "Asia/Tokyo",
-            "Australia/Sydney",
-        ]
-
-        for tz in time_zones:
-            tz_user = UserDetail(
-                id=uuid7(),
-                scope="test-scope",
-                username="tzuser",
-                primary_email="tz@example.com",
-                primary_email_verified=True,
-                primary_phone=None,
-                primary_phone_verified=False,
-                enabled=True,
-                time_zone=tz,
-                name_prefix=None,
-                first_name="TimeZone",
-                middle_name=None,
-                last_name="User",
-                name_suffix=None,
-                display_name="TimeZone User",
-                default_locale="en_US",
-                system_role=SystemRole.SYSTEM_USER,
-                meta={},
-                created=datetime.now(),
-                created_by=uuid7(),
-                last_modified=datetime.now(),
-                last_modified_by=uuid7(),
-            )
-
-            # Create app with tz user override
-            app = FastAPI()
-            app.include_router(router)
-
-            async def override_get_current_user(user=tz_user):
-                return user
-
-            app.dependency_overrides[get_current_user] = override_get_current_user
-
-            async with AsyncClient(
-                transport=ASGITransport(app=app), base_url="http://test"
-            ) as client:
-                response = await client.get("/users/me")
-
-                assert response.status_code == 200
-                data = response.json()
-                assert data["time_zone"] == tz
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_endpoint_path(self, client: AsyncClient):
-        """Test that the endpoint is accessible at the correct path."""
-        response = await client.get("/users/me")
-        assert response.status_code == 200
-
-        # Verify incorrect paths return 404
-        response = await client.get("/users")
-        assert response.status_code == 404
-
-        response = await client.get("/users/current")
-        assert response.status_code == 404
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_http_method(self, client: AsyncClient):
-        """Test that only GET method is allowed."""
-        # GET should work
-        response = await client.get("/users/me")
-        assert response.status_code == 200
-
-        # Other methods should not be allowed
-        response = await client.post("/users/me")
-        assert response.status_code == 405  # Method Not Allowed
-
-        response = await client.put("/users/me")
-        assert response.status_code == 405
-
-        response = await client.patch("/users/me")
-        assert response.status_code == 405
-
-        response = await client.delete("/users/me")
-        assert response.status_code == 405
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_idempotency(
-        self,
-        client: AsyncClient,
+        async_session: AsyncSession,
         mock_user_detail: UserDetail,
     ):
-        """Test that multiple calls return the same user information (idempotent)."""
-        # Make multiple requests
-        response1 = await client.get("/users/me")
-        response2 = await client.get("/users/me")
-        response3 = await client.get("/users/me")
+        """Test successfully retrieving a user by ID."""
+        from app.core.db.database import get_db
 
-        # All should be successful
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-        assert response3.status_code == 200
+        # Create a user
+        user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="targetuser",
+            primary_email="target@example.com",
+            first_name="Target",
+            last_name="User",
+            display_name="Target User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
 
-        # All should return the same data
-        data1 = response1.json()
-        data2 = response2.json()
-        data3 = response3.json()
+        app = FastAPI()
+        app.include_router(router)
 
-        assert data1 == data2 == data3
-        assert data1["id"] == str(mock_user_detail.id)
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(f"/users/{user.id}")
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["id"] == str(user.id)
+            assert data["username"] == "targetuser"
+            assert data["primary_email"] == "target@example.com"
+            # User schema should not include audit fields
+            assert "scope" not in data
+            assert "created" not in data
+            assert "created_by" not in data
+            assert "last_modified" not in data
+            assert "last_modified_by" not in data
+
+    @pytest.mark.asyncio
+    async def test_get_user_not_found(self, client: AsyncClient):
+        """Test retrieving a non-existent user."""
+        fake_id = uuid7()
+        response = await client.get(f"/users/{fake_id}")
+
+        assert response.status_code == 404
+
+
+class TestUpdateUser:
+    """Test suite for PATCH /users/{user_id} endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_update_user_success(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test successfully updating own user information."""
+        from app.core.db.database import get_db
+
+        # Create the current user in DB
+        user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username=mock_user_detail.username,
+            primary_email=mock_user_detail.primary_email,
+            first_name="Old",
+            last_name="Name",
+            display_name="Old Name",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {
+                "first_name": "New",
+                "last_name": "Name",
+                "display_name": "New Name",
+            }
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}", json=update_data
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["first_name"] == "New"
+            assert data["last_name"] == "Name"
+
+    @pytest.mark.asyncio
+    async def test_update_user_unauthorized(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that users cannot update other users."""
+        from app.core.db.database import get_db
+
+        # Create another user
+        other_user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="otheruser",
+            primary_email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            display_name="Other User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(other_user)
+        await async_session.commit()
+        await async_session.refresh(other_user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"first_name": "Hacked"}
+
+            response = await client.patch(f"/users/{other_user.id}", json=update_data)
+
+            assert response.status_code == 403
+            assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_user_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"first_name": "New"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}", json=update_data
+            )
+
+            assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_user_all_fields(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating user with all optional fields."""
+        from app.core.db.database import get_db
+
+        # Create the current user in DB
+        user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username=mock_user_detail.username,
+            primary_email=mock_user_detail.primary_email,
+            first_name="Old",
+            last_name="Name",
+            display_name="Old Name",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {
+                "time_zone": "America/New_York",
+                "name_prefix": "Dr.",
+                "first_name": "New",
+                "middle_name": "M",
+                "last_name": "Name",
+                "name_suffix": "Jr.",
+                "display_name": "New Name",
+                "default_locale": "en_US",
+                "system_role": "systemAdmin",
+                "meta": {"key": "value"},
+            }
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}", json=update_data
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["time_zone"] == "America/New_York"
+            assert data["name_prefix"] == "Dr."
+            assert data["first_name"] == "New"
+            assert data["middle_name"] == "M"
+            assert data["last_name"] == "Name"
+            assert data["name_suffix"] == "Jr."
+            assert data["display_name"] == "New Name"
+            assert data["default_locale"] == "en_US"
+            assert data["system_role"] == "systemAdmin"
+            assert data["meta"] == {"key": "value"}
+
+
+class TestUpdateUserUsername:
+    """Test suite for PATCH /users/{user_id}/username endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_update_username_success(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test successfully updating own username."""
+        from app.core.db.database import get_db
+
+        # Create the current user in DB
+        user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username="oldusername",
+            primary_email=mock_user_detail.primary_email,
+            first_name=mock_user_detail.first_name,
+            last_name=mock_user_detail.last_name,
+            display_name=mock_user_detail.display_name,
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"username": "newusername"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/username", json=update_data
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["username"] == "newusername"
+
+    @pytest.mark.asyncio
+    async def test_update_username_conflict(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating username to an existing username fails."""
+        from app.core.db.database import get_db
+
+        # Create existing user with target username
+        existing_user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="takenusername",
+            primary_email="taken@example.com",
+            first_name="Taken",
+            last_name="User",
+            display_name="Taken User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(existing_user)
+
+        # Create current user
+        current_user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username="myusername",
+            primary_email=mock_user_detail.primary_email,
+            first_name=mock_user_detail.first_name,
+            last_name=mock_user_detail.last_name,
+            display_name=mock_user_detail.display_name,
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(current_user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"username": "takenusername"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/username", json=update_data
+            )
+
+            assert response.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_update_username_unauthorized(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that users cannot update another user's username."""
+        from app.core.db.database import get_db
+
+        # Create another user
+        other_user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="otheruser",
+            primary_email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            display_name="Other User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(other_user)
+        await async_session.commit()
+        await async_session.refresh(other_user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"username": "hackedusername"}
+
+            response = await client.patch(
+                f"/users/{other_user.id}/username", json=update_data
+            )
+
+            assert response.status_code == 403
+            assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_username_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating username for a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"username": "newusername"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/username", json=update_data
+            )
+
+            assert response.status_code == 404
+
+
+class TestUpdateUserEmail:
+    """Test suite for PATCH /users/{user_id}/email endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_update_email_success(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test successfully updating own email."""
+        from app.core.db.database import get_db
+
+        # Create the current user in DB
+        user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username=mock_user_detail.username,
+            primary_email="old@example.com",
+            primary_email_verified=True,
+            first_name=mock_user_detail.first_name,
+            last_name=mock_user_detail.last_name,
+            display_name=mock_user_detail.display_name,
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"email": "new@example.com"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/email", json=update_data
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["primary_email"] == "new@example.com"
+            assert data["primary_email_verified"] is False
+
+    @pytest.mark.asyncio
+    async def test_update_email_unauthorized(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that users cannot update another user's email."""
+        from app.core.db.database import get_db
+
+        # Create another user
+        other_user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="otheruser",
+            primary_email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            display_name="Other User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(other_user)
+        await async_session.commit()
+        await async_session.refresh(other_user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"email": "hacked@example.com"}
+
+            response = await client.patch(
+                f"/users/{other_user.id}/email", json=update_data
+            )
+
+            assert response.status_code == 403
+            assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_email_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating email for a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"email": "newemail@example.com"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/email", json=update_data
+            )
+
+            assert response.status_code == 404
+
+
+class TestUpdateUserPrimaryPhone:
+    """Test suite for PATCH /users/{user_id}/primary-phone endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_update_phone_success(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test successfully updating own primary phone."""
+        from app.core.db.database import get_db
+
+        # Create the current user in DB
+        user = KPrincipal(
+            id=mock_user_detail.id,
+            scope=mock_user_detail.scope,
+            username=mock_user_detail.username,
+            primary_email=mock_user_detail.primary_email,
+            primary_phone="+1234567890",
+            primary_phone_verified=True,
+            first_name=mock_user_detail.first_name,
+            last_name=mock_user_detail.last_name,
+            display_name=mock_user_detail.display_name,
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"primary_phone": "+9876543210"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/primary-phone", json=update_data
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["primary_phone"] == "+9876543210"
+            assert data["primary_phone_verified"] is False
+
+    @pytest.mark.asyncio
+    async def test_update_phone_unauthorized(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that users cannot update another user's phone."""
+        from app.core.db.database import get_db
+
+        # Create another user
+        other_user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="otheruser",
+            primary_email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            display_name="Other User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(other_user)
+        await async_session.commit()
+        await async_session.refresh(other_user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"primary_phone": "+1111111111"}
+
+            response = await client.patch(
+                f"/users/{other_user.id}/primary-phone", json=update_data
+            )
+
+            assert response.status_code == 403
+            assert "not authorized" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_update_phone_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test updating phone for a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            update_data = {"primary_phone": "+9876543210"}
+
+            response = await client.patch(
+                f"/users/{mock_user_detail.id}/primary-phone", json=update_data
+            )
+
+            assert response.status_code == 404
+
+
+class TestDeleteUser:
+    """Test suite for DELETE /users/{user_id} endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_delete_user_success(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test successfully deleting a user."""
+        from app.core.db.database import get_db
+
+        # Create a user to delete
+        user = KPrincipal(
+            scope=mock_root_user.scope,
+            username="deleteme",
+            primary_email="deleteme@example.com",
+            first_name="Delete",
+            last_name="Me",
+            display_name="Delete Me",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        user_id = user.id
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user_id}")
+
+            assert response.status_code == 204
+
+    @pytest.mark.asyncio
+    async def test_delete_user_without_root_role(
+        self,
+        async_session: AsyncSession,
+        mock_user_detail: UserDetail,
+    ):
+        """Test that non-root users cannot delete users."""
+        from app.core.db.database import get_db
+
+        # Create a user
+        user = KPrincipal(
+            scope=mock_user_detail.scope,
+            username="targetuser",
+            primary_email="target@example.com",
+            first_name="Target",
+            last_name="User",
+            display_name="Target User",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_user_detail
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user.id}")
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_delete_user_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test deleting a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            fake_id = uuid7()
+            response = await client.delete(f"/users/{fake_id}")
+
+            assert response.status_code == 404

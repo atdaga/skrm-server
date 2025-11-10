@@ -218,6 +218,39 @@ class UserNotFoundException(DomainException):
         self.username = username
 
 
+class UserAlreadyExistsException(DomainException):
+    """Raised when attempting to create a user that already exists."""
+
+    def __init__(self, username: str, scope: str):
+        message = f"User with username '{username}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="user", entity_id=username)
+        self.username = username
+        self.scope = scope
+
+
+class UserUpdateConflictException(DomainException):
+    """Raised when updating a user causes a conflict."""
+
+    def __init__(self, user_id: UUID, username: str, scope: str):
+        message = f"Cannot update user '{user_id}': username '{username}' already exists in scope '{scope}'"
+        super().__init__(message, entity_type="user", entity_id=user_id)
+        self.user_id = user_id
+        self.username = username
+        self.scope = scope
+
+
+class UnauthorizedUserUpdateException(DomainException):
+    """Raised when a user attempts to update another user's information."""
+
+    def __init__(self, user_id: UUID, requesting_user_id: UUID):
+        message = (
+            f"User '{requesting_user_id}' is not authorized to update user '{user_id}'"
+        )
+        super().__init__(message, entity_type="user", entity_id=user_id)
+        self.user_id = user_id
+        self.requesting_user_id = requesting_user_id
+
+
 class InvalidUserIdException(DomainException):
     """Raised when a user ID is invalid or malformed."""
 

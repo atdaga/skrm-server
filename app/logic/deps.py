@@ -153,6 +153,25 @@ def check_system_user_role(user: UserDetail) -> None:
         )
 
 
+def check_system_root_role(user: UserDetail) -> None:
+    """Check if user has system root role.
+
+    Allows users with the following roles:
+    - SYSTEM_ROOT
+
+    Args:
+        user: User to check role for
+
+    Raises:
+        InsufficientPrivilegesException: If user does not have system root role
+    """
+    if user.system_role != SystemRole.SYSTEM_ROOT:
+        raise InsufficientPrivilegesException(
+            required_privilege="systemRoot",
+            user_id=user.id,
+        )
+
+
 async def verify_organization_membership(
     org_id: UUID, user_id: UUID, db: AsyncSession
 ) -> None:

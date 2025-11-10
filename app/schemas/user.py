@@ -21,6 +21,7 @@ class UserCreate(BaseModel):
     name_suffix: str | None = None
     display_name: str
     default_locale: str | None = None
+    system_role: SystemRole | None = None
     # meta: dict
 
 
@@ -53,12 +54,19 @@ class UserUpdate(BaseModel):
     name_suffix: str | None = None
     display_name: str | None = None
     default_locale: str | None = None
+    system_role: SystemRole | None = None
     meta: dict | None = None
 
 
 class User(BaseModel):
-    """Schema for user response (without sensitive data)."""
+    """Schema for user response (without audit fields)."""
 
+    id: UUID
+    username: str
+    primary_email: EmailStr
+    primary_email_verified: bool
+    primary_phone: str | None = None
+    primary_phone_verified: bool
     enabled: bool
     time_zone: str
     name_prefix: str | None = None
@@ -68,26 +76,26 @@ class User(BaseModel):
     name_suffix: str | None = None
     display_name: str
     default_locale: str
+    system_role: SystemRole
+    meta: dict
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserDetail(User):
-    """Schema for user detailed response."""
+    """Schema for user detailed response (includes audit fields)."""
 
-    id: UUID
     scope: str
-    username: str
-    primary_email: EmailStr
-    primary_email_verified: bool
-    primary_phone: str | None = None
-    primary_phone_verified: bool
-    system_role: SystemRole
-    meta: dict
     created: datetime
     created_by: UUID
     last_modified: datetime
     last_modified_by: UUID
+
+
+class UserList(BaseModel):
+    """Schema for user list response."""
+
+    users: list[User]
 
 
 class Token(BaseModel):
