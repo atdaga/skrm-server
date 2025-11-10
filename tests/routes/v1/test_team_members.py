@@ -37,7 +37,6 @@ async def team(
 class TestAddTeamMember:
     """Test suite for POST /teams/{team_id}/members endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_team_member_success(
         self,
         client: AsyncClient,
@@ -66,7 +65,6 @@ class TestAddTeamMember:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_team_member_minimal_data(
         self,
         client: AsyncClient,
@@ -86,7 +84,6 @@ class TestAddTeamMember:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_team_member_duplicate(
         self,
         client: AsyncClient,
@@ -117,7 +114,6 @@ class TestAddTeamMember:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_team_member_team_not_found(
         self,
         client: AsyncClient,
@@ -134,7 +130,6 @@ class TestAddTeamMember:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_team_member_with_role(
         self,
         client: AsyncClient,
@@ -150,7 +145,6 @@ class TestAddTeamMember:
         data = response.json()
         assert data["role"] == "lead"
 
-    @pytest.mark.asyncio
     async def test_add_team_member_with_complex_meta(
         self,
         client: AsyncClient,
@@ -178,7 +172,6 @@ class TestAddTeamMember:
 class TestListTeamMembers:
     """Test suite for GET /teams/{team_id}/members endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_team_members_empty(
         self,
         client: AsyncClient,
@@ -191,7 +184,6 @@ class TestListTeamMembers:
         data = response.json()
         assert data["members"] == []
 
-    @pytest.mark.asyncio
     async def test_list_team_members_single(
         self,
         client: AsyncClient,
@@ -223,7 +215,6 @@ class TestListTeamMembers:
         assert data["members"][0]["principal_id"] == str(principal.id)
         assert data["members"][0]["role"] == "developer"
 
-    @pytest.mark.asyncio
     async def test_list_team_members_multiple(
         self,
         client: AsyncClient,
@@ -274,7 +265,6 @@ class TestListTeamMembers:
         roles = {m["role"] for m in data["members"]}
         assert roles == {"admin", "developer", "designer"}
 
-    @pytest.mark.asyncio
     async def test_list_team_members_team_not_found(
         self,
         client: AsyncClient,
@@ -291,7 +281,6 @@ class TestListTeamMembers:
 class TestGetTeamMember:
     """Test suite for GET /teams/{team_id}/members/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_team_member_success(
         self,
         client: AsyncClient,
@@ -324,7 +313,6 @@ class TestGetTeamMember:
         assert data["role"] == "developer"
         assert data["meta"] == {"level": "senior"}
 
-    @pytest.mark.asyncio
     async def test_get_team_member_not_found(
         self,
         client: AsyncClient,
@@ -344,7 +332,6 @@ class TestGetTeamMember:
 class TestUpdateTeamMember:
     """Test suite for PATCH /teams/{team_id}/members/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_team_member_role(
         self,
         client: AsyncClient,
@@ -379,7 +366,6 @@ class TestUpdateTeamMember:
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
 
-    @pytest.mark.asyncio
     async def test_update_team_member_meta(
         self,
         client: AsyncClient,
@@ -412,7 +398,6 @@ class TestUpdateTeamMember:
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_team_member_both_fields(
         self,
         client: AsyncClient,
@@ -447,7 +432,6 @@ class TestUpdateTeamMember:
         assert data["role"] == "senior_developer"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_team_member_not_found(
         self,
         client: AsyncClient,
@@ -464,7 +448,6 @@ class TestUpdateTeamMember:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_team_member_empty_payload(
         self,
         client: AsyncClient,
@@ -503,7 +486,6 @@ class TestUpdateTeamMember:
 class TestRemoveTeamMember:
     """Test suite for DELETE /teams/{team_id}/members/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_team_member_success(
         self,
         client: AsyncClient,
@@ -530,7 +512,7 @@ class TestRemoveTeamMember:
         assert response.status_code == 204
         assert response.content == b""
 
-        # Verify member is actually deleted
+        # Verify member is soft-deleted
         from sqlmodel import select
 
         result = await async_session.execute(
@@ -539,9 +521,10 @@ class TestRemoveTeamMember:
                 KTeamMember.principal_id == principal.id,
             )
         )
-        assert result.scalar_one_or_none() is None
+        deleted_member = result.scalar_one_or_none()
+        assert deleted_member is not None
+        assert deleted_member.deleted_at is not None
 
-    @pytest.mark.asyncio
     async def test_remove_team_member_not_found(
         self,
         client: AsyncClient,

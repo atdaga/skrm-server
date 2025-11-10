@@ -67,7 +67,7 @@ async def get_user_by_id(user_id: UUID, db: AsyncSession) -> UserDetail:
     Raises:
         UserNotFoundException: If user is not found in database
     """
-    stmt = select(KPrincipal).where(KPrincipal.id == user_id, KPrincipal.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KPrincipal).where(KPrincipal.id == user_id, KPrincipal.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
 
@@ -168,6 +168,30 @@ def check_system_root_role(user: UserDetail) -> None:
     if user.system_role != SystemRole.SYSTEM_ROOT:
         raise InsufficientPrivilegesException(
             required_privilege="systemRoot",
+            user_id=user.id,
+        )
+
+
+def check_hard_delete_privileges(user: UserDetail) -> None:
+    """Check if user has privileges to perform hard deletes.
+
+    Allows users with the following roles:
+    - SYSTEM
+    - SYSTEM_ROOT
+
+    Args:
+        user: User to check role for
+
+    Raises:
+        InsufficientPrivilegesException: If user does not have hard delete privileges
+    """
+    allowed_roles = {
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    }
+    if user.system_role not in allowed_roles:
+        raise InsufficientPrivilegesException(
+            required_privilege="system or systemRoot",
             user_id=user.id,
         )
 

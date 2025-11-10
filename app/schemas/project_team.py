@@ -34,6 +34,7 @@ class ProjectTeam(BaseModel):
 class ProjectTeamDetail(ProjectTeam):
     """Schema for project team detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

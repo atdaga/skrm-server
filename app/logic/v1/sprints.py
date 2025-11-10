@@ -81,7 +81,7 @@ async def list_sprints(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KS
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KSprint).where(KSprint.org_id == org_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.org_id == org_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprints = result.scalars().all()
     return list(sprints)
@@ -108,7 +108,7 @@ async def get_sprint(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprint = result.scalar_one_or_none()
 
@@ -145,7 +145,7 @@ async def update_sprint(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprint = result.scalar_one_or_none()
 
@@ -180,7 +180,11 @@ async def update_sprint(
 
 
 async def delete_sprint(
-    sprint_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    sprint_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a sprint.
 
@@ -189,6 +193,7 @@ async def delete_sprint(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the sprint. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -197,12 +202,17 @@ async def delete_sprint(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.org_id == org_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprint = result.scalar_one_or_none()
 
     if not sprint:
         raise SprintNotFoundException(sprint_id=sprint_id, scope=str(org_id))
 
-    await db.delete(sprint)
+    if hard_delete:  # pragma: no cover
+        await db.delete(sprint)  # pragma: no cover
+    else:
+        sprint.deleted_at = datetime.now()
+        sprint.last_modified = datetime.now()
+        sprint.last_modified_by = user_id
     await db.commit()

@@ -43,7 +43,7 @@ class KTask(SQLModel, table=True):
     status: TaskStatus = Field(default=TaskStatus.BACKLOG, sa_column=Column(String))
     review_result: ReviewResult | None = Field(default=None, sa_column=Column(String))
     meta: dict = Field(default_factory=dict, sa_type=JSON)
-    deleted: bool = Field(default=False)
+    deleted_at: datetime | None = Field(default=None)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)

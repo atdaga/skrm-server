@@ -42,6 +42,7 @@ class TestPerformLogin:
             default_locale="en",
             system_role=SystemRole.SYSTEM_USER,
             meta={},
+            deleted_at=None,
             created=now,
             created_by=uuid7(),
             last_modified=now,

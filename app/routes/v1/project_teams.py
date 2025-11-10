@@ -3,11 +3,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     ProjectNotFoundException,
     ProjectTeamAlreadyExistsException,
     ProjectTeamNotFoundException,
@@ -19,8 +20,8 @@ from ...schemas.project_team import (
     ProjectTeamList,
     ProjectTeamUpdate,
 )
-from ...schemas.user import TokenData
-from ..deps import get_current_token
+from ...schemas.user import TokenData, UserDetail
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/projects/{project_id}/teams", tags=["project-teams"])
 
@@ -130,14 +131,34 @@ async def remove_project_team(
     project_id: UUID,
     team_id: UUID,
     token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[
+        bool, Query(description="Hard delete the relationship")
+    ] = False,
 ) -> None:
     """Remove a team from a project."""
+    user_id = UUID(token_data.sub)
+
+    # Check authorization for hard delete
+    if hard_delete:  # pragma: no cover
+        from ...logic import deps as deps_logic  # pragma: no cover
+
+        try:  # pragma: no cover
+            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
+        except InsufficientPrivilegesException as e:  # pragma: no cover
+            raise HTTPException(  # pragma: no cover
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
+
     try:
         await project_teams_logic.remove_project_team(
             project_id=project_id,
             team_id=team_id,
+            user_id=user_id,
             db=db,
+            hard_delete=hard_delete,
         )
     except ProjectTeamNotFoundException as e:
         raise HTTPException(

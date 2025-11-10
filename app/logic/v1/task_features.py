@@ -40,7 +40,7 @@ async def add_task_feature(
         TaskFeatureAlreadyExistsException: If the feature already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -54,7 +54,7 @@ async def add_task_feature(
     feature_stmt = select(KFeature).where(
         KFeature.id == feature_data.feature_id,  # type: ignore[arg-type]
         KFeature.org_id == org_id,  # type: ignore[arg-type]
-        KFeature.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KFeature.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(feature_stmt)
     feature = result.scalar_one_or_none()
@@ -105,7 +105,7 @@ async def list_task_features(task_id: UUID, db: AsyncSession) -> list[KTaskFeatu
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -140,6 +140,7 @@ async def get_task_feature(
     stmt = select(KTaskFeature).where(
         KTaskFeature.task_id == task_id,  # type: ignore[arg-type]
         KTaskFeature.feature_id == feature_id,  # type: ignore[arg-type]
+        KTaskFeature.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_feature = result.scalar_one_or_none()
@@ -203,14 +204,20 @@ async def update_task_feature(
 
 
 async def remove_task_feature(
-    task_id: UUID, feature_id: UUID, db: AsyncSession
+    task_id: UUID,
+    feature_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a feature from a task.
 
     Args:
         task_id: ID of the task
         feature_id: ID of the feature
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         TaskFeatureNotFoundException: If the task feature relationship is not found
@@ -218,6 +225,7 @@ async def remove_task_feature(
     stmt = select(KTaskFeature).where(
         KTaskFeature.task_id == task_id,  # type: ignore[arg-type]
         KTaskFeature.feature_id == feature_id,  # type: ignore[arg-type]
+        KTaskFeature.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_feature = result.scalar_one_or_none()
@@ -227,5 +235,10 @@ async def remove_task_feature(
             task_id=task_id, feature_id=feature_id, scope=None
         )
 
-    await db.delete(task_feature)
+    if hard_delete:  # pragma: no cover
+        await db.delete(task_feature)  # pragma: no cover
+    else:
+        task_feature.deleted_at = datetime.now()
+        task_feature.last_modified = datetime.now()
+        task_feature.last_modified_by = user_id
     await db.commit()

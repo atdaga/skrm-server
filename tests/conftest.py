@@ -257,7 +257,7 @@ async def test_organization_without_membership(
     result = await async_session.execute(
         select(KPrincipal).where(
             KPrincipal.id == test_user_id,
-            KPrincipal.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KPrincipal.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
     )
     existing_principal = result.scalar_one_or_none()
@@ -305,7 +305,7 @@ async def test_principal(async_session: AsyncSession, test_user_id: UUID):
     result = await async_session.execute(
         select(KPrincipal).where(
             KPrincipal.id == test_user_id,
-            KPrincipal.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KPrincipal.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
     )
     test_user_principal = result.scalar_one_or_none()
@@ -354,6 +354,7 @@ def app_with_overrides(
     """
     from fastapi import FastAPI
 
+    from app.core.auth import oauth2_scheme
     from app.core.db.database import get_db
     from app.routes.deps import get_current_token, get_current_user
 
@@ -363,6 +364,9 @@ def app_with_overrides(
     async def override_get_db():
         yield async_session
 
+    async def override_oauth2_scheme():
+        return "test-token"
+
     async def override_get_current_token():
         return mock_token_data
 
@@ -370,6 +374,7 @@ def app_with_overrides(
         return mock_user
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
     app.dependency_overrides[get_current_token] = override_get_current_token
     app.dependency_overrides[get_current_user] = override_get_current_user
 
@@ -426,6 +431,7 @@ def mock_user(test_user_id: UUID) -> "UserDetail":
         default_locale="en",
         system_role=SystemRole.SYSTEM_USER,
         meta={},
+        deleted_at=None,
         created=now,
         created_by=test_user_id,
         last_modified=now,
@@ -463,6 +469,7 @@ def mock_user_detail(test_user_id: UUID, test_scope: str) -> "UserDetail":
         default_locale="en_US",
         system_role=SystemRole.SYSTEM_USER,
         meta={"department": "Engineering"},
+        deleted_at=None,
         created=datetime.now(),
         created_by=test_user_id,
         last_modified=datetime.now(),
@@ -501,6 +508,46 @@ def mock_client_user(test_user_id: UUID) -> "UserDetail":
         default_locale="en",
         system_role=SystemRole.SYSTEM_CLIENT,
         meta={},
+        deleted_at=None,
+        created=now,
+        created_by=test_user_id,
+        last_modified=now,
+        last_modified_by=test_user_id,
+    )
+
+
+@pytest.fixture
+def mock_system_root_user(test_user_id: UUID) -> "UserDetail":
+    """Create a mock UserDetail object with SYSTEM_ROOT role for testing.
+
+    This user has hard delete privileges.
+    """
+    from datetime import datetime
+
+    from app.models.k_principal import SystemRole
+    from app.schemas.user import UserDetail
+
+    now = datetime.now()
+    return UserDetail(
+        id=test_user_id,
+        scope="global",
+        username="rootuser",
+        primary_email="root@example.com",
+        primary_email_verified=True,
+        primary_phone=None,
+        primary_phone_verified=False,
+        enabled=True,
+        time_zone="UTC",
+        name_prefix=None,
+        first_name="Root",
+        middle_name=None,
+        last_name="User",
+        name_suffix=None,
+        display_name="Root User",
+        default_locale="en",
+        system_role=SystemRole.SYSTEM_ROOT,
+        meta={},
+        deleted_at=None,
         created=now,
         created_by=test_user_id,
         last_modified=now,

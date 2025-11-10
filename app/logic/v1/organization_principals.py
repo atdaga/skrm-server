@@ -46,7 +46,7 @@ async def add_organization_principal(
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
     # Verify organization exists
-    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     organization = result.scalar_one_or_none()
 
@@ -98,7 +98,7 @@ async def list_organization_principals(
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
     # Verify organization exists
-    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     organization = result.scalar_one_or_none()
 
@@ -138,6 +138,7 @@ async def get_organization_principal(
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
         KOrganizationPrincipal.principal_id == principal_id,  # type: ignore[arg-type]
+        KOrganizationPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     principal = result.scalar_one_or_none()
@@ -205,7 +206,11 @@ async def update_organization_principal(
 
 
 async def remove_organization_principal(
-    org_id: UUID, principal_id: UUID, user_id: UUID, db: AsyncSession
+    org_id: UUID,
+    principal_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a principal from an organization.
 
@@ -214,6 +219,7 @@ async def remove_organization_principal(
         principal_id: ID of the principal
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -225,6 +231,7 @@ async def remove_organization_principal(
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
         KOrganizationPrincipal.principal_id == principal_id,  # type: ignore[arg-type]
+        KOrganizationPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     principal = result.scalar_one_or_none()
@@ -234,5 +241,10 @@ async def remove_organization_principal(
             org_id=org_id, principal_id=principal_id, scope=None
         )
 
-    await db.delete(principal)
+    if hard_delete:  # pragma: no cover
+        await db.delete(principal)  # pragma: no cover
+    else:
+        principal.deleted_at = datetime.now()
+        principal.last_modified = datetime.now()
+        principal.last_modified_by = user_id
     await db.commit()

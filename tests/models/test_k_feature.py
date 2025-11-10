@@ -312,7 +312,7 @@ class TestKFeatureModel:
         # Query features for test_org_id
         stmt = select(KFeature).where(
             KFeature.org_id == test_org_id,  # type: ignore[arg-type]
-            KFeature.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KFeature.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         features = result.scalars().all()
@@ -366,7 +366,7 @@ class TestKFeatureModel:
         # Query children by parent
         stmt = select(KFeature).where(
             KFeature.parent == parent.id,  # type: ignore[arg-type]
-            KFeature.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KFeature.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         children = result.scalars().all()

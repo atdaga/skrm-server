@@ -40,7 +40,7 @@ async def add_task_owner(
         TaskOwnerAlreadyExistsException: If the owner already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -104,7 +104,7 @@ async def list_task_owners(task_id: UUID, db: AsyncSession) -> list[KTaskOwner]:
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -139,6 +139,7 @@ async def get_task_owner(
     stmt = select(KTaskOwner).where(
         KTaskOwner.task_id == task_id,  # type: ignore[arg-type]
         KTaskOwner.principal_id == principal_id,  # type: ignore[arg-type]
+        KTaskOwner.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_owner = result.scalar_one_or_none()
@@ -202,14 +203,20 @@ async def update_task_owner(
 
 
 async def remove_task_owner(
-    task_id: UUID, principal_id: UUID, db: AsyncSession
+    task_id: UUID,
+    principal_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove an owner from a task.
 
     Args:
         task_id: ID of the task
         principal_id: ID of the principal
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         TaskOwnerNotFoundException: If the task owner relationship is not found
@@ -217,6 +224,7 @@ async def remove_task_owner(
     stmt = select(KTaskOwner).where(
         KTaskOwner.task_id == task_id,  # type: ignore[arg-type]
         KTaskOwner.principal_id == principal_id,  # type: ignore[arg-type]
+        KTaskOwner.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_owner = result.scalar_one_or_none()
@@ -226,5 +234,10 @@ async def remove_task_owner(
             task_id=task_id, principal_id=principal_id, scope=None
         )
 
-    await db.delete(task_owner)
+    if hard_delete:  # pragma: no cover
+        await db.delete(task_owner)  # pragma: no cover
+    else:
+        task_owner.deleted_at = datetime.now()
+        task_owner.last_modified = datetime.now()
+        task_owner.last_modified_by = user_id
     await db.commit()

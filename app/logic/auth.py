@@ -174,14 +174,14 @@ async def begin_fido2_registration(
         InvalidCredentialsException: If user not found
     """
     # Fetch user
-    result = await db.execute(select(KPrincipal).where(KPrincipal.id == user_id, KPrincipal.deleted == False))  # type: ignore[arg-type]  # noqa: E712
+    result = await db.execute(select(KPrincipal).where(KPrincipal.id == user_id, KPrincipal.deleted_at.is_(None)))  # type: ignore[arg-type,union-attr]
     user = result.scalar_one_or_none()
     if not user:
         raise InvalidCredentialsException(username=str(user_id))
 
     # Get existing credentials for this user to exclude them
     existing_result = await db.execute(
-        select(KFido2Credential).where(KFido2Credential.principal_id == user_id, KFido2Credential.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+        select(KFido2Credential).where(KFido2Credential.principal_id == user_id, KFido2Credential.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     )
     existing_credentials = existing_result.scalars().all()
 
@@ -380,13 +380,13 @@ async def begin_fido2_authentication(
     if username:
         # Find user
         result = await db.execute(
-            select(KPrincipal).where(KPrincipal.username == username, KPrincipal.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+            select(KPrincipal).where(KPrincipal.username == username, KPrincipal.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
         )
         user = result.scalar_one_or_none()
         if user:
             # Get user's credentials
             creds_result = await db.execute(
-                select(KFido2Credential).where(KFido2Credential.principal_id == user.id, KFido2Credential.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+                select(KFido2Credential).where(KFido2Credential.principal_id == user.id, KFido2Credential.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
             )
             credentials = creds_result.scalars().all()
             allow_credentials = [
@@ -465,7 +465,7 @@ async def complete_fido2_authentication(
         # Find credential in database
         result = await db.execute(
             select(KFido2Credential).where(
-                KFido2Credential.credential_id == credential_id, KFido2Credential.deleted == False  # type: ignore[arg-type]  # noqa: E712
+                KFido2Credential.credential_id == credential_id, KFido2Credential.deleted_at.is_(None)  # type: ignore[arg-type,union-attr]
             )
         )
         credential = result.scalar_one_or_none()
@@ -474,7 +474,7 @@ async def complete_fido2_authentication(
 
         # Get user
         user_result = await db.execute(
-            select(KPrincipal).where(KPrincipal.id == credential.principal_id, KPrincipal.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+            select(KPrincipal).where(KPrincipal.id == credential.principal_id, KPrincipal.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
         )
         user = user_result.scalar_one_or_none()
         if not user:
@@ -640,7 +640,7 @@ async def list_user_credentials(
         List of credential details
     """
     result = await db.execute(
-        select(KFido2Credential).where(KFido2Credential.principal_id == user_id, KFido2Credential.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+        select(KFido2Credential).where(KFido2Credential.principal_id == user_id, KFido2Credential.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     )
     credentials = result.scalars().all()
 
@@ -677,7 +677,7 @@ async def update_credential_nickname(
         select(KFido2Credential).where(
             KFido2Credential.id == credential_id,  # type: ignore[arg-type]
             KFido2Credential.principal_id == user_id,  # type: ignore[arg-type]
-            KFido2Credential.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+            KFido2Credential.deleted_at.is_(None),  # type: ignore[union-attr]
         )
     )
     credential = result.scalar_one_or_none()
@@ -692,7 +692,7 @@ async def update_credential_nickname(
 
 
 async def delete_credential(
-    user_id: UUID, credential_id: UUID, db: AsyncSession
+    user_id: UUID, credential_id: UUID, db: AsyncSession, hard_delete: bool = False
 ) -> None:
     """Delete a FIDO2 credential.
 
@@ -700,6 +700,7 @@ async def delete_credential(
         user_id: User ID (for authorization)
         credential_id: Credential ID to delete
         db: Database session
+        hard_delete: If True, permanently delete the credential. If False, soft delete.
 
     Raises:
         InvalidCredentialsException: If credential not found or doesn't belong to user
@@ -708,12 +709,16 @@ async def delete_credential(
         select(KFido2Credential).where(
             KFido2Credential.id == credential_id,  # type: ignore[arg-type]
             KFido2Credential.principal_id == user_id,  # type: ignore[arg-type]
-            KFido2Credential.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+            KFido2Credential.deleted_at.is_(None),  # type: ignore[union-attr]
         )
     )
     credential = result.scalar_one_or_none()
     if not credential:
         raise InvalidCredentialsException(username=str(user_id))
 
-    await db.delete(credential)
+    if hard_delete:
+        await db.delete(credential)
+    else:
+        credential.deleted_at = datetime.now()
+        credential.last_modified = datetime.now()
     await db.commit()

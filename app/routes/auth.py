@@ -3,7 +3,16 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -501,11 +510,15 @@ async def delete_credential(
     credential_id: UUID,
     current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[
+        bool, Query(description="Hard delete the credential")
+    ] = False,
 ) -> Fido2CredentialDeleteResponse:
     """Delete a FIDO2 credential.
 
     Args:
         credential_id: ID of the credential to delete
+        hard_delete: If True, permanently delete the credential. If False, soft delete.
         current_user: Currently authenticated user
         db: Database session
 
@@ -515,8 +528,23 @@ async def delete_credential(
     Raises:
         HTTPException: If credential not found or doesn't belong to user
     """
+    # Check authorization for hard delete
+    if hard_delete:
+        from ..core.exceptions.domain_exceptions import InsufficientPrivilegesException
+        from ..logic import deps as deps_logic
+
+        try:
+            deps_logic.check_hard_delete_privileges(current_user)
+        except InsufficientPrivilegesException as e:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
+
     try:
-        await auth_logic.delete_credential(current_user.id, credential_id, db)
+        await auth_logic.delete_credential(
+            current_user.id, credential_id, db, hard_delete=hard_delete
+        )
         return Fido2CredentialDeleteResponse()
     except InvalidCredentialsException as e:
         raise HTTPException(

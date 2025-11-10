@@ -20,7 +20,6 @@ def app_with_overrides(app_with_overrides):
 class TestCreateProject:
     """Test suite for POST /projects endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_project_success(
         self,
         client: AsyncClient,
@@ -51,7 +50,6 @@ class TestCreateProject:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_project_minimal_fields(
         self,
         client: AsyncClient,
@@ -71,7 +69,6 @@ class TestCreateProject:
         assert data["description"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_project_duplicate_name(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -91,7 +88,6 @@ class TestCreateProject:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_project_unauthorized_org(
         self, client: AsyncClient, test_user_id: UUID
     ):
@@ -108,7 +104,6 @@ class TestCreateProject:
 class TestListProjects:
     """Test suite for GET /projects endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_projects_empty(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -119,7 +114,6 @@ class TestListProjects:
         data = response.json()
         assert data["projects"] == []
 
-    @pytest.mark.asyncio
     async def test_list_projects_multiple(
         self,
         client: AsyncClient,
@@ -158,7 +152,6 @@ class TestListProjects:
         assert "Project Alpha" in project_names
         assert "Project Beta" in project_names
 
-    @pytest.mark.asyncio
     async def test_list_projects_unauthorized_org(self, client: AsyncClient):
         """Test that listing projects in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -170,7 +163,6 @@ class TestListProjects:
 class TestGetProject:
     """Test suite for GET /projects/{project_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_project_success(
         self,
         client: AsyncClient,
@@ -200,7 +192,6 @@ class TestGetProject:
         assert data["name"] == "DevOps Project"
         assert data["description"] == "CI/CD pipeline setup"
 
-    @pytest.mark.asyncio
     async def test_get_project_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -212,7 +203,6 @@ class TestGetProject:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_get_project_wrong_org(
         self,
         client: AsyncClient,
@@ -249,7 +239,6 @@ class TestGetProject:
 class TestUpdateProject:
     """Test suite for PATCH /projects/{project_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_project_success(
         self,
         client: AsyncClient,
@@ -286,7 +275,6 @@ class TestUpdateProject:
         assert data["description"] == "New description"
         assert data["meta"] == {"status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_project_partial(
         self,
         client: AsyncClient,
@@ -318,7 +306,6 @@ class TestUpdateProject:
         assert data["name"] == "Original Project"  # Unchanged
         assert data["description"] == "Updated description"  # Changed
 
-    @pytest.mark.asyncio
     async def test_update_project_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -332,7 +319,6 @@ class TestUpdateProject:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_update_project_duplicate_name(
         self,
         client: AsyncClient,
@@ -366,7 +352,6 @@ class TestUpdateProject:
         )
         assert response.status_code == 409
 
-    @pytest.mark.asyncio
     async def test_update_project_unauthorized_org(
         self,
         client: AsyncClient,
@@ -407,7 +392,6 @@ class TestUpdateProject:
 class TestDeleteProject:
     """Test suite for DELETE /projects/{project_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_project_success(
         self,
         client: AsyncClient,
@@ -438,7 +422,6 @@ class TestDeleteProject:
         )
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_project_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -450,7 +433,6 @@ class TestDeleteProject:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_project_unauthorized_org(
         self,
         client: AsyncClient,

@@ -125,6 +125,7 @@ class Fido2CredentialDetail(BaseModel):
     transports: list[str]
     is_discoverable: bool
     last_used: datetime | None = None
+    deleted_at: datetime | None = None
     created: datetime
 
 

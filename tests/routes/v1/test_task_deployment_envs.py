@@ -72,7 +72,6 @@ async def deployment_env(
 class TestAddTaskDeploymentEnv:
     """Test suite for POST /tasks/{task_id}/deployment_envs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_task_deployment_env_success(
         self,
         client: AsyncClient,
@@ -109,7 +108,6 @@ class TestAddTaskDeploymentEnv:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_task_deployment_env_minimal_fields(
         self,
         client: AsyncClient,
@@ -128,7 +126,6 @@ class TestAddTaskDeploymentEnv:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_task_deployment_env_duplicate(
         self,
         client: AsyncClient,
@@ -154,7 +151,6 @@ class TestAddTaskDeploymentEnv:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_task_deployment_env_nonexistent_task(
         self,
         client: AsyncClient,
@@ -169,7 +165,6 @@ class TestAddTaskDeploymentEnv:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_task_deployment_env_nonexistent_deployment_env(
         self,
         client: AsyncClient,
@@ -188,7 +183,6 @@ class TestAddTaskDeploymentEnv:
 class TestListTaskDeploymentEnvs:
     """Test suite for GET /tasks/{task_id}/deployment_envs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_task_deployment_envs_empty(
         self,
         client: AsyncClient,
@@ -201,7 +195,6 @@ class TestListTaskDeploymentEnvs:
         data = response.json()
         assert data["deployment_envs"] == []
 
-    @pytest.mark.asyncio
     async def test_list_task_deployment_envs_multiple(
         self,
         client: AsyncClient,
@@ -258,7 +251,6 @@ class TestListTaskDeploymentEnvs:
         assert "staging" in env_roles
         assert "production" in env_roles
 
-    @pytest.mark.asyncio
     async def test_list_task_deployment_envs_nonexistent_task(
         self,
         client: AsyncClient,
@@ -273,7 +265,6 @@ class TestListTaskDeploymentEnvs:
 class TestGetTaskDeploymentEnv:
     """Test suite for GET /tasks/{task_id}/deployment_envs/{deployment_env_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_task_deployment_env_success(
         self,
         client: AsyncClient,
@@ -308,7 +299,6 @@ class TestGetTaskDeploymentEnv:
         assert data["role"] == "primary"
         assert data["meta"] == {"priority": "high"}
 
-    @pytest.mark.asyncio
     async def test_get_task_deployment_env_not_found(
         self,
         client: AsyncClient,
@@ -326,7 +316,6 @@ class TestGetTaskDeploymentEnv:
 class TestUpdateTaskDeploymentEnv:
     """Test suite for PATCH /tasks/{task_id}/deployment_envs/{deployment_env_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_task_deployment_env_success(
         self,
         client: AsyncClient,
@@ -365,7 +354,6 @@ class TestUpdateTaskDeploymentEnv:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_task_deployment_env_partial(
         self,
         client: AsyncClient,
@@ -401,7 +389,6 @@ class TestUpdateTaskDeploymentEnv:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_task_deployment_env_not_found(
         self,
         client: AsyncClient,
@@ -421,7 +408,6 @@ class TestUpdateTaskDeploymentEnv:
 class TestRemoveTaskDeploymentEnv:
     """Test suite for DELETE /tasks/{task_id}/deployment_envs/{deployment_env_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_task_deployment_env_success(
         self,
         client: AsyncClient,
@@ -456,7 +442,6 @@ class TestRemoveTaskDeploymentEnv:
         )
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_task_deployment_env_not_found(
         self,
         client: AsyncClient,

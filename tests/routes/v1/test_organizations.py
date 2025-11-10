@@ -66,7 +66,6 @@ def app_with_overrides(
 class TestCreateOrganization:
     """Test suite for POST /organizations endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_organization_success(
         self,
         client: AsyncClient,
@@ -93,7 +92,6 @@ class TestCreateOrganization:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_organization_minimal_data(
         self,
         client: AsyncClient,
@@ -109,7 +107,6 @@ class TestCreateOrganization:
         assert data["alias"] == "minimal_org"
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_organization_duplicate_name(
         self,
         client: AsyncClient,
@@ -151,7 +148,6 @@ class TestCreateOrganization:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_organization_duplicate_alias(
         self,
         client: AsyncClient,
@@ -193,7 +189,6 @@ class TestCreateOrganization:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_empty(
         self,
         client: AsyncClient,
@@ -207,7 +202,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_uppercase(
         self,
         client: AsyncClient,
@@ -221,7 +215,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_mixed_case(
         self,
         client: AsyncClient,
@@ -237,7 +230,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_all_uppercase(
         self,
         client: AsyncClient,
@@ -251,7 +243,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_starts_with_digit(
         self,
         client: AsyncClient,
@@ -265,7 +256,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_invalid_alias_special_chars(
         self,
         client: AsyncClient,
@@ -279,7 +269,6 @@ class TestCreateOrganization:
         detail = response.json()["detail"]
         assert any("alias" in str(error).lower() for error in detail)
 
-    @pytest.mark.asyncio
     async def test_create_organization_valid_aliases(
         self,
         client: AsyncClient,
@@ -303,7 +292,6 @@ class TestCreateOrganization:
 class TestListOrganizations:
     """Test suite for GET /organizations endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_organizations_empty(
         self,
         client: AsyncClient,
@@ -315,7 +303,6 @@ class TestListOrganizations:
         data = response.json()
         assert data["organizations"] == []
 
-    @pytest.mark.asyncio
     async def test_list_organizations_single(
         self,
         client: AsyncClient,
@@ -331,7 +318,6 @@ class TestListOrganizations:
         assert data["organizations"][0]["alias"] == "test_org"
         assert data["organizations"][0]["id"] == str(test_organization.id)
 
-    @pytest.mark.asyncio
     async def test_list_organizations_multiple(
         self,
         client: AsyncClient,
@@ -386,7 +372,6 @@ class TestListOrganizations:
 class TestGetOrganization:
     """Test suite for GET /organizations/{org_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_organization_success(
         self,
         client: AsyncClient,
@@ -402,7 +387,6 @@ class TestGetOrganization:
         assert data["alias"] == "test_org"
         assert data["meta"] == {"test": "data"}
 
-    @pytest.mark.asyncio
     async def test_get_organization_not_found(
         self,
         client: AsyncClient,
@@ -420,7 +404,6 @@ class TestGetOrganization:
 class TestUpdateOrganization:
     """Test suite for PATCH /organizations/{org_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_organization_name(
         self,
         client: AsyncClient,
@@ -467,7 +450,6 @@ class TestUpdateOrganization:
         assert data["name"] == "New Name"
         assert data["alias"] == "old_alias"  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_organization_alias(
         self,
         client: AsyncClient,
@@ -514,7 +496,6 @@ class TestUpdateOrganization:
         assert data["name"] == "Test Org"  # Unchanged
         assert data["alias"] == "new_alias"
 
-    @pytest.mark.asyncio
     async def test_update_organization_meta(
         self,
         client: AsyncClient,
@@ -561,7 +542,6 @@ class TestUpdateOrganization:
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_organization_all_fields(
         self,
         client: AsyncClient,
@@ -614,7 +594,6 @@ class TestUpdateOrganization:
         assert data["alias"] == "new_alias"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_organization_not_found(
         self,
         client: AsyncClient,
@@ -627,7 +606,6 @@ class TestUpdateOrganization:
         # Returns 403 because user is not a member of non-existent org
         assert response.status_code == 403
 
-    @pytest.mark.asyncio
     async def test_update_organization_duplicate_name(
         self,
         client: AsyncClient,
@@ -678,7 +656,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 409
 
-    @pytest.mark.asyncio
     async def test_update_organization_duplicate_alias(
         self,
         client: AsyncClient,
@@ -729,7 +706,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 409
 
-    @pytest.mark.asyncio
     async def test_update_organization_alias_none(
         self,
         client: AsyncClient,
@@ -775,7 +751,6 @@ class TestUpdateOrganization:
         data = response.json()
         assert data["alias"] == "test_org"  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_organization_invalid_alias_empty(
         self,
         client: AsyncClient,
@@ -816,7 +791,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 422
 
-    @pytest.mark.asyncio
     async def test_update_organization_invalid_alias_special_chars(
         self,
         client: AsyncClient,
@@ -857,7 +831,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 422
 
-    @pytest.mark.asyncio
     async def test_update_organization_invalid_alias_uppercase(
         self,
         client: AsyncClient,
@@ -898,7 +871,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 422
 
-    @pytest.mark.asyncio
     async def test_update_organization_invalid_alias_mixed_case(
         self,
         client: AsyncClient,
@@ -941,7 +913,6 @@ class TestUpdateOrganization:
 
         assert response.status_code == 422
 
-    @pytest.mark.asyncio
     async def test_update_organization_invalid_alias(
         self,
         client: AsyncClient,
@@ -986,7 +957,6 @@ class TestUpdateOrganization:
 class TestDeleteOrganization:
     """Test suite for DELETE /organizations/{org_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_organization_success(
         self,
         client: AsyncClient,
@@ -1031,11 +1001,10 @@ class TestDeleteOrganization:
 
         assert response.status_code == 204
 
-        # Verify it's deleted (returns 403 since org no longer exists and user is not a member)
+        # Verify it's deleted (returns 404 since org is soft-deleted)
         get_response = await client.get(f"/organizations/{org_id}")
-        assert get_response.status_code == 403
+        assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_organization_not_found(
         self,
         client: AsyncClient,
@@ -1051,7 +1020,6 @@ class TestDeleteOrganization:
 class TestUnauthorizedOrganizationAccess:
     """Test suite for unauthorized organization access scenarios."""
 
-    @pytest.mark.asyncio
     async def test_get_organization_unauthorized(
         self,
         client: AsyncClient,
@@ -1065,7 +1033,6 @@ class TestUnauthorizedOrganizationAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_update_organization_unauthorized(
         self,
         client: AsyncClient,
@@ -1081,7 +1048,6 @@ class TestUnauthorizedOrganizationAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_delete_organization_unauthorized(
         self,
         client: AsyncClient,
@@ -1099,7 +1065,6 @@ class TestUnauthorizedOrganizationAccess:
 class TestOrganizationDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
 
-    @pytest.mark.asyncio
     async def test_get_organization_with_membership_but_no_org(
         self,
         client: AsyncClient,
@@ -1155,7 +1120,6 @@ class TestOrganizationDataInconsistency:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_update_organization_with_membership_but_no_org(
         self,
         client: AsyncClient,
@@ -1212,7 +1176,6 @@ class TestOrganizationDataInconsistency:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_delete_organization_with_membership_but_no_org(
         self,
         client: AsyncClient,
@@ -1272,7 +1235,6 @@ class TestOrganizationDataInconsistency:
 class TestSystemRoleAuthorization:
     """Test suite for system role authorization on organization management endpoints."""
 
-    @pytest.mark.asyncio
     async def test_create_organization_without_system_role(
         self,
         async_session: AsyncSession,
@@ -1313,7 +1275,6 @@ class TestSystemRoleAuthorization:
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_update_organization_without_system_role(
         self,
         async_session: AsyncSession,
@@ -1384,7 +1345,6 @@ class TestSystemRoleAuthorization:
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_delete_organization_without_system_role(
         self,
         async_session: AsyncSession,

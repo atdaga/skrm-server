@@ -83,7 +83,7 @@ async def list_deployment_envs(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     deployment_envs = result.scalars().all()
     return list(deployment_envs)
@@ -110,7 +110,7 @@ async def get_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 
@@ -149,7 +149,7 @@ async def update_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 
@@ -183,7 +183,11 @@ async def update_deployment_env(
 
 
 async def delete_deployment_env(
-    deployment_env_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    deployment_env_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a deployment environment.
 
@@ -192,6 +196,7 @@ async def delete_deployment_env(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the deployment environment. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -200,7 +205,7 @@ async def delete_deployment_env(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDeploymentEnv).where(KDeploymentEnv.id == deployment_env_id, KDeploymentEnv.org_id == org_id, KDeploymentEnv.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     deployment_env = result.scalar_one_or_none()
 
@@ -209,5 +214,10 @@ async def delete_deployment_env(
             deployment_env_id=deployment_env_id, scope=str(org_id)
         )
 
-    await db.delete(deployment_env)
+    if hard_delete:
+        await db.delete(deployment_env)
+    else:
+        deployment_env.deleted_at = datetime.now()
+        deployment_env.last_modified = datetime.now()
+        deployment_env.last_modified_by = user_id
     await db.commit()

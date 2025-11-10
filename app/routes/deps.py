@@ -184,3 +184,23 @@ async def get_system_root_user(
         return current_user
     except InsufficientPrivilegesException as e:
         raise HTTPException(status_code=403, detail=e.message) from e
+
+
+async def check_hard_delete_authorization(
+    current_user: Annotated[UserDetail, Depends(get_current_user)]
+) -> UserDetail:
+    """Check if current user has privileges to perform hard deletes.
+
+    This dependency ensures the user has system or systemRoot role.
+
+    Returns:
+        The current user if they have the required role
+
+    Raises:
+        HTTPException: 403 if user does not have hard delete privileges
+    """
+    try:
+        deps_logic.check_hard_delete_privileges(current_user)
+        return current_user
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(status_code=403, detail=e.message) from e

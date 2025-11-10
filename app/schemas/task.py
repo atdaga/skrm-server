@@ -50,6 +50,7 @@ class Task(BaseModel):
 class TaskDetail(Task):
     """Schema for task detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

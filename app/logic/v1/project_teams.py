@@ -38,7 +38,7 @@ async def add_project_team(
         ProjectTeamAlreadyExistsException: If the team already exists in the project
     """
     # Verify project exists and get its org_id
-    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -87,7 +87,7 @@ async def list_project_teams(project_id: UUID, db: AsyncSession) -> list[KProjec
         ProjectNotFoundException: If the project is not found
     """
     # Verify project exists and get its org_id
-    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.id == project_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -122,6 +122,7 @@ async def get_project_team(
     stmt = select(KProjectTeam).where(
         KProjectTeam.project_id == project_id,  # type: ignore[arg-type]
         KProjectTeam.team_id == team_id,  # type: ignore[arg-type]
+        KProjectTeam.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
@@ -185,14 +186,20 @@ async def update_project_team(
 
 
 async def remove_project_team(
-    project_id: UUID, team_id: UUID, db: AsyncSession
+    project_id: UUID,
+    team_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a team from a project.
 
     Args:
         project_id: ID of the project
         team_id: ID of the team
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         ProjectTeamNotFoundException: If the project team is not found
@@ -200,6 +207,7 @@ async def remove_project_team(
     stmt = select(KProjectTeam).where(
         KProjectTeam.project_id == project_id,  # type: ignore[arg-type]
         KProjectTeam.team_id == team_id,  # type: ignore[arg-type]
+        KProjectTeam.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
@@ -209,5 +217,10 @@ async def remove_project_team(
             project_id=project_id, team_id=team_id, scope=None
         )
 
-    await db.delete(team)
+    if hard_delete:  # pragma: no cover
+        await db.delete(team)  # pragma: no cover
+    else:
+        team.deleted_at = datetime.now()
+        team.last_modified = datetime.now()
+        team.last_modified_by = user_id
     await db.commit()

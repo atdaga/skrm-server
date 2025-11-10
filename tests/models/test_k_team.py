@@ -174,7 +174,7 @@ class TestKTeamModel:
 
         # Both should exist
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+            select(KTeam).where(KTeam.deleted_at.is_(None))  # type: ignore[comparison-overlap]  # noqa: E712
         )
         teams = result_exec.scalars().all()
         assert len(teams) == 2
@@ -198,7 +198,7 @@ class TestKTeamModel:
         result_exec = await session.execute(
             select(KTeam).where(
                 KTeam.name == "Product Team",
-                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+                KTeam.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
             )
         )
         result = result_exec.scalar_one_or_none()
@@ -259,7 +259,7 @@ class TestKTeamModel:
         result_exec = await session.execute(
             select(KTeam).where(
                 KTeam.org_id == org1.id,
-                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+                KTeam.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
             )
         )
         results = result_exec.scalars().all()
@@ -392,7 +392,7 @@ class TestKTeamModel:
 
         # List all teams
         result_exec = await session.execute(
-            select(KTeam).where(KTeam.deleted == False)  # type: ignore[comparison-overlap]  # noqa: E712
+            select(KTeam).where(KTeam.deleted_at.is_(None))  # type: ignore[comparison-overlap]  # noqa: E712
         )
         all_teams = result_exec.scalars().all()
         assert len(all_teams) == 3
@@ -445,7 +445,7 @@ class TestKTeamModel:
         result_exec = await session.execute(
             select(KTeam).where(
                 KTeam.org_id == org1.id,
-                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+                KTeam.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
             )
         )
         org1_teams = result_exec.scalars().all()
@@ -455,7 +455,7 @@ class TestKTeamModel:
         result_exec = await session.execute(
             select(KTeam).where(
                 KTeam.org_id == org2.id,
-                KTeam.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+                KTeam.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
             )
         )
         org2_teams = result_exec.scalars().all()

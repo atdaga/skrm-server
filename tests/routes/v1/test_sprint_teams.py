@@ -54,7 +54,6 @@ async def team(
 class TestAddSprintTeam:
     """Test suite for POST /sprints/{sprint_id}/teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_sprint_team_success(
         self,
         client: AsyncClient,
@@ -89,7 +88,6 @@ class TestAddSprintTeam:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_sprint_team_minimal_fields(
         self,
         client: AsyncClient,
@@ -106,7 +104,6 @@ class TestAddSprintTeam:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_sprint_team_duplicate(
         self,
         client: AsyncClient,
@@ -125,7 +122,6 @@ class TestAddSprintTeam:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_sprint_team_nonexistent_sprint(
         self,
         client: AsyncClient,
@@ -140,7 +136,6 @@ class TestAddSprintTeam:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_sprint_team_nonexistent_team(
         self,
         client: AsyncClient,
@@ -157,7 +152,6 @@ class TestAddSprintTeam:
 class TestListSprintTeams:
     """Test suite for GET /sprints/{sprint_id}/teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_sprint_teams_empty(
         self,
         client: AsyncClient,
@@ -170,7 +164,6 @@ class TestListSprintTeams:
         data = response.json()
         assert data["teams"] == []
 
-    @pytest.mark.asyncio
     async def test_list_sprint_teams_multiple(
         self,
         client: AsyncClient,
@@ -227,7 +220,6 @@ class TestListSprintTeams:
         assert "frontend" in team_roles
         assert "backend" in team_roles
 
-    @pytest.mark.asyncio
     async def test_list_sprint_teams_nonexistent_sprint(
         self,
         client: AsyncClient,
@@ -242,7 +234,6 @@ class TestListSprintTeams:
 class TestGetSprintTeam:
     """Test suite for GET /sprints/{sprint_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_sprint_team_success(
         self,
         client: AsyncClient,
@@ -275,7 +266,6 @@ class TestGetSprintTeam:
         assert data["role"] == "qa"
         assert data["meta"] == {"test_coverage": "90%"}
 
-    @pytest.mark.asyncio
     async def test_get_sprint_team_not_found(
         self,
         client: AsyncClient,
@@ -293,7 +283,6 @@ class TestGetSprintTeam:
 class TestUpdateSprintTeam:
     """Test suite for PATCH /sprints/{sprint_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_sprint_team_success(
         self,
         client: AsyncClient,
@@ -332,7 +321,6 @@ class TestUpdateSprintTeam:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_sprint_team_partial(
         self,
         client: AsyncClient,
@@ -368,7 +356,6 @@ class TestUpdateSprintTeam:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_sprint_team_not_found(
         self,
         client: AsyncClient,
@@ -388,7 +375,6 @@ class TestUpdateSprintTeam:
 class TestRemoveSprintTeam:
     """Test suite for DELETE /sprints/{sprint_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_sprint_team_success(
         self,
         client: AsyncClient,
@@ -419,7 +405,6 @@ class TestRemoveSprintTeam:
         get_response = await client.get(f"/sprints/{sprint.id}/teams/{team.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_sprint_team_not_found(
         self,
         client: AsyncClient,

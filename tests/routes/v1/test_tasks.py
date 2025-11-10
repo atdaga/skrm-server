@@ -40,7 +40,6 @@ async def test_team(
 class TestCreateTask:
     """Test suite for POST /tasks endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_task_success(
         self,
         client: AsyncClient,
@@ -78,7 +77,6 @@ class TestCreateTask:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_task_minimal_fields(
         self,
         client: AsyncClient,
@@ -104,7 +102,6 @@ class TestCreateTask:
         assert data["review_result"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_task_with_review_result(
         self,
         client: AsyncClient,
@@ -127,7 +124,6 @@ class TestCreateTask:
         assert data["status"] == "Review"
         assert data["review_result"] == "Passed"
 
-    @pytest.mark.asyncio
     async def test_create_task_unauthorized_org(
         self, client: AsyncClient, test_team: KTeam
     ):
@@ -146,7 +142,6 @@ class TestCreateTask:
 class TestListTasks:
     """Test suite for GET /tasks endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_tasks_empty(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -157,7 +152,6 @@ class TestListTasks:
         data = response.json()
         assert data["tasks"] == []
 
-    @pytest.mark.asyncio
     async def test_list_tasks_multiple(
         self,
         client: AsyncClient,
@@ -200,7 +194,6 @@ class TestListTasks:
         assert "First task summary" in task_summaries
         assert "Second task summary" in task_summaries
 
-    @pytest.mark.asyncio
     async def test_list_tasks_unauthorized_org(self, client: AsyncClient):
         """Test that listing tasks in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -212,7 +205,6 @@ class TestListTasks:
 class TestGetTask:
     """Test suite for GET /tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_task_success(
         self,
         client: AsyncClient,
@@ -242,7 +234,6 @@ class TestGetTask:
         assert data["summary"] == "Test summary"
         assert data["status"] == "InProgress"
 
-    @pytest.mark.asyncio
     async def test_get_task_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -254,7 +245,6 @@ class TestGetTask:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_get_task_wrong_org(
         self,
         client: AsyncClient,
@@ -293,7 +283,6 @@ class TestGetTask:
 class TestUpdateTask:
     """Test suite for PATCH /tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_task_success(
         self,
         client: AsyncClient,
@@ -334,7 +323,6 @@ class TestUpdateTask:
         assert data["review_result"] == "Passed"
         assert data["meta"] == {"priority": "medium"}
 
-    @pytest.mark.asyncio
     async def test_update_task_partial(
         self,
         client: AsyncClient,
@@ -370,7 +358,6 @@ class TestUpdateTask:
         assert data["guestimate"] == 5.0  # Changed
         assert data["status"] == "InProgress"  # Changed
 
-    @pytest.mark.asyncio
     async def test_update_task_all_fields(
         self,
         client: AsyncClient,
@@ -438,7 +425,6 @@ class TestUpdateTask:
         assert data["review_result"] == "Passed"
         assert data["meta"] == {"updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_task_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -452,7 +438,6 @@ class TestUpdateTask:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_update_task_unauthorized_org(
         self,
         client: AsyncClient,
@@ -495,7 +480,6 @@ class TestUpdateTask:
 class TestDeleteTask:
     """Test suite for DELETE /tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_task_success(
         self,
         client: AsyncClient,
@@ -528,7 +512,6 @@ class TestDeleteTask:
         )
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_task_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -540,7 +523,6 @@ class TestDeleteTask:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_task_unauthorized_org(
         self,
         client: AsyncClient,

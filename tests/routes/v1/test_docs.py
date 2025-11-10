@@ -20,7 +20,6 @@ def app_with_overrides(app_with_overrides):
 class TestCreateDoc:
     """Test suite for POST /docs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_doc_success(
         self,
         client: AsyncClient,
@@ -56,7 +55,6 @@ class TestCreateDoc:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_doc_minimal_fields(
         self,
         client: AsyncClient,
@@ -77,7 +75,6 @@ class TestCreateDoc:
         assert data["content"] == "Some quick notes here."
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_doc_duplicate_name(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -98,7 +95,6 @@ class TestCreateDoc:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_doc_unauthorized_org(
         self, client: AsyncClient, test_user_id: UUID
     ):
@@ -115,7 +111,6 @@ class TestCreateDoc:
 class TestListDocs:
     """Test suite for GET /docs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_docs_empty(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -126,7 +121,6 @@ class TestListDocs:
         data = response.json()
         assert data["docs"] == []
 
-    @pytest.mark.asyncio
     async def test_list_docs_multiple(
         self,
         client: AsyncClient,
@@ -167,7 +161,6 @@ class TestListDocs:
         assert "Doc Alpha" in doc_names
         assert "Doc Beta" in doc_names
 
-    @pytest.mark.asyncio
     async def test_list_docs_unauthorized_org(self, client: AsyncClient):
         """Test that listing docs in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -179,7 +172,6 @@ class TestListDocs:
 class TestGetDoc:
     """Test suite for GET /docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_doc_success(
         self,
         client: AsyncClient,
@@ -213,7 +205,6 @@ class TestGetDoc:
             data["content"] == "# Architecture\n\nDetailed architecture documentation."
         )
 
-    @pytest.mark.asyncio
     async def test_get_doc_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -225,7 +216,6 @@ class TestGetDoc:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_get_doc_wrong_org(
         self,
         client: AsyncClient,
@@ -263,7 +253,6 @@ class TestGetDoc:
 class TestUpdateDoc:
     """Test suite for PATCH /docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_doc_success(
         self,
         client: AsyncClient,
@@ -303,7 +292,6 @@ class TestUpdateDoc:
         assert data["content"] == "New content"
         assert data["meta"] == {"status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_doc_partial(
         self,
         client: AsyncClient,
@@ -337,7 +325,6 @@ class TestUpdateDoc:
         assert data["description"] == "Original description"  # Unchanged
         assert data["content"] == "Updated content"  # Changed
 
-    @pytest.mark.asyncio
     async def test_update_doc_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -351,7 +338,6 @@ class TestUpdateDoc:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_update_doc_duplicate_name(
         self,
         client: AsyncClient,
@@ -387,7 +373,6 @@ class TestUpdateDoc:
         )
         assert response.status_code == 409
 
-    @pytest.mark.asyncio
     async def test_update_doc_unauthorized_org(
         self,
         client: AsyncClient,
@@ -429,7 +414,6 @@ class TestUpdateDoc:
 class TestDeleteDoc:
     """Test suite for DELETE /docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_doc_success(
         self,
         client: AsyncClient,
@@ -459,7 +443,6 @@ class TestDeleteDoc:
         get_response = await client.get(f"/docs/{doc.id}?org_id={test_organization.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_doc_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -471,7 +454,6 @@ class TestDeleteDoc:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_doc_unauthorized_org(
         self,
         client: AsyncClient,

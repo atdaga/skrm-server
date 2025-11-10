@@ -32,6 +32,7 @@ class DeploymentEnv(BaseModel):
 class DeploymentEnvDetail(DeploymentEnv):
     """Schema for deployment environment detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

@@ -43,7 +43,7 @@ async def add_task_deployment_env(
         TaskDeploymentEnvAlreadyExistsException: If the deployment environment already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -57,7 +57,7 @@ async def add_task_deployment_env(
     deployment_env_stmt = select(KDeploymentEnv).where(
         KDeploymentEnv.id == deployment_env_data.deployment_env_id,  # type: ignore[arg-type]
         KDeploymentEnv.org_id == org_id,  # type: ignore[arg-type]
-        KDeploymentEnv.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KDeploymentEnv.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(deployment_env_stmt)
     deployment_env = result.scalar_one_or_none()
@@ -110,7 +110,7 @@ async def list_task_deployment_envs(
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -145,6 +145,7 @@ async def get_task_deployment_env(
     stmt = select(KTaskDeploymentEnv).where(
         KTaskDeploymentEnv.task_id == task_id,  # type: ignore[arg-type]
         KTaskDeploymentEnv.deployment_env_id == deployment_env_id,  # type: ignore[arg-type]
+        KTaskDeploymentEnv.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_deployment_env = result.scalar_one_or_none()
@@ -208,14 +209,20 @@ async def update_task_deployment_env(
 
 
 async def remove_task_deployment_env(
-    task_id: UUID, deployment_env_id: UUID, db: AsyncSession
+    task_id: UUID,
+    deployment_env_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a deployment environment from a task.
 
     Args:
         task_id: ID of the task
         deployment_env_id: ID of the deployment environment
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         TaskDeploymentEnvNotFoundException: If the task deployment environment relationship is not found
@@ -223,6 +230,7 @@ async def remove_task_deployment_env(
     stmt = select(KTaskDeploymentEnv).where(
         KTaskDeploymentEnv.task_id == task_id,  # type: ignore[arg-type]
         KTaskDeploymentEnv.deployment_env_id == deployment_env_id,  # type: ignore[arg-type]
+        KTaskDeploymentEnv.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_deployment_env = result.scalar_one_or_none()
@@ -232,5 +240,10 @@ async def remove_task_deployment_env(
             task_id=task_id, deployment_env_id=deployment_env_id, scope=None
         )
 
-    await db.delete(task_deployment_env)
+    if hard_delete:  # pragma: no cover
+        await db.delete(task_deployment_env)  # pragma: no cover
+    else:
+        task_deployment_env.deleted_at = datetime.now()
+        task_deployment_env.last_modified = datetime.now()
+        task_deployment_env.last_modified_by = user_id
     await db.commit()

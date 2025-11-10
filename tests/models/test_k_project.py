@@ -244,7 +244,7 @@ class TestKProjectModel:
         # Query projects for test_org_id
         stmt = select(KProject).where(
             KProject.org_id == test_org_id,  # type: ignore[arg-type]
-            KProject.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KProject.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         projects = result.scalars().all()

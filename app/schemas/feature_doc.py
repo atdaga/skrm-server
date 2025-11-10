@@ -34,6 +34,7 @@ class FeatureDoc(BaseModel):
 class FeatureDocDetail(FeatureDoc):
     """Schema for feature doc relationship detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

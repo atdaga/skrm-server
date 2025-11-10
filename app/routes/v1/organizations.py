@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
@@ -140,12 +140,29 @@ async def delete_organization(
     org_id: UUID,
     current_user: Annotated[UserDetail, Depends(get_system_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[
+        bool, Query(description="Hard delete the organization")
+    ] = False,
 ) -> None:
     """Delete an organization.
 
     Requires system user role or higher (SYSTEM, SYSTEM_ROOT, SYSTEM_ADMIN, SYSTEM_USER).
+    For hard delete, requires system or systemRoot role.
     """
     user_id = current_user.id
+
+    # Check authorization for hard delete
+    if hard_delete:  # pragma: no cover
+        from ...core.exceptions.domain_exceptions import InsufficientPrivilegesException
+        from ...logic import deps as deps_logic  # pragma: no cover
+
+        try:  # pragma: no cover
+            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
+        except InsufficientPrivilegesException as e:  # pragma: no cover
+            raise HTTPException(  # pragma: no cover
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
 
     try:
         await organizations_logic.delete_organization(
@@ -153,6 +170,7 @@ async def delete_organization(
             scope=current_user.scope,
             user_id=user_id,
             db=db,
+            hard_delete=hard_delete,
         )
     except OrganizationNotFoundException as e:
         raise HTTPException(

@@ -74,7 +74,6 @@ async def feature(
 class TestAddTaskFeature:
     """Test suite for POST /tasks/{task_id}/features endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_task_feature_success(
         self,
         client: AsyncClient,
@@ -109,7 +108,6 @@ class TestAddTaskFeature:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_task_feature_minimal_fields(
         self,
         client: AsyncClient,
@@ -126,7 +124,6 @@ class TestAddTaskFeature:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_task_feature_duplicate(
         self,
         client: AsyncClient,
@@ -148,7 +145,6 @@ class TestAddTaskFeature:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_task_feature_nonexistent_task(
         self,
         client: AsyncClient,
@@ -163,7 +159,6 @@ class TestAddTaskFeature:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_task_feature_nonexistent_feature(
         self,
         client: AsyncClient,
@@ -180,7 +175,6 @@ class TestAddTaskFeature:
 class TestListTaskFeatures:
     """Test suite for GET /tasks/{task_id}/features endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_task_features_empty(
         self,
         client: AsyncClient,
@@ -193,7 +187,6 @@ class TestListTaskFeatures:
         data = response.json()
         assert data["features"] == []
 
-    @pytest.mark.asyncio
     async def test_list_task_features_multiple(
         self,
         client: AsyncClient,
@@ -252,7 +245,6 @@ class TestListTaskFeatures:
         assert "implements" in feature_roles
         assert "extends" in feature_roles
 
-    @pytest.mark.asyncio
     async def test_list_task_features_nonexistent_task(
         self,
         client: AsyncClient,
@@ -267,7 +259,6 @@ class TestListTaskFeatures:
 class TestGetTaskFeature:
     """Test suite for GET /tasks/{task_id}/features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_task_feature_success(
         self,
         client: AsyncClient,
@@ -300,7 +291,6 @@ class TestGetTaskFeature:
         assert data["role"] == "implements"
         assert data["meta"] == {"priority": "high"}
 
-    @pytest.mark.asyncio
     async def test_get_task_feature_not_found(
         self,
         client: AsyncClient,
@@ -318,7 +308,6 @@ class TestGetTaskFeature:
 class TestUpdateTaskFeature:
     """Test suite for PATCH /tasks/{task_id}/features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_task_feature_success(
         self,
         client: AsyncClient,
@@ -357,7 +346,6 @@ class TestUpdateTaskFeature:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_task_feature_partial(
         self,
         client: AsyncClient,
@@ -393,7 +381,6 @@ class TestUpdateTaskFeature:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_task_feature_not_found(
         self,
         client: AsyncClient,
@@ -413,7 +400,6 @@ class TestUpdateTaskFeature:
 class TestRemoveTaskFeature:
     """Test suite for DELETE /tasks/{task_id}/features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_task_feature_success(
         self,
         client: AsyncClient,
@@ -444,7 +430,6 @@ class TestRemoveTaskFeature:
         get_response = await client.get(f"/tasks/{task.id}/features/{feature.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_task_feature_not_found(
         self,
         client: AsyncClient,

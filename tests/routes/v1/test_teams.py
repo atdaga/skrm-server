@@ -20,7 +20,6 @@ def app_with_overrides(app_with_overrides):
 class TestCreateTeam:
     """Test suite for POST /teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_team_success(
         self,
         client: AsyncClient,
@@ -49,7 +48,6 @@ class TestCreateTeam:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_team_minimal_data(
         self,
         client: AsyncClient,
@@ -68,7 +66,6 @@ class TestCreateTeam:
         assert data["name"] == "Minimal Team"
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_team_duplicate_name_in_scope(
         self,
         client: AsyncClient,
@@ -97,7 +94,6 @@ class TestCreateTeam:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_team_with_empty_meta(
         self,
         client: AsyncClient,
@@ -114,7 +110,6 @@ class TestCreateTeam:
         data = response.json()
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_team_with_complex_meta(
         self,
         client: AsyncClient,
@@ -143,7 +138,6 @@ class TestCreateTeam:
 class TestListTeams:
     """Test suite for GET /teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_teams_empty(
         self,
         client: AsyncClient,
@@ -156,7 +150,6 @@ class TestListTeams:
         data = response.json()
         assert data["teams"] == []
 
-    @pytest.mark.asyncio
     async def test_list_teams_single(
         self,
         client: AsyncClient,
@@ -185,7 +178,6 @@ class TestListTeams:
         assert data["teams"][0]["name"] == "Test Team"
         assert data["teams"][0]["id"] == str(team.id)
 
-    @pytest.mark.asyncio
     async def test_list_teams_multiple(
         self,
         client: AsyncClient,
@@ -225,7 +217,6 @@ class TestListTeams:
 class TestGetTeam:
     """Test suite for GET /teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_team_success(
         self,
         client: AsyncClient,
@@ -255,7 +246,6 @@ class TestGetTeam:
         assert data["name"] == "Test Team"
         assert data["meta"] == {"department": "Engineering"}
 
-    @pytest.mark.asyncio
     async def test_get_team_not_found(
         self,
         client: AsyncClient,
@@ -271,7 +261,6 @@ class TestGetTeam:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_get_team_invalid_uuid(
         self,
         client: AsyncClient,
@@ -285,7 +274,6 @@ class TestGetTeam:
 class TestUpdateTeam:
     """Test suite for PATCH /teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_team_name(
         self,
         client: AsyncClient,
@@ -316,7 +304,6 @@ class TestUpdateTeam:
         assert data["name"] == "New Name"
         assert data["id"] == str(team.id)
 
-    @pytest.mark.asyncio
     async def test_update_team_meta(
         self,
         client: AsyncClient,
@@ -348,7 +335,6 @@ class TestUpdateTeam:
         assert data["meta"] == {"new": "data", "updated": True}
         assert data["name"] == "Test Team"  # Name unchanged
 
-    @pytest.mark.asyncio
     async def test_update_team_both_fields(
         self,
         client: AsyncClient,
@@ -380,7 +366,6 @@ class TestUpdateTeam:
         assert data["name"] == "New Name"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_team_not_found(
         self,
         client: AsyncClient,
@@ -397,7 +382,6 @@ class TestUpdateTeam:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_team_duplicate_name(
         self,
         client: AsyncClient,
@@ -434,7 +418,6 @@ class TestUpdateTeam:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_team_empty_payload(
         self,
         client: AsyncClient,
@@ -466,7 +449,6 @@ class TestUpdateTeam:
         assert data["name"] == "Test Team"  # Unchanged
         assert data["meta"] == {"key": "value"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_team_audit_fields(
         self,
         client: AsyncClient,
@@ -502,7 +484,6 @@ class TestUpdateTeam:
 class TestDeleteTeam:
     """Test suite for DELETE /teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_team_success(
         self,
         client: AsyncClient,
@@ -530,11 +511,10 @@ class TestDeleteTeam:
         assert response.status_code == 204
         assert response.content == b""  # No content in response
 
-        # Verify team is actually deleted
-        result = await async_session.get(KTeam, team_id)
-        assert result is None
+        # Verify team is soft-deleted
+        await async_session.refresh(team)
+        assert team.deleted_at is not None
 
-    @pytest.mark.asyncio
     async def test_delete_team_not_found(
         self,
         client: AsyncClient,
@@ -550,7 +530,6 @@ class TestDeleteTeam:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_delete_team_invalid_uuid(
         self,
         client: AsyncClient,
@@ -564,7 +543,6 @@ class TestDeleteTeam:
 class TestUnauthorizedAccess:
     """Test suite for unauthorized access scenarios."""
 
-    @pytest.mark.asyncio
     async def test_create_team_unauthorized(
         self,
         client: AsyncClient,
@@ -589,7 +567,6 @@ class TestUnauthorizedAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_list_teams_unauthorized(
         self,
         client: AsyncClient,
@@ -613,7 +590,6 @@ class TestUnauthorizedAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_get_team_unauthorized(
         self,
         client: AsyncClient,
@@ -648,7 +624,6 @@ class TestUnauthorizedAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_update_team_unauthorized(
         self,
         client: AsyncClient,
@@ -686,7 +661,6 @@ class TestUnauthorizedAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_delete_team_unauthorized(
         self,
         client: AsyncClient,

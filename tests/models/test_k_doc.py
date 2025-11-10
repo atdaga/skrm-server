@@ -312,7 +312,7 @@ python main.py
         # Query docs for test_org_id
         stmt = select(KDoc).where(
             KDoc.org_id == test_org_id,  # type: ignore[arg-type]
-            KDoc.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KDoc.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         docs = result.scalars().all()

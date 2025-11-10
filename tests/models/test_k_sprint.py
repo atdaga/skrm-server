@@ -52,7 +52,7 @@ class TestKSprintModel:
         assert sprint.status == SprintStatus.BACKLOG
         assert sprint.end_ts is None
         assert sprint.meta == {}
-        assert sprint.deleted is False
+        assert sprint.deleted_at is None
         assert isinstance(sprint.created, datetime)
         assert isinstance(sprint.last_modified, datetime)
 
@@ -212,7 +212,7 @@ class TestKSprintModel:
         # Query sprints for test_org_id
         stmt = select(KSprint).where(
             KSprint.org_id == test_org_id,  # type: ignore[arg-type]
-            KSprint.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KSprint.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         sprints = result.scalars().all()
@@ -242,7 +242,7 @@ class TestKSprintModel:
         # Verify all sprints were created
         stmt = select(KSprint).where(
             KSprint.org_id == test_org_id,  # type: ignore[arg-type]
-            KSprint.deleted == False,  # type: ignore[comparison-overlap]  # noqa: E712
+            KSprint.deleted_at.is_(None),  # type: ignore[comparison-overlap]  # noqa: E712
         )
         result = await session.execute(stmt)
         sprints = result.scalars().all()

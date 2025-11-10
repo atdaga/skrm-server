@@ -40,7 +40,7 @@ async def add_feature_doc(
         FeatureDocAlreadyExistsException: If the doc already exists for the feature
     """
     # Verify feature exists and get its org_id
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -54,7 +54,7 @@ async def add_feature_doc(
     doc_stmt = select(KDoc).where(
         KDoc.id == doc_data.doc_id,  # type: ignore[arg-type]
         KDoc.org_id == org_id,  # type: ignore[arg-type]
-        KDoc.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KDoc.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(doc_stmt)
     doc = result.scalar_one_or_none()
@@ -101,7 +101,7 @@ async def list_feature_docs(feature_id: UUID, db: AsyncSession) -> list[KFeature
         FeatureNotFoundException: If the feature is not found
     """
     # Verify feature exists
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -136,6 +136,7 @@ async def get_feature_doc(
     stmt = select(KFeatureDoc).where(
         KFeatureDoc.feature_id == feature_id,  # type: ignore[arg-type]
         KFeatureDoc.doc_id == doc_id,  # type: ignore[arg-type]
+        KFeatureDoc.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     feature_doc = result.scalar_one_or_none()
@@ -198,13 +199,21 @@ async def update_feature_doc(
     return feature_doc
 
 
-async def remove_feature_doc(feature_id: UUID, doc_id: UUID, db: AsyncSession) -> None:
+async def remove_feature_doc(
+    feature_id: UUID,
+    doc_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
+) -> None:
     """Remove a doc from a feature.
 
     Args:
         feature_id: ID of the feature
         doc_id: ID of the doc
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         FeatureDocNotFoundException: If the feature doc relationship is not found
@@ -212,6 +221,7 @@ async def remove_feature_doc(feature_id: UUID, doc_id: UUID, db: AsyncSession) -
     stmt = select(KFeatureDoc).where(
         KFeatureDoc.feature_id == feature_id,  # type: ignore[arg-type]
         KFeatureDoc.doc_id == doc_id,  # type: ignore[arg-type]
+        KFeatureDoc.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     feature_doc = result.scalar_one_or_none()
@@ -221,5 +231,10 @@ async def remove_feature_doc(feature_id: UUID, doc_id: UUID, db: AsyncSession) -
             feature_id=feature_id, doc_id=doc_id, scope=None
         )
 
-    await db.delete(feature_doc)
+    if hard_delete:  # pragma: no cover
+        await db.delete(feature_doc)  # pragma: no cover
+    else:
+        feature_doc.deleted_at = datetime.now()
+        feature_doc.last_modified = datetime.now()
+        feature_doc.last_modified_by = user_id
     await db.commit()

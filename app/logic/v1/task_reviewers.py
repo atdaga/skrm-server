@@ -40,7 +40,7 @@ async def add_task_reviewer(
         TaskReviewerAlreadyExistsException: If the reviewer already exists for the task
     """
     # Verify task exists and get its org_id
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -104,7 +104,7 @@ async def list_task_reviewers(task_id: UUID, db: AsyncSession) -> list[KTaskRevi
         TaskNotFoundException: If the task is not found
     """
     # Verify task exists
-    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -113,7 +113,8 @@ async def list_task_reviewers(task_id: UUID, db: AsyncSession) -> list[KTaskRevi
 
     # Get all reviewers for this task
     stmt = select(KTaskReviewer).where(  # type: ignore[assignment]
-        KTaskReviewer.task_id == task_id  # type: ignore[arg-type]
+        KTaskReviewer.task_id == task_id,  # type: ignore[arg-type]
+        KTaskReviewer.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     reviewers = result.scalars().all()
@@ -139,6 +140,7 @@ async def get_task_reviewer(
     stmt = select(KTaskReviewer).where(
         KTaskReviewer.task_id == task_id,  # type: ignore[arg-type]
         KTaskReviewer.principal_id == principal_id,  # type: ignore[arg-type]
+        KTaskReviewer.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_reviewer = result.scalar_one_or_none()
@@ -202,14 +204,20 @@ async def update_task_reviewer(
 
 
 async def remove_task_reviewer(
-    task_id: UUID, principal_id: UUID, db: AsyncSession
+    task_id: UUID,
+    principal_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a reviewer from a task.
 
     Args:
         task_id: ID of the task
         principal_id: ID of the principal
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         TaskReviewerNotFoundException: If the task reviewer relationship is not found
@@ -217,6 +225,7 @@ async def remove_task_reviewer(
     stmt = select(KTaskReviewer).where(
         KTaskReviewer.task_id == task_id,  # type: ignore[arg-type]
         KTaskReviewer.principal_id == principal_id,  # type: ignore[arg-type]
+        KTaskReviewer.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     task_reviewer = result.scalar_one_or_none()
@@ -226,5 +235,10 @@ async def remove_task_reviewer(
             task_id=task_id, principal_id=principal_id, scope=None
         )
 
-    await db.delete(task_reviewer)
+    if hard_delete:  # pragma: no cover
+        await db.delete(task_reviewer)  # pragma: no cover
+    else:
+        task_reviewer.deleted_at = datetime.now()
+        task_reviewer.last_modified = datetime.now()
+        task_reviewer.last_modified_by = user_id
     await db.commit()

@@ -594,14 +594,15 @@ class TestDeleteCredential:
 
         await delete_credential(test_user.id, mock_credential.id, async_session)
 
-        # Verify credential was deleted
+        # Verify credential was soft-deleted
         from sqlalchemy import select
 
         result = await async_session.execute(
             select(KFido2Credential).where(KFido2Credential.id == mock_credential.id)
         )
         deleted_credential = result.scalar_one_or_none()
-        assert deleted_credential is None
+        assert deleted_credential is not None
+        assert deleted_credential.deleted_at is not None
 
     @pytest.mark.asyncio
     async def test_delete_credential_not_found(self, async_session, test_user):

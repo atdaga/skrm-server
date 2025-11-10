@@ -11,6 +11,7 @@ from ...core.exceptions.domain_exceptions import (
     DeploymentEnvAlreadyExistsException,
     DeploymentEnvNotFoundException,
     DeploymentEnvUpdateConflictException,
+    InsufficientPrivilegesException,
     UnauthorizedOrganizationAccessException,
 )
 from ...logic.v1 import deployment_envs as deployment_envs_logic
@@ -20,8 +21,8 @@ from ...schemas.deployment_env import (
     DeploymentEnvList,
     DeploymentEnvUpdate,
 )
-from ...schemas.user import TokenData
-from ..deps import get_current_token
+from ...schemas.user import TokenData, UserDetail
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/deployment-envs", tags=["deployment-envs"])
 
@@ -156,10 +157,26 @@ async def delete_deployment_env(
     deployment_env_id: UUID,
     org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[
+        bool, Query(description="Hard delete the deployment environment")
+    ] = False,
 ) -> None:
     """Delete a deployment environment."""
     user_id = UUID(token_data.sub)
+
+    # Check authorization for hard delete
+    if hard_delete:
+        from ...logic import deps as deps_logic
+
+        try:
+            deps_logic.check_hard_delete_privileges(current_user)
+        except InsufficientPrivilegesException as e:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
 
     try:
         await deployment_envs_logic.delete_deployment_env(
@@ -167,6 +184,7 @@ async def delete_deployment_env(
             org_id=org_id,
             user_id=user_id,
             db=db,
+            hard_delete=hard_delete,
         )
     except DeploymentEnvNotFoundException as e:
         raise HTTPException(

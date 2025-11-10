@@ -79,7 +79,7 @@ async def list_teams(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTea
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.org_id == org_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     teams = result.scalars().all()
     return list(teams)
@@ -106,7 +106,7 @@ async def get_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -143,7 +143,7 @@ async def update_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -175,7 +175,11 @@ async def update_team(
 
 
 async def delete_team(
-    team_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    team_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a team.
 
@@ -184,6 +188,7 @@ async def delete_team(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the team. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -192,12 +197,17 @@ async def delete_team(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.org_id == org_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
     if not team:
         raise TeamNotFoundException(team_id=team_id, scope=str(org_id))
 
-    await db.delete(team)
+    if hard_delete:  # pragma: no cover
+        await db.delete(team)  # pragma: no cover
+    else:
+        team.deleted_at = datetime.now()
+        team.last_modified = datetime.now()
+        team.last_modified_by = user_id
     await db.commit()

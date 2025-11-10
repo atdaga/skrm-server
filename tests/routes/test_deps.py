@@ -541,6 +541,7 @@ class TestGetCurrentSuperuser:
             default_locale="en",
             system_role=SystemRole.SYSTEM_USER,
             meta={},
+            deleted_at=None,
             created=now,
             created_by=creator_id,
             last_modified=now,
@@ -553,6 +554,7 @@ class TestGetCurrentSuperuser:
         user_id = uuid7()
         now = datetime.now()
         return UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="superuser",
@@ -602,6 +604,7 @@ class TestGetCurrentSuperuser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="user",
@@ -637,6 +640,7 @@ class TestGetCurrentSuperuser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="user",
@@ -676,6 +680,7 @@ class TestGetSystemUser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="systemuser",
@@ -711,6 +716,7 @@ class TestGetSystemUser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="systemadmin",
@@ -746,6 +752,7 @@ class TestGetSystemUser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="systemroot",
@@ -781,6 +788,7 @@ class TestGetSystemUser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="system",
@@ -816,6 +824,7 @@ class TestGetSystemUser:
         user_id = uuid7()
         now = datetime.now()
         user = UserDetail(
+            deleted_at=None,
             id=user_id,
             scope="global",
             username="systemclient",
@@ -842,6 +851,144 @@ class TestGetSystemUser:
 
         with pytest.raises(HTTPException) as exc_info:
             await get_system_user(user)
+
+        assert exc_info.value.status_code == 403
+        assert "insufficient privileges" in exc_info.value.detail.lower()
+
+
+class TestCheckHardDeleteAuthorization:
+    """Test check_hard_delete_authorization dependency."""
+
+    @pytest.mark.asyncio
+    async def test_check_hard_delete_authorization_with_system_role(self):
+        """Test check_hard_delete_authorization succeeds with SYSTEM role."""
+        from datetime import datetime
+        from uuid import uuid7
+
+        from app.models.k_principal import SystemRole
+        from app.routes.deps import check_hard_delete_authorization
+        from app.schemas.user import UserDetail
+
+        user_id = uuid7()
+        creator_id = uuid7()
+        now = datetime.now()
+
+        user = UserDetail(
+            deleted_at=None,
+            id=user_id,
+            scope="global",
+            username="systemuser",
+            primary_email="system@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await check_hard_delete_authorization(user)
+        assert result == user
+
+    @pytest.mark.asyncio
+    async def test_check_hard_delete_authorization_with_system_root_role(self):
+        """Test check_hard_delete_authorization succeeds with SYSTEM_ROOT role."""
+        from datetime import datetime
+        from uuid import uuid7
+
+        from app.models.k_principal import SystemRole
+        from app.routes.deps import check_hard_delete_authorization
+        from app.schemas.user import UserDetail
+
+        user_id = uuid7()
+        creator_id = uuid7()
+        now = datetime.now()
+
+        user = UserDetail(
+            deleted_at=None,
+            id=user_id,
+            scope="global",
+            username="rootuser",
+            primary_email="root@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="Root",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="Root User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ROOT,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        result = await check_hard_delete_authorization(user)
+        assert result == user
+
+    @pytest.mark.asyncio
+    async def test_check_hard_delete_authorization_fails_with_regular_user(self):
+        """Test check_hard_delete_authorization fails with regular user role."""
+        from datetime import datetime
+        from uuid import uuid7
+
+        from fastapi import HTTPException
+
+        from app.models.k_principal import SystemRole
+        from app.routes.deps import check_hard_delete_authorization
+        from app.schemas.user import UserDetail
+
+        user_id = uuid7()
+        creator_id = uuid7()
+        now = datetime.now()
+
+        user = UserDetail(
+            deleted_at=None,
+            id=user_id,
+            scope="global",
+            username="regularuser",
+            primary_email="user@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="Regular",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="Regular User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await check_hard_delete_authorization(user)
 
         assert exc_info.value.status_code == 403
         assert "insufficient privileges" in exc_info.value.detail.lower()

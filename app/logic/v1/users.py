@@ -119,7 +119,7 @@ async def list_users(scope: str, db: AsyncSession) -> list[KPrincipal]:
     """
     stmt = select(KPrincipal).where(
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     users = result.scalars().all()
@@ -143,7 +143,7 @@ async def get_user(user_id: UUID, scope: str, db: AsyncSession) -> KPrincipal:
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -186,7 +186,7 @@ async def update_user(
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -259,7 +259,7 @@ async def update_user_username(
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -318,7 +318,7 @@ async def update_user_email(
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -372,7 +372,7 @@ async def update_user_primary_phone(
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -394,13 +394,16 @@ async def update_user_primary_phone(
     return user
 
 
-async def delete_user(user_id: UUID, scope: str, db: AsyncSession) -> None:
+async def delete_user(
+    user_id: UUID, scope: str, db: AsyncSession, hard_delete: bool = False
+) -> None:
     """Delete a user.
 
     Args:
         user_id: ID of the user to delete
         scope: Scope for multi-tenancy
         db: Database session
+        hard_delete: If True, permanently delete the user. If False, soft delete.
 
     Raises:
         UserNotFoundException: If the user is not found
@@ -408,7 +411,7 @@ async def delete_user(user_id: UUID, scope: str, db: AsyncSession) -> None:
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
-        KPrincipal.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KPrincipal.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -416,6 +419,9 @@ async def delete_user(user_id: UUID, scope: str, db: AsyncSession) -> None:
     if not user:
         raise UserNotFoundException(user_id=user_id)
 
-    # Soft delete by setting deleted flag
-    user.deleted = True
+    if hard_delete:
+        await db.delete(user)
+    else:
+        user.deleted_at = datetime.now()
+        user.last_modified = datetime.now()
     await db.commit()

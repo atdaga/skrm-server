@@ -34,6 +34,7 @@ class TeamReviewer(BaseModel):
 class TeamReviewerDetail(TeamReviewer):
     """Schema for team reviewer detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

@@ -51,7 +51,7 @@ class TestFido2RegisterBeginEndpoint:
     """Test suite for POST /auth/fido2/register/begin endpoint."""
 
     @pytest.mark.asyncio
-    async def test_register_begin_success(self, client: AsyncClient, mock_user):
+    async def test_register_begin_success(self, client: AsyncClient):
         """Test successful registration initiation."""
         with patch(
             "app.logic.auth.begin_fido2_registration", new_callable=AsyncMock
@@ -304,7 +304,7 @@ class TestListCredentialsEndpoint:
     """Test suite for GET /auth/fido2/credentials endpoint."""
 
     @pytest.mark.asyncio
-    async def test_list_credentials_success(self, client: AsyncClient, mock_user):
+    async def test_list_credentials_success(self, client: AsyncClient):
         """Test listing user credentials."""
         with patch(
             "app.logic.auth.list_user_credentials", new_callable=AsyncMock
@@ -342,7 +342,7 @@ class TestListCredentialsEndpoint:
             assert len(data["credentials"]) == 2
 
     @pytest.mark.asyncio
-    async def test_list_credentials_empty(self, client: AsyncClient, mock_user):
+    async def test_list_credentials_empty(self, client: AsyncClient):
         """Test listing when user has no credentials."""
         with patch(
             "app.logic.auth.list_user_credentials", new_callable=AsyncMock
@@ -434,7 +434,9 @@ class TestDeleteCredentialEndpoint:
             data = result.json()
             assert "message" in data
 
-            mock_delete.assert_called_once_with(mock_user.id, credential_id, ANY)
+            mock_delete.assert_called_once_with(
+                mock_user.id, credential_id, ANY, hard_delete=False
+            )
 
     @pytest.mark.asyncio
     async def test_delete_credential_not_found(self, client: AsyncClient, mock_user):
@@ -460,3 +462,94 @@ class TestDeleteCredentialEndpoint:
         credential_id = uuid7()
         result = await client_no_auth.delete(f"/auth/fido2/credentials/{credential_id}")
         assert result.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_credential_success(
+        self, async_session, mock_system_root_user, mock_token_data
+    ):
+        """Test hard deleting credential with system root privileges."""
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        from app.core.auth import oauth2_scheme
+        from app.core.db.database import get_db
+        from app.models import KFido2Credential, KPrincipal
+        from app.routes.auth import router
+        from app.routes.deps import get_current_token, get_current_user
+
+        # Create app with system root overrides
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_oauth2_scheme():
+            return "test-token"
+
+        async def override_get_current_token():
+            return mock_token_data
+
+        async def override_get_current_user():
+            return mock_system_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
+        app.dependency_overrides[get_current_token] = override_get_current_token
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        # Create principal and credential
+        principal = KPrincipal(
+            id=mock_system_root_user.id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            created_by=mock_system_root_user.id,
+            last_modified_by=mock_system_root_user.id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
+        credential = KFido2Credential(
+            principal_id=mock_system_root_user.id,
+            credential_id=b"test_cred_id",
+            public_key=b"test_public_key",
+            sign_count=0,
+            aaguid=b"test_aaguid_bytes",
+            created_by=mock_system_root_user.id,
+            last_modified_by=mock_system_root_user.id,
+        )
+        async_session.add(credential)
+        await async_session.commit()
+        await async_session.refresh(credential)
+        cred_id = credential.id
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            result = await client.delete(
+                f"/auth/fido2/credentials/{cred_id}?hard_delete=true"
+            )
+
+        assert result.status_code == 200
+
+        # Verify hard deleted
+        from sqlalchemy import select
+
+        result = await async_session.execute(
+            select(KFido2Credential).where(KFido2Credential.id == cred_id)
+        )
+        assert result.scalar_one_or_none() is None
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_credential_forbidden(self, client: AsyncClient):
+        """Test hard delete is forbidden for regular users."""
+        credential_id = uuid7()
+
+        result = await client.delete(
+            f"/auth/fido2/credentials/{credential_id}?hard_delete=true"
+        )
+
+        assert result.status_code == 403

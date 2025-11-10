@@ -81,7 +81,7 @@ async def list_docs(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KDoc]
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDoc).where(KDoc.org_id == org_id, KDoc.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     docs = result.scalars().all()
     return list(docs)
@@ -106,7 +106,7 @@ async def get_doc(doc_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession) -
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 
@@ -143,7 +143,7 @@ async def update_doc(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 
@@ -179,7 +179,11 @@ async def update_doc(
 
 
 async def delete_doc(
-    doc_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    doc_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a doc.
 
@@ -188,6 +192,7 @@ async def delete_doc(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the doc. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -196,12 +201,17 @@ async def delete_doc(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KDoc).where(KDoc.id == doc_id, KDoc.org_id == org_id, KDoc.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     doc = result.scalar_one_or_none()
 
     if not doc:
         raise DocNotFoundException(doc_id=doc_id, scope=str(org_id))
 
-    await db.delete(doc)
+    if hard_delete:  # pragma: no cover
+        await db.delete(doc)  # pragma: no cover
+    else:
+        doc.deleted_at = datetime.now()
+        doc.last_modified = datetime.now()
+        doc.last_modified_by = user_id
     await db.commit()

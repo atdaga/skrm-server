@@ -86,7 +86,6 @@ async def principal(
 class TestAddTaskReviewer:
     """Test suite for POST /tasks/{task_id}/reviewers endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_task_reviewer_success(
         self,
         client: AsyncClient,
@@ -121,7 +120,6 @@ class TestAddTaskReviewer:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_task_reviewer_minimal_fields(
         self,
         client: AsyncClient,
@@ -138,7 +136,6 @@ class TestAddTaskReviewer:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_task_reviewer_duplicate(
         self,
         client: AsyncClient,
@@ -160,7 +157,6 @@ class TestAddTaskReviewer:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_task_reviewer_nonexistent_task(
         self,
         client: AsyncClient,
@@ -175,7 +171,6 @@ class TestAddTaskReviewer:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_task_reviewer_nonexistent_principal(
         self,
         client: AsyncClient,
@@ -192,7 +187,6 @@ class TestAddTaskReviewer:
 class TestListTaskReviewers:
     """Test suite for GET /tasks/{task_id}/reviewers endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_task_reviewers_empty(
         self,
         client: AsyncClient,
@@ -205,7 +199,6 @@ class TestListTaskReviewers:
         data = response.json()
         assert data["reviewers"] == []
 
-    @pytest.mark.asyncio
     async def test_list_task_reviewers_multiple(
         self,
         client: AsyncClient,
@@ -284,7 +277,6 @@ class TestListTaskReviewers:
         assert "technical" in reviewer_roles
         assert "functional" in reviewer_roles
 
-    @pytest.mark.asyncio
     async def test_list_task_reviewers_nonexistent_task(
         self,
         client: AsyncClient,
@@ -299,7 +291,6 @@ class TestListTaskReviewers:
 class TestGetTaskReviewer:
     """Test suite for GET /tasks/{task_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_task_reviewer_success(
         self,
         client: AsyncClient,
@@ -332,7 +323,6 @@ class TestGetTaskReviewer:
         assert data["role"] == "technical"
         assert data["meta"] == {"expertise": "security"}
 
-    @pytest.mark.asyncio
     async def test_get_task_reviewer_not_found(
         self,
         client: AsyncClient,
@@ -350,7 +340,6 @@ class TestGetTaskReviewer:
 class TestUpdateTaskReviewer:
     """Test suite for PATCH /tasks/{task_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_task_reviewer_success(
         self,
         client: AsyncClient,
@@ -389,7 +378,6 @@ class TestUpdateTaskReviewer:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_task_reviewer_partial(
         self,
         client: AsyncClient,
@@ -425,7 +413,6 @@ class TestUpdateTaskReviewer:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_task_reviewer_not_found(
         self,
         client: AsyncClient,
@@ -445,7 +432,6 @@ class TestUpdateTaskReviewer:
 class TestRemoveTaskReviewer:
     """Test suite for DELETE /tasks/{task_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_task_reviewer_success(
         self,
         client: AsyncClient,
@@ -476,7 +462,6 @@ class TestRemoveTaskReviewer:
         get_response = await client.get(f"/tasks/{task.id}/reviewers/{principal.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_task_reviewer_not_found(
         self,
         client: AsyncClient,

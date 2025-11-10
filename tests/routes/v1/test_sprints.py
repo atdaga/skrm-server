@@ -22,7 +22,6 @@ def app_with_overrides(app_with_overrides):
 class TestCreateSprint:
     """Test suite for POST /sprints endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_sprint_success(
         self,
         client: AsyncClient,
@@ -53,7 +52,6 @@ class TestCreateSprint:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_sprint_minimal_fields(
         self,
         client: AsyncClient,
@@ -74,7 +72,6 @@ class TestCreateSprint:
         assert data["end_ts"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_sprint_unauthorized_org(
         self, client: AsyncClient, test_user_id: UUID
     ):
@@ -91,7 +88,6 @@ class TestCreateSprint:
 class TestListSprints:
     """Test suite for GET /sprints endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_sprints_empty(self, client: AsyncClient, test_organization):
         """Test listing sprints when none exist."""
         response = await client.get(f"/sprints?org_id={test_organization.id}")
@@ -100,7 +96,6 @@ class TestListSprints:
         data = response.json()
         assert data["sprints"] == []
 
-    @pytest.mark.asyncio
     async def test_list_sprints_multiple(
         self,
         client: AsyncClient,
@@ -139,7 +134,6 @@ class TestListSprints:
         assert "Sprint Alpha" in sprint_titles
         assert "Sprint Beta" in sprint_titles
 
-    @pytest.mark.asyncio
     async def test_list_sprints_unauthorized_org(self, client: AsyncClient):
         """Test that listing sprints in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -151,7 +145,6 @@ class TestListSprints:
 class TestGetSprint:
     """Test suite for GET /sprints/{sprint_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_sprint_success(
         self,
         client: AsyncClient,
@@ -182,7 +175,6 @@ class TestGetSprint:
         assert data["title"] == "DevOps Sprint"
         assert data["status"] == "Active"
 
-    @pytest.mark.asyncio
     async def test_get_sprint_not_found(self, client: AsyncClient, test_organization):
         """Test getting a non-existent sprint."""
         non_existent_id = uuid7()
@@ -192,7 +184,6 @@ class TestGetSprint:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_get_sprint_wrong_org(
         self,
         client: AsyncClient,
@@ -231,7 +222,6 @@ class TestGetSprint:
 class TestUpdateSprint:
     """Test suite for PATCH /sprints/{sprint_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_sprint_success(
         self,
         client: AsyncClient,
@@ -269,7 +259,6 @@ class TestUpdateSprint:
         assert data["status"] == "Active"
         assert data["meta"] == {"status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_sprint_partial(
         self,
         client: AsyncClient,
@@ -301,7 +290,6 @@ class TestUpdateSprint:
         assert data["title"] == "Original Sprint"  # Unchanged
         assert data["status"] == "Active"  # Changed
 
-    @pytest.mark.asyncio
     async def test_update_sprint_not_found(
         self, client: AsyncClient, test_organization
     ):
@@ -315,7 +303,6 @@ class TestUpdateSprint:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_update_sprint_unauthorized_org(
         self,
         client: AsyncClient,
@@ -358,7 +345,6 @@ class TestUpdateSprint:
 class TestDeleteSprint:
     """Test suite for DELETE /sprints/{sprint_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_sprint_success(
         self,
         client: AsyncClient,
@@ -389,7 +375,6 @@ class TestDeleteSprint:
         )
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_sprint_not_found(
         self, client: AsyncClient, test_organization
     ):
@@ -401,7 +386,6 @@ class TestDeleteSprint:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_sprint_unauthorized_org(
         self,
         client: AsyncClient,
@@ -436,7 +420,6 @@ class TestDeleteSprint:
         response = await client.delete(f"/sprints/{sprint.id}?org_id={other_org.id}")
         assert response.status_code == 403
 
-    @pytest.mark.asyncio
     async def test_update_sprint_conflict(
         self,
         client: AsyncClient,

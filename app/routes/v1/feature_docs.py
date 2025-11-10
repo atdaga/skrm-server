@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
@@ -12,6 +12,7 @@ from ...core.exceptions.domain_exceptions import (
     FeatureDocAlreadyExistsException,
     FeatureDocNotFoundException,
     FeatureNotFoundException,
+    InsufficientPrivilegesException,
 )
 from ...logic.v1 import feature_docs as feature_docs_logic
 from ...schemas.feature_doc import (
@@ -20,8 +21,8 @@ from ...schemas.feature_doc import (
     FeatureDocList,
     FeatureDocUpdate,
 )
-from ...schemas.user import TokenData
-from ..deps import get_current_token
+from ...schemas.user import TokenData, UserDetail
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/features/{feature_id}/docs", tags=["feature-docs"])
 
@@ -134,14 +135,34 @@ async def remove_feature_doc(
     feature_id: UUID,
     doc_id: UUID,
     token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[
+        bool, Query(description="Hard delete the relationship")
+    ] = False,
 ) -> None:
     """Remove a doc from a feature."""
+    user_id = UUID(token_data.sub)
+
+    # Check authorization for hard delete
+    if hard_delete:  # pragma: no cover
+        from ...logic import deps as deps_logic  # pragma: no cover
+
+        try:  # pragma: no cover
+            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
+        except InsufficientPrivilegesException as e:  # pragma: no cover
+            raise HTTPException(  # pragma: no cover
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
+
     try:
         await feature_docs_logic.remove_feature_doc(
             feature_id=feature_id,
             doc_id=doc_id,
+            user_id=user_id,
             db=db,
+            hard_delete=hard_delete,
         )
     except FeatureDocNotFoundException as e:
         raise HTTPException(

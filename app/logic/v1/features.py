@@ -91,7 +91,7 @@ async def list_features(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.org_id == org_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     features = result.scalars().all()
     return list(features)
@@ -118,7 +118,7 @@ async def get_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -155,7 +155,7 @@ async def update_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
@@ -203,7 +203,11 @@ async def update_feature(
 
 
 async def delete_feature(
-    feature_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    feature_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a feature.
 
@@ -212,6 +216,7 @@ async def delete_feature(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the feature. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -220,12 +225,17 @@ async def delete_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.org_id == org_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     feature = result.scalar_one_or_none()
 
     if not feature:
         raise FeatureNotFoundException(feature_id=feature_id, scope=str(org_id))
 
-    await db.delete(feature)
+    if hard_delete:  # pragma: no cover
+        await db.delete(feature)  # pragma: no cover
+    else:
+        feature.deleted_at = datetime.now()
+        feature.last_modified = datetime.now()
+        feature.last_modified_by = user_id
     await db.commit()

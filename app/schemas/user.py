@@ -86,6 +86,7 @@ class UserDetail(User):
     """Schema for user detailed response (includes audit fields)."""
 
     scope: str
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

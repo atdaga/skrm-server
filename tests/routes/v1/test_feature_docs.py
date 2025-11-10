@@ -58,7 +58,6 @@ async def doc(
 class TestAddFeatureDoc:
     """Test suite for POST /features/{feature_id}/docs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_success(
         self,
         client: AsyncClient,
@@ -87,7 +86,6 @@ class TestAddFeatureDoc:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_minimal_data(
         self,
         client: AsyncClient,
@@ -107,7 +105,6 @@ class TestAddFeatureDoc:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_duplicate(
         self,
         client: AsyncClient,
@@ -138,7 +135,6 @@ class TestAddFeatureDoc:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_feature_not_found(
         self,
         client: AsyncClient,
@@ -155,7 +151,6 @@ class TestAddFeatureDoc:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_doc_not_found(
         self,
         client: AsyncClient,
@@ -170,7 +165,6 @@ class TestAddFeatureDoc:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_with_role(
         self,
         client: AsyncClient,
@@ -186,7 +180,6 @@ class TestAddFeatureDoc:
         data = response.json()
         assert data["role"] == "reference"
 
-    @pytest.mark.asyncio
     async def test_add_feature_doc_with_complex_meta(
         self,
         client: AsyncClient,
@@ -214,7 +207,6 @@ class TestAddFeatureDoc:
 class TestListFeatureDocs:
     """Test suite for GET /features/{feature_id}/docs endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_feature_docs_empty(
         self,
         client: AsyncClient,
@@ -227,7 +219,6 @@ class TestListFeatureDocs:
         data = response.json()
         assert data["docs"] == []
 
-    @pytest.mark.asyncio
     async def test_list_feature_docs_single(
         self,
         client: AsyncClient,
@@ -259,7 +250,6 @@ class TestListFeatureDocs:
         assert data["docs"][0]["doc_id"] == str(doc.id)
         assert data["docs"][0]["role"] == "specification"
 
-    @pytest.mark.asyncio
     async def test_list_feature_docs_multiple(
         self,
         client: AsyncClient,
@@ -308,7 +298,6 @@ class TestListFeatureDocs:
         roles = {d["role"] for d in data["docs"]}
         assert roles == {"specification", "reference", "tutorial"}
 
-    @pytest.mark.asyncio
     async def test_list_feature_docs_feature_not_found(
         self,
         client: AsyncClient,
@@ -325,7 +314,6 @@ class TestListFeatureDocs:
 class TestGetFeatureDoc:
     """Test suite for GET /features/{feature_id}/docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_feature_doc_success(
         self,
         client: AsyncClient,
@@ -358,7 +346,6 @@ class TestGetFeatureDoc:
         assert data["role"] == "specification"
         assert data["meta"] == {"version": "2.0"}
 
-    @pytest.mark.asyncio
     async def test_get_feature_doc_not_found(
         self,
         client: AsyncClient,
@@ -378,7 +365,6 @@ class TestGetFeatureDoc:
 class TestUpdateFeatureDoc:
     """Test suite for PATCH /features/{feature_id}/docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_feature_doc_role(
         self,
         client: AsyncClient,
@@ -413,7 +399,6 @@ class TestUpdateFeatureDoc:
         assert data["feature_id"] == str(feature.id)
         assert data["doc_id"] == str(doc.id)
 
-    @pytest.mark.asyncio
     async def test_update_feature_doc_meta(
         self,
         client: AsyncClient,
@@ -446,7 +431,6 @@ class TestUpdateFeatureDoc:
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_feature_doc_both_fields(
         self,
         client: AsyncClient,
@@ -481,7 +465,6 @@ class TestUpdateFeatureDoc:
         assert data["role"] == "approved_specification"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_feature_doc_not_found(
         self,
         client: AsyncClient,
@@ -498,7 +481,6 @@ class TestUpdateFeatureDoc:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_feature_doc_empty_payload(
         self,
         client: AsyncClient,
@@ -537,7 +519,6 @@ class TestUpdateFeatureDoc:
 class TestRemoveFeatureDoc:
     """Test suite for DELETE /features/{feature_id}/docs/{doc_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_feature_doc_success(
         self,
         client: AsyncClient,
@@ -564,7 +545,7 @@ class TestRemoveFeatureDoc:
         assert response.status_code == 204
         assert response.content == b""
 
-        # Verify feature doc is actually deleted
+        # Verify feature doc is soft-deleted
         from sqlmodel import select
 
         result = await async_session.execute(
@@ -573,9 +554,10 @@ class TestRemoveFeatureDoc:
                 KFeatureDoc.doc_id == doc.id,
             )
         )
-        assert result.scalar_one_or_none() is None
+        deleted_feature_doc = result.scalar_one_or_none()
+        assert deleted_feature_doc is not None
+        assert deleted_feature_doc.deleted_at is not None
 
-    @pytest.mark.asyncio
     async def test_remove_feature_doc_not_found(
         self,
         client: AsyncClient,

@@ -38,6 +38,7 @@ def mock_root_user(test_user_id: UUID) -> UserDetail:
         default_locale="en",
         system_role=SystemRole.SYSTEM_ROOT,
         meta={},
+        deleted_at=None,
         created=now,
         created_by=test_user_id,
         last_modified=now,
@@ -1041,12 +1042,14 @@ class TestDeleteUser:
     """Test suite for DELETE /users/{user_id} endpoint."""
 
     @pytest.mark.asyncio
-    async def test_delete_user_success(
+    async def test_soft_delete_user_success(
         self,
         async_session: AsyncSession,
         mock_root_user: UserDetail,
     ):
-        """Test successfully deleting a user."""
+        """Test successfully soft deleting a user (default behavior)."""
+        from sqlalchemy import select
+
         from app.core.db.database import get_db
 
         # Create a user to delete
@@ -1084,6 +1087,367 @@ class TestDeleteUser:
             response = await client.delete(f"/users/{user_id}")
 
             assert response.status_code == 204
+
+            # Verify user is soft deleted (deleted_at is set)
+            stmt = select(KPrincipal).where(KPrincipal.id == user_id)  # type: ignore[arg-type]
+            result = await async_session.execute(stmt)
+            deleted_user = result.scalar_one_or_none()
+
+            assert deleted_user is not None
+            assert deleted_user.deleted_at is not None
+
+    @pytest.mark.asyncio
+    async def test_soft_deleted_user_not_in_list(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test that soft-deleted users are not visible in list."""
+        from datetime import datetime
+
+        from app.core.db.database import get_db
+
+        # Create users
+        user1 = KPrincipal(
+            scope=mock_root_user.scope,
+            username="activeuser",
+            primary_email="active@example.com",
+            first_name="Active",
+            last_name="User",
+            display_name="Active User",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+        )
+        user2 = KPrincipal(
+            scope=mock_root_user.scope,
+            username="deleteduser",
+            primary_email="deleted@example.com",
+            first_name="Deleted",
+            last_name="User",
+            display_name="Deleted User",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+            deleted_at=datetime.now(),  # Soft deleted
+        )
+        async_session.add_all([user1, user2])
+        await async_session.commit()
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/users")
+
+            assert response.status_code == 200
+            data = response.json()
+            usernames = [u["username"] for u in data["users"]]
+            assert "activeuser" in usernames
+            assert "deleteduser" not in usernames
+
+    @pytest.mark.asyncio
+    async def test_soft_deleted_user_not_retrievable(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test that soft-deleted users cannot be retrieved."""
+        from datetime import datetime
+
+        from app.core.db.database import get_db
+
+        # Create a soft-deleted user
+        user = KPrincipal(
+            scope=mock_root_user.scope,
+            username="deleteduser",
+            primary_email="deleted@example.com",
+            first_name="Deleted",
+            last_name="User",
+            display_name="Deleted User",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+            deleted_at=datetime.now(),  # Soft deleted
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get(f"/users/{user.id}")
+
+            assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_soft_deleted_user_cannot_be_deleted_again(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test that soft-deleted users cannot be deleted again."""
+        from datetime import datetime
+
+        from app.core.db.database import get_db
+
+        # Create a soft-deleted user
+        user = KPrincipal(
+            scope=mock_root_user.scope,
+            username="deleteduser",
+            primary_email="deleted@example.com",
+            first_name="Deleted",
+            last_name="User",
+            display_name="Deleted User",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+            deleted_at=datetime.now(),  # Soft deleted
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user.id}")
+
+            assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_user_with_system_root_role(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test hard delete with systemRoot role."""
+        from sqlalchemy import select
+
+        from app.core.db.database import get_db
+
+        # Create a user to delete
+        user = KPrincipal(
+            scope=mock_root_user.scope,
+            username="harddelete",
+            primary_email="harddelete@example.com",
+            first_name="Hard",
+            last_name="Delete",
+            display_name="Hard Delete",
+            created_by=mock_root_user.id,
+            last_modified_by=mock_root_user.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        user_id = user.id
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user_id}?hard_delete=true")
+
+            assert response.status_code == 204
+
+            # Verify user is permanently deleted from database
+            stmt = select(KPrincipal).where(KPrincipal.id == user_id)  # type: ignore[arg-type]
+            result = await async_session.execute(stmt)
+            deleted_user = result.scalar_one_or_none()
+
+            assert deleted_user is None
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_requires_root_role_for_endpoint_access(
+        self,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test that delete endpoint requires systemRoot role (system role not allowed)."""
+        from app.core.db.database import get_db
+
+        # Create mock system user (not systemRoot, so can't access endpoint)
+        now = datetime.now()
+        mock_system_user = UserDetail(
+            id=test_user_id,
+            scope="global",
+            username="systemuser",
+            primary_email="system@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create a user to delete
+        user = KPrincipal(
+            scope=mock_system_user.scope,
+            username="harddelete2",
+            primary_email="harddelete2@example.com",
+            first_name="Hard",
+            last_name="Delete",
+            display_name="Hard Delete 2",
+            created_by=mock_system_user.id,
+            last_modified_by=mock_system_user.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        user_id = user.id
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_system_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user_id}?hard_delete=true")
+
+            # Should fail at dependency level because only systemRoot can access delete endpoint
+            assert response.status_code == 403
+            assert "systemroot" in response.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_endpoint_requires_system_root(
+        self,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test that delete endpoint requires systemRoot role (systemAdmin not allowed)."""
+        from app.core.db.database import get_db
+
+        # Create mock systemAdmin user (not allowed to access delete endpoint)
+        now = datetime.now()
+        mock_admin_user = UserDetail(
+            id=test_user_id,
+            scope="global",
+            username="adminuser",
+            primary_email="admin@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="Admin",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="Admin User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ADMIN,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
+        )
+
+        # Create a user to delete
+        user = KPrincipal(
+            scope=mock_admin_user.scope,
+            username="targetuser",
+            primary_email="target@example.com",
+            first_name="Target",
+            last_name="User",
+            display_name="Target User",
+            created_by=mock_admin_user.id,
+            last_modified_by=mock_admin_user.id,
+        )
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_admin_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/users/{user.id}?hard_delete=true")
+
+            # Should fail at dependency level - systemAdmin doesn't have systemRoot role
+            assert response.status_code == 403
+            assert "systemroot" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_delete_user_without_root_role(
@@ -1155,5 +1519,34 @@ class TestDeleteUser:
         ) as client:
             fake_id = uuid7()
             response = await client.delete(f"/users/{fake_id}")
+
+            assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_user_not_found(
+        self,
+        async_session: AsyncSession,
+        mock_root_user: UserDetail,
+    ):
+        """Test hard deleting a non-existent user."""
+        from app.core.db.database import get_db
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            fake_id = uuid7()
+            response = await client.delete(f"/users/{fake_id}?hard_delete=true")
 
             assert response.status_code == 404

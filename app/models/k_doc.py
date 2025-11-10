@@ -20,7 +20,7 @@ class KDoc(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=255)
     content: str = Field(..., sa_type=Text)
     meta: dict = Field(default_factory=dict, sa_type=JSON)
-    deleted: bool = Field(default=False)
+    deleted_at: datetime | None = Field(default=None)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)

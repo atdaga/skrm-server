@@ -55,7 +55,6 @@ async def team(
 class TestAddProjectTeam:
     """Test suite for POST /projects/{project_id}/teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_project_team_success(
         self,
         client: AsyncClient,
@@ -90,7 +89,6 @@ class TestAddProjectTeam:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_project_team_minimal_fields(
         self,
         client: AsyncClient,
@@ -107,7 +105,6 @@ class TestAddProjectTeam:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_project_team_duplicate(
         self,
         client: AsyncClient,
@@ -126,7 +123,6 @@ class TestAddProjectTeam:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_project_team_nonexistent_project(
         self,
         client: AsyncClient,
@@ -145,7 +141,6 @@ class TestAddProjectTeam:
 class TestListProjectTeams:
     """Test suite for GET /projects/{project_id}/teams endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_project_teams_empty(
         self,
         client: AsyncClient,
@@ -158,7 +153,6 @@ class TestListProjectTeams:
         data = response.json()
         assert data["teams"] == []
 
-    @pytest.mark.asyncio
     async def test_list_project_teams_multiple(
         self,
         client: AsyncClient,
@@ -215,7 +209,6 @@ class TestListProjectTeams:
         assert "frontend" in team_roles
         assert "backend" in team_roles
 
-    @pytest.mark.asyncio
     async def test_list_project_teams_nonexistent_project(
         self,
         client: AsyncClient,
@@ -230,7 +223,6 @@ class TestListProjectTeams:
 class TestGetProjectTeam:
     """Test suite for GET /projects/{project_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_project_team_success(
         self,
         client: AsyncClient,
@@ -263,7 +255,6 @@ class TestGetProjectTeam:
         assert data["role"] == "qa"
         assert data["meta"] == {"test_coverage": "90%"}
 
-    @pytest.mark.asyncio
     async def test_get_project_team_not_found(
         self,
         client: AsyncClient,
@@ -281,7 +272,6 @@ class TestGetProjectTeam:
 class TestUpdateProjectTeam:
     """Test suite for PATCH /projects/{project_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_project_team_success(
         self,
         client: AsyncClient,
@@ -320,7 +310,6 @@ class TestUpdateProjectTeam:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_project_team_partial(
         self,
         client: AsyncClient,
@@ -356,7 +345,6 @@ class TestUpdateProjectTeam:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_project_team_not_found(
         self,
         client: AsyncClient,
@@ -376,7 +364,6 @@ class TestUpdateProjectTeam:
 class TestRemoveProjectTeam:
     """Test suite for DELETE /projects/{project_id}/teams/{team_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_project_team_success(
         self,
         client: AsyncClient,
@@ -407,7 +394,6 @@ class TestRemoveProjectTeam:
         get_response = await client.get(f"/projects/{project.id}/teams/{team.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_project_team_not_found(
         self,
         client: AsyncClient,

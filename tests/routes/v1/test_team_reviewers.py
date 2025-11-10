@@ -55,7 +55,6 @@ async def principal(async_session: AsyncSession, test_user_id: UUID) -> KPrincip
 class TestAddTeamReviewer:
     """Test suite for POST /teams/{team_id}/reviewers endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_success(
         self,
         client: AsyncClient,
@@ -84,7 +83,6 @@ class TestAddTeamReviewer:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_minimal_data(
         self,
         client: AsyncClient,
@@ -104,7 +102,6 @@ class TestAddTeamReviewer:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_duplicate(
         self,
         client: AsyncClient,
@@ -135,7 +132,6 @@ class TestAddTeamReviewer:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_team_not_found(
         self,
         client: AsyncClient,
@@ -152,7 +148,6 @@ class TestAddTeamReviewer:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_with_role(
         self,
         client: AsyncClient,
@@ -168,7 +163,6 @@ class TestAddTeamReviewer:
         data = response.json()
         assert data["role"] == "senior_reviewer"
 
-    @pytest.mark.asyncio
     async def test_add_team_reviewer_with_complex_meta(
         self,
         client: AsyncClient,
@@ -196,7 +190,6 @@ class TestAddTeamReviewer:
 class TestListTeamReviewers:
     """Test suite for GET /teams/{team_id}/reviewers endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_team_reviewers_empty(
         self,
         client: AsyncClient,
@@ -209,7 +202,6 @@ class TestListTeamReviewers:
         data = response.json()
         assert data["reviewers"] == []
 
-    @pytest.mark.asyncio
     async def test_list_team_reviewers_single(
         self,
         client: AsyncClient,
@@ -241,7 +233,6 @@ class TestListTeamReviewers:
         assert data["reviewers"][0]["principal_id"] == str(principal.id)
         assert data["reviewers"][0]["role"] == "lead_reviewer"
 
-    @pytest.mark.asyncio
     async def test_list_team_reviewers_multiple(
         self,
         client: AsyncClient,
@@ -304,7 +295,6 @@ class TestListTeamReviewers:
         roles = {r["role"] for r in data["reviewers"]}
         assert roles == {"lead_reviewer", "senior_reviewer", "reviewer"}
 
-    @pytest.mark.asyncio
     async def test_list_team_reviewers_team_not_found(
         self,
         client: AsyncClient,
@@ -321,7 +311,6 @@ class TestListTeamReviewers:
 class TestGetTeamReviewer:
     """Test suite for GET /teams/{team_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_team_reviewer_success(
         self,
         client: AsyncClient,
@@ -354,7 +343,6 @@ class TestGetTeamReviewer:
         assert data["role"] == "lead_reviewer"
         assert data["meta"] == {"specialization": "security"}
 
-    @pytest.mark.asyncio
     async def test_get_team_reviewer_not_found(
         self,
         client: AsyncClient,
@@ -374,7 +362,6 @@ class TestGetTeamReviewer:
 class TestUpdateTeamReviewer:
     """Test suite for PATCH /teams/{team_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_team_reviewer_role(
         self,
         client: AsyncClient,
@@ -409,7 +396,6 @@ class TestUpdateTeamReviewer:
         assert data["team_id"] == str(team.id)
         assert data["principal_id"] == str(principal.id)
 
-    @pytest.mark.asyncio
     async def test_update_team_reviewer_meta(
         self,
         client: AsyncClient,
@@ -442,7 +428,6 @@ class TestUpdateTeamReviewer:
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_team_reviewer_both_fields(
         self,
         client: AsyncClient,
@@ -477,7 +462,6 @@ class TestUpdateTeamReviewer:
         assert data["role"] == "senior_reviewer"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_team_reviewer_not_found(
         self,
         client: AsyncClient,
@@ -494,7 +478,6 @@ class TestUpdateTeamReviewer:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_team_reviewer_empty_payload(
         self,
         client: AsyncClient,
@@ -533,7 +516,6 @@ class TestUpdateTeamReviewer:
 class TestRemoveTeamReviewer:
     """Test suite for DELETE /teams/{team_id}/reviewers/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_team_reviewer_success(
         self,
         client: AsyncClient,
@@ -560,7 +542,7 @@ class TestRemoveTeamReviewer:
         assert response.status_code == 204
         assert response.content == b""
 
-        # Verify reviewer is actually deleted
+        # Verify reviewer is soft-deleted
         from sqlmodel import select
 
         result = await async_session.execute(
@@ -569,9 +551,10 @@ class TestRemoveTeamReviewer:
                 KTeamReviewer.principal_id == principal.id,
             )
         )
-        assert result.scalar_one_or_none() is None
+        deleted_reviewer = result.scalar_one_or_none()
+        assert deleted_reviewer is not None
+        assert deleted_reviewer.deleted_at is not None
 
-    @pytest.mark.asyncio
     async def test_remove_team_reviewer_not_found(
         self,
         client: AsyncClient,

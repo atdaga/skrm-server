@@ -38,7 +38,7 @@ async def add_team_member(
         TeamMemberAlreadyExistsException: If the member already exists in the team
     """
     # Verify team exists and get its org_id
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -87,7 +87,7 @@ async def list_team_members(team_id: UUID, db: AsyncSession) -> list[KTeamMember
         TeamNotFoundException: If the team is not found
     """
     # Verify team exists and get its org_id
-    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     team = result.scalar_one_or_none()
 
@@ -122,6 +122,7 @@ async def get_team_member(
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamMember.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
@@ -185,14 +186,20 @@ async def update_team_member(
 
 
 async def remove_team_member(
-    team_id: UUID, principal_id: UUID, db: AsyncSession
+    team_id: UUID,
+    principal_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Remove a member from a team.
 
     Args:
         team_id: ID of the team
         principal_id: ID of the principal (member)
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         TeamMemberNotFoundException: If the team member is not found
@@ -200,6 +207,7 @@ async def remove_team_member(
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
+        KTeamMember.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()
@@ -209,5 +217,10 @@ async def remove_team_member(
             team_id=team_id, principal_id=principal_id, scope=None
         )
 
-    await db.delete(member)
+    if hard_delete:  # pragma: no cover
+        await db.delete(member)  # pragma: no cover
+    else:
+        member.deleted_at = datetime.now()
+        member.last_modified = datetime.now()
+        member.last_modified_by = user_id
     await db.commit()

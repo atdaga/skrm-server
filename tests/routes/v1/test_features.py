@@ -21,7 +21,6 @@ def app_with_overrides(app_with_overrides):
 class TestCreateFeature:
     """Test suite for POST /features endpoint."""
 
-    @pytest.mark.asyncio
     async def test_create_feature_success(
         self,
         client: AsyncClient,
@@ -58,7 +57,6 @@ class TestCreateFeature:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_create_feature_minimal_fields(
         self,
         client: AsyncClient,
@@ -84,7 +82,6 @@ class TestCreateFeature:
         assert data["review_result"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_create_feature_with_parent(
         self,
         client: AsyncClient,
@@ -121,7 +118,6 @@ class TestCreateFeature:
         assert data["parent"] == str(parent_feature.id)
         assert data["parent_path"] == "/Parent Feature"
 
-    @pytest.mark.asyncio
     async def test_create_feature_duplicate_name(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -141,7 +137,6 @@ class TestCreateFeature:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_create_feature_unauthorized_org(self, client: AsyncClient):
         """Test that creating a feature in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -156,7 +151,6 @@ class TestCreateFeature:
 class TestListFeatures:
     """Test suite for GET /features endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_features_empty(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -167,7 +161,6 @@ class TestListFeatures:
         data = response.json()
         assert data["features"] == []
 
-    @pytest.mark.asyncio
     async def test_list_features_multiple(
         self,
         client: AsyncClient,
@@ -207,7 +200,6 @@ class TestListFeatures:
         assert "Feature 1" in feature_names
         assert "Feature 2" in feature_names
 
-    @pytest.mark.asyncio
     async def test_list_features_unauthorized_org(self, client: AsyncClient):
         """Test that listing features in unauthorized org fails."""
         unauthorized_org_id = uuid7()
@@ -219,7 +211,6 @@ class TestListFeatures:
 class TestGetFeature:
     """Test suite for GET /features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_feature_success(
         self,
         client: AsyncClient,
@@ -250,7 +241,6 @@ class TestGetFeature:
         assert data["name"] == "Test Feature"
         assert data["summary"] == "Test summary"
 
-    @pytest.mark.asyncio
     async def test_get_feature_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -262,7 +252,6 @@ class TestGetFeature:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_get_feature_wrong_org(
         self,
         client: AsyncClient,
@@ -300,7 +289,6 @@ class TestGetFeature:
 class TestUpdateFeature:
     """Test suite for PATCH /features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_feature_success(
         self,
         client: AsyncClient,
@@ -339,7 +327,6 @@ class TestUpdateFeature:
         assert data["review_result"] == "Passed"
         assert data["meta"] == {"priority": "medium"}
 
-    @pytest.mark.asyncio
     async def test_update_feature_partial(
         self,
         client: AsyncClient,
@@ -374,7 +361,6 @@ class TestUpdateFeature:
         assert data["summary"] == "Original summary"  # Unchanged
         assert data["guestimate"] == 5.0  # Changed
 
-    @pytest.mark.asyncio
     async def test_update_feature_all_optional_fields(
         self,
         client: AsyncClient,
@@ -447,7 +433,6 @@ class TestUpdateFeature:
         assert data["summary"] == "Initial summary"
         assert data["guestimate"] == 3.0
 
-    @pytest.mark.asyncio
     async def test_update_feature_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -461,7 +446,6 @@ class TestUpdateFeature:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_update_feature_duplicate_name(
         self,
         client: AsyncClient,
@@ -497,7 +481,6 @@ class TestUpdateFeature:
         )
         assert response.status_code == 409
 
-    @pytest.mark.asyncio
     async def test_update_feature_unauthorized_org(
         self,
         client: AsyncClient,
@@ -539,7 +522,6 @@ class TestUpdateFeature:
 class TestDeleteFeature:
     """Test suite for DELETE /features/{feature_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_delete_feature_success(
         self,
         client: AsyncClient,
@@ -571,7 +553,6 @@ class TestDeleteFeature:
         )
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_feature_not_found(
         self, client: AsyncClient, test_organization: KOrganization
     ):
@@ -583,7 +564,6 @@ class TestDeleteFeature:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_delete_feature_unauthorized_org(
         self,
         client: AsyncClient,

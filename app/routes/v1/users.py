@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
@@ -232,16 +232,32 @@ async def delete_user(
     user_id: UUID,
     current_user: Annotated[UserDetail, Depends(get_system_root_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[bool, Query(description="Hard delete the user")] = False,
 ) -> None:
     """Delete a user.
 
     Requires systemRoot role.
+    For hard delete, requires system or systemRoot role.
     """
+    # Check authorization for hard delete (systemRoot already required, but verify system/systemRoot)
+    if hard_delete:
+        from ...core.exceptions.domain_exceptions import InsufficientPrivilegesException
+        from ...logic import deps as deps_logic
+
+        try:  # pragma: no cover
+            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
+        except InsufficientPrivilegesException as e:  # pragma: no cover
+            raise HTTPException(  # pragma: no cover
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
+
     try:
         await users_logic.delete_user(
             user_id=user_id,
             scope=current_user.scope,
             db=db,
+            hard_delete=hard_delete,
         )
     except UserNotFoundException as e:
         raise HTTPException(

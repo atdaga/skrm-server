@@ -34,6 +34,7 @@ class TaskReviewer(BaseModel):
 class TaskReviewerDetail(TaskReviewer):
     """Schema for task reviewer relationship detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

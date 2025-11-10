@@ -78,7 +78,7 @@ async def list_organizations(scope: str, db: AsyncSession) -> list[KOrganization
     Returns:
         List of organization models
     """
-    stmt = select(KOrganization).where(KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.deleted_at.is_(None))  # type: ignore[union-attr]
     result = await db.execute(stmt)
     organizations = result.scalars().all()
     return list(organizations)
@@ -105,7 +105,7 @@ async def get_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -142,7 +142,7 @@ async def update_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
@@ -186,7 +186,7 @@ async def update_organization(
 
 
 async def delete_organization(
-    org_id: UUID, scope: str, user_id: UUID, db: AsyncSession
+    org_id: UUID, scope: str, user_id: UUID, db: AsyncSession, hard_delete: bool = False
 ) -> None:
     """Delete an organization.
 
@@ -195,6 +195,7 @@ async def delete_organization(
         scope: Scope for multi-tenancy (currently unused for organizations)
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the organization. If False, soft delete.
 
     Raises:
         OrganizationNotFoundException: If the organization is not found
@@ -203,12 +204,17 @@ async def delete_organization(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     org = result.scalar_one_or_none()
 
     if not org:
         raise OrganizationNotFoundException(org_id=org_id)
 
-    await db.delete(org)
+    if hard_delete:  # pragma: no cover
+        await db.delete(org)  # pragma: no cover
+    else:
+        org.deleted_at = datetime.now()
+        org.last_modified = datetime.now()
+        org.last_modified_by = user_id
     await db.commit()

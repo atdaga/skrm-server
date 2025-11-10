@@ -20,7 +20,6 @@ def app_with_overrides(app_with_overrides):
 class TestAddOrganizationPrincipal:
     """Test suite for POST /organizations/{org_id}/principals endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_success(
         self,
         client: AsyncClient,
@@ -50,7 +49,6 @@ class TestAddOrganizationPrincipal:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_minimal_data(
         self,
         client: AsyncClient,
@@ -71,7 +69,6 @@ class TestAddOrganizationPrincipal:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_duplicate(
         self,
         client: AsyncClient,
@@ -103,7 +100,6 @@ class TestAddOrganizationPrincipal:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_org_not_found(
         self,
         client: AsyncClient,
@@ -121,7 +117,6 @@ class TestAddOrganizationPrincipal:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_with_role(
         self,
         client: AsyncClient,
@@ -139,7 +134,6 @@ class TestAddOrganizationPrincipal:
         data = response.json()
         assert data["role"] == "manager"
 
-    @pytest.mark.asyncio
     async def test_add_organization_principal_with_complex_meta(
         self,
         client: AsyncClient,
@@ -169,7 +163,6 @@ class TestAddOrganizationPrincipal:
 class TestListOrganizationPrincipals:
     """Test suite for GET /organizations/{org_id}/principals endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_organization_principals_empty(
         self,
         client: AsyncClient,
@@ -185,7 +178,6 @@ class TestListOrganizationPrincipals:
         assert len(data["principals"]) == 1
         assert data["principals"][0]["principal_id"] == str(test_user_id)
 
-    @pytest.mark.asyncio
     async def test_list_organization_principals_single(
         self,
         client: AsyncClient,
@@ -216,7 +208,6 @@ class TestListOrganizationPrincipals:
         assert str(test_principal.id) in principal_ids
         assert str(test_user_id) in principal_ids
 
-    @pytest.mark.asyncio
     async def test_list_organization_principals_multiple(
         self,
         client: AsyncClient,
@@ -268,7 +259,6 @@ class TestListOrganizationPrincipals:
         roles = {p["role"] for p in principals_with_role}
         assert roles == {"admin", "engineer", "manager"}
 
-    @pytest.mark.asyncio
     async def test_list_organization_principals_org_not_found(
         self,
         client: AsyncClient,
@@ -286,7 +276,6 @@ class TestListOrganizationPrincipals:
 class TestGetOrganizationPrincipal:
     """Test suite for GET /organizations/{org_id}/principals/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_organization_principal_success(
         self,
         client: AsyncClient,
@@ -319,7 +308,6 @@ class TestGetOrganizationPrincipal:
         assert data["role"] == "admin"
         assert data["meta"] == {"level": "senior"}
 
-    @pytest.mark.asyncio
     async def test_get_organization_principal_not_found(
         self,
         client: AsyncClient,
@@ -339,7 +327,6 @@ class TestGetOrganizationPrincipal:
 class TestUpdateOrganizationPrincipal:
     """Test suite for PATCH /organizations/{org_id}/principals/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_organization_principal_role(
         self,
         client: AsyncClient,
@@ -373,7 +360,6 @@ class TestUpdateOrganizationPrincipal:
         assert data["org_id"] == str(test_organization.id)
         assert data["principal_id"] == str(test_principal.id)
 
-    @pytest.mark.asyncio
     async def test_update_organization_principal_meta(
         self,
         client: AsyncClient,
@@ -405,7 +391,6 @@ class TestUpdateOrganizationPrincipal:
         data = response.json()
         assert data["meta"] == {"new": "data", "updated": True}
 
-    @pytest.mark.asyncio
     async def test_update_organization_principal_both_fields(
         self,
         client: AsyncClient,
@@ -439,7 +424,6 @@ class TestUpdateOrganizationPrincipal:
         assert data["role"] == "senior_member"
         assert data["meta"] == {"new": "data"}
 
-    @pytest.mark.asyncio
     async def test_update_organization_principal_not_found(
         self,
         client: AsyncClient,
@@ -457,7 +441,6 @@ class TestUpdateOrganizationPrincipal:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_update_organization_principal_empty_payload(
         self,
         client: AsyncClient,
@@ -495,7 +478,6 @@ class TestUpdateOrganizationPrincipal:
 class TestRemoveOrganizationPrincipal:
     """Test suite for DELETE /organizations/{org_id}/principals/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_organization_principal_success(
         self,
         client: AsyncClient,
@@ -522,7 +504,7 @@ class TestRemoveOrganizationPrincipal:
         assert response.status_code == 204
         assert response.content == b""
 
-        # Verify principal is actually deleted
+        # Verify principal is soft-deleted
         from sqlmodel import select
 
         result = await async_session.execute(
@@ -531,9 +513,10 @@ class TestRemoveOrganizationPrincipal:
                 KOrganizationPrincipal.principal_id == test_principal.id,
             )
         )
-        assert result.scalar_one_or_none() is None
+        deleted_org_principal = result.scalar_one_or_none()
+        assert deleted_org_principal is not None
+        assert deleted_org_principal.deleted_at is not None
 
-    @pytest.mark.asyncio
     async def test_remove_organization_principal_not_found(
         self,
         client: AsyncClient,
@@ -553,7 +536,6 @@ class TestRemoveOrganizationPrincipal:
 class TestUnauthorizedOrganizationPrincipalAccess:
     """Test suite for unauthorized organization principal access scenarios."""
 
-    @pytest.mark.asyncio
     async def test_add_principal_unauthorized(
         self,
         client: AsyncClient,
@@ -570,7 +552,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_list_principals_unauthorized(
         self,
         client: AsyncClient,
@@ -584,7 +565,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_get_principal_unauthorized(
         self,
         client: AsyncClient,
@@ -599,7 +579,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_update_principal_unauthorized(
         self,
         client: AsyncClient,
@@ -616,7 +595,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_remove_principal_unauthorized(
         self,
         client: AsyncClient,
@@ -635,7 +613,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
 class TestOrganizationPrincipalDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
 
-    @pytest.mark.asyncio
     async def test_add_principal_org_not_found(
         self,
         client: AsyncClient,
@@ -680,7 +657,6 @@ class TestOrganizationPrincipalDataInconsistency:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
-    @pytest.mark.asyncio
     async def test_list_principals_org_not_found(
         self,
         client: AsyncClient,

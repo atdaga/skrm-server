@@ -86,7 +86,6 @@ async def principal(
 class TestAddTaskOwner:
     """Test suite for POST /tasks/{task_id}/owners endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_task_owner_success(
         self,
         client: AsyncClient,
@@ -121,7 +120,6 @@ class TestAddTaskOwner:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_task_owner_minimal_fields(
         self,
         client: AsyncClient,
@@ -138,7 +136,6 @@ class TestAddTaskOwner:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_task_owner_duplicate(
         self,
         client: AsyncClient,
@@ -160,7 +157,6 @@ class TestAddTaskOwner:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_task_owner_nonexistent_task(
         self,
         client: AsyncClient,
@@ -175,7 +171,6 @@ class TestAddTaskOwner:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_task_owner_nonexistent_principal(
         self,
         client: AsyncClient,
@@ -192,7 +187,6 @@ class TestAddTaskOwner:
 class TestListTaskOwners:
     """Test suite for GET /tasks/{task_id}/owners endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_task_owners_empty(
         self,
         client: AsyncClient,
@@ -205,7 +199,6 @@ class TestListTaskOwners:
         data = response.json()
         assert data["owners"] == []
 
-    @pytest.mark.asyncio
     async def test_list_task_owners_multiple(
         self,
         client: AsyncClient,
@@ -284,7 +277,6 @@ class TestListTaskOwners:
         assert "lead" in owner_roles
         assert "backup" in owner_roles
 
-    @pytest.mark.asyncio
     async def test_list_task_owners_nonexistent_task(
         self,
         client: AsyncClient,
@@ -299,7 +291,6 @@ class TestListTaskOwners:
 class TestGetTaskOwner:
     """Test suite for GET /tasks/{task_id}/owners/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_task_owner_success(
         self,
         client: AsyncClient,
@@ -332,7 +323,6 @@ class TestGetTaskOwner:
         assert data["role"] == "lead"
         assert data["meta"] == {"allocation": 100}
 
-    @pytest.mark.asyncio
     async def test_get_task_owner_not_found(
         self,
         client: AsyncClient,
@@ -350,7 +340,6 @@ class TestGetTaskOwner:
 class TestUpdateTaskOwner:
     """Test suite for PATCH /tasks/{task_id}/owners/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_task_owner_success(
         self,
         client: AsyncClient,
@@ -389,7 +378,6 @@ class TestUpdateTaskOwner:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_task_owner_partial(
         self,
         client: AsyncClient,
@@ -425,7 +413,6 @@ class TestUpdateTaskOwner:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_task_owner_not_found(
         self,
         client: AsyncClient,
@@ -445,7 +432,6 @@ class TestUpdateTaskOwner:
 class TestRemoveTaskOwner:
     """Test suite for DELETE /tasks/{task_id}/owners/{principal_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_task_owner_success(
         self,
         client: AsyncClient,
@@ -476,7 +462,6 @@ class TestRemoveTaskOwner:
         get_response = await client.get(f"/tasks/{task.id}/owners/{principal.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_task_owner_not_found(
         self,
         client: AsyncClient,

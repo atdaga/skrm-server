@@ -72,7 +72,6 @@ async def task(
 class TestAddSprintTask:
     """Test suite for POST /sprints/{sprint_id}/tasks endpoint."""
 
-    @pytest.mark.asyncio
     async def test_add_sprint_task_success(
         self,
         client: AsyncClient,
@@ -107,7 +106,6 @@ class TestAddSprintTask:
         assert "created" in data
         assert "last_modified" in data
 
-    @pytest.mark.asyncio
     async def test_add_sprint_task_minimal_fields(
         self,
         client: AsyncClient,
@@ -124,7 +122,6 @@ class TestAddSprintTask:
         assert data["role"] is None
         assert data["meta"] == {}
 
-    @pytest.mark.asyncio
     async def test_add_sprint_task_duplicate(
         self,
         client: AsyncClient,
@@ -143,7 +140,6 @@ class TestAddSprintTask:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.asyncio
     async def test_add_sprint_task_nonexistent_sprint(
         self,
         client: AsyncClient,
@@ -158,7 +154,6 @@ class TestAddSprintTask:
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_add_sprint_task_nonexistent_task(
         self,
         client: AsyncClient,
@@ -175,7 +170,6 @@ class TestAddSprintTask:
 class TestListSprintTasks:
     """Test suite for GET /sprints/{sprint_id}/tasks endpoint."""
 
-    @pytest.mark.asyncio
     async def test_list_sprint_tasks_empty(
         self,
         client: AsyncClient,
@@ -188,7 +182,6 @@ class TestListSprintTasks:
         data = response.json()
         assert data["tasks"] == []
 
-    @pytest.mark.asyncio
     async def test_list_sprint_tasks_multiple(
         self,
         client: AsyncClient,
@@ -248,7 +241,6 @@ class TestListSprintTasks:
         assert "primary" in task_roles
         assert "secondary" in task_roles
 
-    @pytest.mark.asyncio
     async def test_list_sprint_tasks_nonexistent_sprint(
         self,
         client: AsyncClient,
@@ -263,7 +255,6 @@ class TestListSprintTasks:
 class TestGetSprintTask:
     """Test suite for GET /sprints/{sprint_id}/tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_get_sprint_task_success(
         self,
         client: AsyncClient,
@@ -296,7 +287,6 @@ class TestGetSprintTask:
         assert data["role"] == "primary"
         assert data["meta"] == {"priority": "high"}
 
-    @pytest.mark.asyncio
     async def test_get_sprint_task_not_found(
         self,
         client: AsyncClient,
@@ -314,7 +304,6 @@ class TestGetSprintTask:
 class TestUpdateSprintTask:
     """Test suite for PATCH /sprints/{sprint_id}/tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_update_sprint_task_success(
         self,
         client: AsyncClient,
@@ -353,7 +342,6 @@ class TestUpdateSprintTask:
         assert data["role"] == "new_role"
         assert data["meta"] == {"new": "data", "status": "updated"}
 
-    @pytest.mark.asyncio
     async def test_update_sprint_task_partial(
         self,
         client: AsyncClient,
@@ -389,7 +377,6 @@ class TestUpdateSprintTask:
         assert data["role"] == "updated_role"
         assert data["meta"] == {"original": "meta"}  # Unchanged
 
-    @pytest.mark.asyncio
     async def test_update_sprint_task_not_found(
         self,
         client: AsyncClient,
@@ -409,7 +396,6 @@ class TestUpdateSprintTask:
 class TestRemoveSprintTask:
     """Test suite for DELETE /sprints/{sprint_id}/tasks/{task_id} endpoint."""
 
-    @pytest.mark.asyncio
     async def test_remove_sprint_task_success(
         self,
         client: AsyncClient,
@@ -440,7 +426,6 @@ class TestRemoveSprintTask:
         get_response = await client.get(f"/sprints/{sprint.id}/tasks/{task.id}")
         assert get_response.status_code == 404
 
-    @pytest.mark.asyncio
     async def test_remove_sprint_task_not_found(
         self,
         client: AsyncClient,

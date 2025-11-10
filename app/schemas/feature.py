@@ -58,6 +58,7 @@ class Feature(BaseModel):
 class FeatureDetail(Feature):
     """Schema for feature detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

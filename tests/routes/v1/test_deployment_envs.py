@@ -477,3 +477,96 @@ class TestDeleteDeploymentEnv:
             f"/deployment-envs/{deployment_env.id}?org_id={other_org.id}"
         )
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_deployment_env_success(
+        self,
+        async_session: AsyncSession,
+        test_organization: KOrganization,
+        test_user_id: UUID,
+        mock_system_root_user,
+        mock_token_data,
+    ):
+        """Test successfully hard deleting a deployment environment with system root user."""
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
+        from app.core.auth import oauth2_scheme
+        from app.core.db.database import get_db
+        from app.routes.deps import get_current_token, get_current_user
+        from app.routes.v1.deployment_envs import router
+
+        # Create app with overrides for system root user
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_oauth2_scheme():
+            return "test-token"
+
+        async def override_get_current_token():
+            return mock_token_data
+
+        async def override_get_current_user():
+            return mock_system_root_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
+        app.dependency_overrides[get_current_token] = override_get_current_token
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        # Create deployment env
+        deployment_env = KDeploymentEnv(
+            name="To Hard Delete",
+            org_id=test_organization.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(deployment_env)
+        await async_session.commit()
+        await async_session.refresh(deployment_env)
+        env_id = deployment_env.id
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(
+                f"/deployment-envs/{env_id}?org_id={test_organization.id}&hard_delete=true"
+            )
+
+        assert response.status_code == 204
+
+        # Verify deployment environment is hard deleted (not in DB at all)
+        from sqlalchemy import select
+
+        result = await async_session.execute(
+            select(KDeploymentEnv).where(KDeploymentEnv.id == env_id)
+        )
+        assert result.scalar_one_or_none() is None
+
+    @pytest.mark.asyncio
+    async def test_hard_delete_deployment_env_forbidden_for_regular_user(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test that hard delete is forbidden for regular users."""
+        deployment_env = KDeploymentEnv(
+            name="Test Env",
+            org_id=test_organization.id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(deployment_env)
+        await async_session.commit()
+        await async_session.refresh(deployment_env)
+
+        response = await client.delete(
+            f"/deployment-envs/{deployment_env.id}?org_id={test_organization.id}&hard_delete=true"
+        )
+
+        assert response.status_code == 403

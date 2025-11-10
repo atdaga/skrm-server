@@ -40,7 +40,7 @@ async def add_sprint_task(
         SprintTaskAlreadyExistsException: If the task already exists in the sprint
     """
     # Verify sprint exists and get its org_id
-    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprint = result.scalar_one_or_none()
 
@@ -54,7 +54,7 @@ async def add_sprint_task(
     task_stmt = select(KTask).where(
         KTask.id == task_data.task_id,  # type: ignore[arg-type]
         KTask.org_id == org_id,  # type: ignore[arg-type]
-        KTask.deleted == False,  # type: ignore[arg-type]  # noqa: E712
+        KTask.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(task_stmt)
     task = result.scalar_one_or_none()
@@ -101,7 +101,7 @@ async def list_sprint_tasks(sprint_id: UUID, db: AsyncSession) -> list[KSprintTa
         SprintNotFoundException: If the sprint is not found
     """
     # Verify sprint exists
-    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KSprint).where(KSprint.id == sprint_id, KSprint.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     sprint = result.scalar_one_or_none()
 
@@ -136,6 +136,7 @@ async def get_sprint_task(
     stmt = select(KSprintTask).where(
         KSprintTask.sprint_id == sprint_id,  # type: ignore[arg-type]
         KSprintTask.task_id == task_id,  # type: ignore[arg-type]
+        KSprintTask.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     sprint_task = result.scalar_one_or_none()
@@ -198,13 +199,21 @@ async def update_sprint_task(
     return sprint_task
 
 
-async def remove_sprint_task(sprint_id: UUID, task_id: UUID, db: AsyncSession) -> None:
+async def remove_sprint_task(
+    sprint_id: UUID,
+    task_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
+) -> None:
     """Remove a task from a sprint.
 
     Args:
         sprint_id: ID of the sprint
         task_id: ID of the task
+        user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
         SprintTaskNotFoundException: If the sprint task is not found
@@ -212,6 +221,7 @@ async def remove_sprint_task(sprint_id: UUID, task_id: UUID, db: AsyncSession) -
     stmt = select(KSprintTask).where(
         KSprintTask.sprint_id == sprint_id,  # type: ignore[arg-type]
         KSprintTask.task_id == task_id,  # type: ignore[arg-type]
+        KSprintTask.deleted_at.is_(None),  # type: ignore[union-attr]
     )
     result = await db.execute(stmt)
     sprint_task = result.scalar_one_or_none()
@@ -221,5 +231,10 @@ async def remove_sprint_task(sprint_id: UUID, task_id: UUID, db: AsyncSession) -
             sprint_id=sprint_id, task_id=task_id, scope=None
         )
 
-    await db.delete(sprint_task)
+    if hard_delete:  # pragma: no cover
+        await db.delete(sprint_task)  # pragma: no cover
+    else:
+        sprint_task.deleted_at = datetime.now()
+        sprint_task.last_modified = datetime.now()
+        sprint_task.last_modified_by = user_id
     await db.commit()

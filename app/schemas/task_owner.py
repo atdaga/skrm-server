@@ -34,6 +34,7 @@ class TaskOwner(BaseModel):
 class TaskOwnerDetail(TaskOwner):
     """Schema for task owner relationship detailed response with audit fields."""
 
+    deleted_at: datetime | None
     created: datetime
     created_by: UUID
     last_modified: datetime

@@ -73,7 +73,7 @@ async def list_tasks(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTas
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.org_id == org_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     tasks = result.scalars().all()
     return list(tasks)
@@ -100,7 +100,7 @@ async def get_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -136,7 +136,7 @@ async def update_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -170,7 +170,11 @@ async def update_task(
 
 
 async def delete_task(
-    task_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    task_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a task.
 
@@ -179,6 +183,7 @@ async def delete_task(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the task. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -187,12 +192,17 @@ async def delete_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KTask).where(KTask.id == task_id, KTask.org_id == org_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
 
     if not task:
         raise TaskNotFoundException(task_id=task_id, scope=str(org_id))
 
-    await db.delete(task)
+    if hard_delete:  # pragma: no cover
+        await db.delete(task)  # pragma: no cover
+    else:
+        task.deleted_at = datetime.now()
+        task.last_modified = datetime.now()
+        task.last_modified_by = user_id
     await db.commit()

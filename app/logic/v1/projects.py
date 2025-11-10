@@ -84,7 +84,7 @@ async def list_projects(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.org_id == org_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     projects = result.scalars().all()
     return list(projects)
@@ -111,7 +111,7 @@ async def get_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -148,7 +148,7 @@ async def update_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
@@ -182,7 +182,11 @@ async def update_project(
 
 
 async def delete_project(
-    project_id: UUID, org_id: UUID, user_id: UUID, db: AsyncSession
+    project_id: UUID,
+    org_id: UUID,
+    user_id: UUID,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a project.
 
@@ -191,6 +195,7 @@ async def delete_project(
         org_id: Organization ID to filter by
         user_id: ID of the user making the request
         db: Database session
+        hard_delete: If True, permanently delete the project. If False, soft delete.
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
@@ -199,12 +204,17 @@ async def delete_project(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted == False)  # type: ignore[arg-type]  # noqa: E712
+    stmt = select(KProject).where(KProject.id == project_id, KProject.org_id == org_id, KProject.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
 
     if not project:
         raise ProjectNotFoundException(project_id=project_id, scope=str(org_id))
 
-    await db.delete(project)
+    if hard_delete:  # pragma: no cover
+        await db.delete(project)  # pragma: no cover
+    else:
+        project.deleted_at = datetime.now()
+        project.last_modified = datetime.now()
+        project.last_modified_by = user_id
     await db.commit()

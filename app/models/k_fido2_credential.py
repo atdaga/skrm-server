@@ -28,7 +28,7 @@ class KFido2Credential(SQLModel, table=True):
         default=None, max_length=255
     )  # User-friendly name (e.g., "YubiKey 5", "iPhone TouchID")
     last_used: datetime | None = None  # Track usage for security monitoring
-    deleted: bool = Field(default=False)
+    deleted_at: datetime | None = Field(default=None)
     created: datetime = Field(default_factory=datetime.now)
     created_by: UUID
     last_modified: datetime = Field(default_factory=datetime.now)

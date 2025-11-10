@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     TeamAlreadyExistsException,
     TeamNotFoundException,
     TeamUpdateConflictException,
@@ -15,8 +16,8 @@ from ...core.exceptions.domain_exceptions import (
 )
 from ...logic.v1 import teams as teams_logic
 from ...schemas.team import TeamCreate, TeamDetail, TeamList, TeamUpdate
-from ...schemas.user import TokenData
-from ..deps import get_current_token
+from ...schemas.user import TokenData, UserDetail
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/teams", tags=["teams"])
 
@@ -142,10 +143,24 @@ async def delete_team(
     team_id: UUID,
     org_id: Annotated[UUID, Query(description="Organization ID")],
     token_data: Annotated[TokenData, Depends(get_current_token)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    hard_delete: Annotated[bool, Query(description="Hard delete the team")] = False,
 ) -> None:
     """Delete a team (cascades to team members)."""
     user_id = UUID(token_data.sub)
+
+    # Check authorization for hard delete
+    if hard_delete:  # pragma: no cover
+        from ...logic import deps as deps_logic  # pragma: no cover
+
+        try:  # pragma: no cover
+            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
+        except InsufficientPrivilegesException as e:  # pragma: no cover
+            raise HTTPException(  # pragma: no cover
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=e.message,
+            ) from e
 
     try:
         await teams_logic.delete_team(
@@ -153,6 +168,7 @@ async def delete_team(
             org_id=org_id,
             user_id=user_id,
             db=db,
+            hard_delete=hard_delete,
         )
     except TeamNotFoundException as e:
         raise HTTPException(

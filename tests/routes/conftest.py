@@ -23,7 +23,7 @@ def app() -> FastAPI:
 
 @pytest.fixture
 def app_with_overrides(
-    async_session: AsyncSession, mock_token_data: TokenData
+    async_session: AsyncSession, mock_token_data: TokenData, mock_user
 ) -> FastAPI:
     """Create a FastAPI app with dependency overrides for testing.
 
@@ -39,14 +39,23 @@ def app_with_overrides(
     async def override_get_db():
         yield async_session
 
+    async def override_oauth2_scheme():
+        return "test-token"
+
     async def override_get_current_token():
         return mock_token_data
 
+    async def override_get_current_user():
+        return mock_user
+
+    from app.core.auth import oauth2_scheme
     from app.core.db.database import get_db
-    from app.routes.deps import get_current_token
+    from app.routes.deps import get_current_token, get_current_user
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[oauth2_scheme] = override_oauth2_scheme
     app.dependency_overrides[get_current_token] = override_get_current_token
+    app.dependency_overrides[get_current_user] = override_get_current_user
 
     return app
 
