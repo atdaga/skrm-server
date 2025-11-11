@@ -8,11 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationUpdateConflictException,
 )
 from ...models import KOrganization
+from ...models.k_principal import SystemRole
 from ...schemas.organization import OrganizationCreate, OrganizationUpdate
 from ..deps import verify_organization_membership
 
@@ -21,6 +23,7 @@ async def create_organization(
     org_data: OrganizationCreate,
     user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KOrganization:
     """Create a new organization.
@@ -29,14 +32,23 @@ async def create_organization(
         org_data: Organization creation data
         user_id: ID of the user creating the organization
         scope: Scope for multi-tenancy (currently unused for organizations)
+        system_role: System role of the user
         db: Database session
 
     Returns:
         The created organization model
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationAlreadyExistsException: If an organization with the same name or alias already exists
     """
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can create organizations
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
+
     # Create new organization with audit fields
     new_org = KOrganization(
         name=org_data.name,
@@ -120,6 +132,7 @@ async def update_organization(
     org_data: OrganizationUpdate,
     user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KOrganization:
     """Update an organization.
@@ -129,18 +142,23 @@ async def update_organization(
         org_data: Organization update data
         user_id: ID of the user performing the update
         scope: Scope for multi-tenancy (currently unused for organizations)
+        system_role: System role of the user
         db: Database session
 
     Returns:
         The updated organization model
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationNotFoundException: If the organization is not found
-        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationUpdateConflictException: If updating causes a name or alias conflict
     """
-    # Verify user has access to this organization
-    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can update organizations
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
 
     stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
@@ -186,7 +204,12 @@ async def update_organization(
 
 
 async def delete_organization(
-    org_id: UUID, scope: str, user_id: UUID, db: AsyncSession, hard_delete: bool = False
+    org_id: UUID,
+    scope: str,
+    user_id: UUID,
+    system_role: SystemRole,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete an organization.
 
@@ -194,15 +217,20 @@ async def delete_organization(
         org_id: ID of the organization to delete
         scope: Scope for multi-tenancy (currently unused for organizations)
         user_id: ID of the user making the request
+        system_role: System role of the user
         db: Database session
         hard_delete: If True, permanently delete the organization. If False, soft delete.
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationNotFoundException: If the organization is not found
-        UnauthorizedOrganizationAccessException: If user is not a member of the organization
     """
-    # Verify user has access to this organization
-    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can delete organizations
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
 
     stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)

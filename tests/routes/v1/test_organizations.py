@@ -606,8 +606,8 @@ class TestUpdateOrganization:
         update_data = {"name": "New Name"}
         response = await client.patch(f"/organizations/{fake_id}", json=update_data)
 
-        # Returns 403 because user is not a member of non-existent org
-        assert response.status_code == 403
+        # Returns 404 because organization doesn't exist
+        assert response.status_code == 404
 
     async def test_update_organization_duplicate_name(
         self,
@@ -1016,8 +1016,8 @@ class TestDeleteOrganization:
         fake_id = uuid7()
         response = await client.delete(f"/organizations/{fake_id}")
 
-        # Returns 403 because user is not a member of non-existent org
-        assert response.status_code == 403
+        # Returns 404 because organization doesn't exist
+        assert response.status_code == 404
 
 
 class TestUnauthorizedOrganizationAccess:
@@ -1035,35 +1035,6 @@ class TestUnauthorizedOrganizationAccess:
 
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
-
-    async def test_update_organization_unauthorized(
-        self,
-        client: AsyncClient,
-        test_organization_without_membership: KOrganization,
-    ):
-        """Test updating an organization the user is not a member of."""
-        update_data = {"name": "New Name"}
-        response = await client.patch(
-            f"/organizations/{test_organization_without_membership.id}",
-            json=update_data,
-        )
-
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
-
-    async def test_delete_organization_unauthorized(
-        self,
-        client: AsyncClient,
-        test_organization_without_membership: KOrganization,
-    ):
-        """Test deleting an organization the user is not a member of."""
-        response = await client.delete(
-            f"/organizations/{test_organization_without_membership.id}"
-        )
-
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
-
 
 class TestOrganizationDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
@@ -1413,6 +1384,75 @@ class TestSystemRoleAuthorization:
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             response = await client.delete(f"/organizations/{org.id}")
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    async def test_delete_organization_hard_delete_without_privileges(
+        self,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test hard delete requires SYSTEM or SYSTEM_ROOT role (not SYSTEM_ADMIN)."""
+        from app.core.db.database import get_db
+        from app.models.k_principal import SystemRole
+        from app.routes.deps import get_current_user
+        from app.routes.v1.organizations import router
+        from app.schemas.user import UserDetail
+
+        # Create principal
+        principal = KPrincipal(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            display_name="Test User",
+            system_role=SystemRole.SYSTEM_ADMIN,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(principal)
+        await async_session.commit()
+
+        # Create organization
+        org = KOrganization(
+            name="Test Org",
+            alias="test_org",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(org)
+        await async_session.commit()
+        await async_session.refresh(org)
+
+        # Create system admin user (not allowed for hard delete)
+        system_admin_user = UserDetail(
+            id=test_user_id,
+            username="testuser",
+            primary_email="test@example.com",
+            scope="org::test_org",
+            system_role=SystemRole.SYSTEM_ADMIN,  # This role can't hard delete
+            meta={},
+        )
+
+        # Create app with system admin user
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return system_admin_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.delete(f"/organizations/{org.id}?hard_delete=true")
 
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()

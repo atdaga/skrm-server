@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     UserAlreadyExistsException,
     UserNotFoundException,
     UserUpdateConflictException,
@@ -25,8 +26,6 @@ from ...schemas.user import (
 )
 from ..deps import (
     get_current_user,
-    get_system_or_system_root_user,
-    get_system_root_user,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("", response_model=UserDetail, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
-    current_user: Annotated[UserDetail, Depends(get_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Create a new user.
@@ -47,9 +46,15 @@ async def create_user(
             user_data=user_data,
             created_by_user_id=current_user.id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return UserDetail.model_validate(user)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserAlreadyExistsException as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -101,7 +106,7 @@ async def get_user(
 async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
-    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user.
@@ -114,9 +119,15 @@ async def update_user(
             user_data=user_data,
             requesting_user_id=current_user.id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return UserDetail.model_validate(user)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -128,7 +139,7 @@ async def update_user(
 async def update_user_username(
     user_id: UUID,
     user_data: UserUpdateUsername,
-    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's username.
@@ -141,9 +152,15 @@ async def update_user_username(
             user_data=user_data,
             requesting_user_id=current_user.id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return UserDetail.model_validate(user)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -160,7 +177,7 @@ async def update_user_username(
 async def update_user_email(
     user_id: UUID,
     user_data: UserUpdateEmail,
-    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's primary email.
@@ -173,9 +190,15 @@ async def update_user_email(
             user_data=user_data,
             requesting_user_id=current_user.id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return UserDetail.model_validate(user)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -187,7 +210,7 @@ async def update_user_email(
 async def update_user_primary_phone(
     user_id: UUID,
     user_data: UserUpdatePrimaryPhone,
-    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserDetail:
     """Update a user's primary phone.
@@ -200,9 +223,15 @@ async def update_user_primary_phone(
             user_data=user_data,
             requesting_user_id=current_user.id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return UserDetail.model_validate(user)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -213,7 +242,7 @@ async def update_user_primary_phone(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_system_or_system_root_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[bool, Query(description="Hard delete the user")] = False,
 ) -> None:
@@ -224,7 +253,6 @@ async def delete_user(
     """
     # Check authorization for hard delete
     if hard_delete:
-        from ...core.exceptions.domain_exceptions import InsufficientPrivilegesException
         from ...logic import deps as deps_logic
 
         try:  # pragma: no cover
@@ -239,9 +267,16 @@ async def delete_user(
         await users_logic.delete_user(
             user_id=user_id,
             scope=current_user.scope,
+            requesting_user_id=current_user.id,
+            system_role=current_user.system_role,
             db=db,
             hard_delete=hard_delete,
         )
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except UserNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

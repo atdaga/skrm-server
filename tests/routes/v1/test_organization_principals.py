@@ -3,11 +3,13 @@
 from uuid import UUID, uuid7
 
 import pytest
-from httpx import AsyncClient
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganization, KOrganizationPrincipal, KPrincipal
 from app.routes.v1.organization_principals import router
+from app.schemas.user import UserDetail
 
 
 @pytest.fixture
@@ -113,9 +115,9 @@ class TestAddOrganizationPrincipal:
             f"/organizations/{non_existent_org_id}/principals", json=principal_data
         )
 
-        # Returns 403 because user is not a member of non-existent org
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
+        # Returns 404 because organization doesn't exist
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"].lower()
 
     async def test_add_organization_principal_with_role(
         self,
@@ -536,22 +538,6 @@ class TestRemoveOrganizationPrincipal:
 class TestUnauthorizedOrganizationPrincipalAccess:
     """Test suite for unauthorized organization principal access scenarios."""
 
-    async def test_add_principal_unauthorized(
-        self,
-        client: AsyncClient,
-        test_organization_without_membership: KOrganization,
-        test_principal: KPrincipal,
-    ):
-        """Test adding a principal to an organization user is not a member of."""
-        principal_data = {"principal_id": str(test_principal.id)}
-        response = await client.post(
-            f"/organizations/{test_organization_without_membership.id}/principals",
-            json=principal_data,
-        )
-
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
-
     async def test_list_principals_unauthorized(
         self,
         client: AsyncClient,
@@ -578,37 +564,6 @@ class TestUnauthorizedOrganizationPrincipalAccess:
 
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
-
-    async def test_update_principal_unauthorized(
-        self,
-        client: AsyncClient,
-        test_organization_without_membership: KOrganization,
-        test_principal: KPrincipal,
-    ):
-        """Test updating a principal in an organization user is not a member of."""
-        update_data = {"role": "admin"}
-        response = await client.patch(
-            f"/organizations/{test_organization_without_membership.id}/principals/{test_principal.id}",
-            json=update_data,
-        )
-
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
-
-    async def test_remove_principal_unauthorized(
-        self,
-        client: AsyncClient,
-        test_organization_without_membership: KOrganization,
-        test_principal: KPrincipal,
-    ):
-        """Test removing a principal from an organization user is not a member of."""
-        response = await client.delete(
-            f"/organizations/{test_organization_without_membership.id}/principals/{test_principal.id}"
-        )
-
-        assert response.status_code == 403
-        assert "not authorized" in response.json()["detail"].lower()
-
 
 class TestOrganizationPrincipalDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
@@ -709,3 +664,199 @@ class TestOrganizationPrincipalDataInconsistency:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
+
+
+class TestSystemRoleAuthorization:
+    """Test suite for system role authorization on CUD operations."""
+
+    async def test_add_principal_without_system_role(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_principal: KPrincipal,
+        mock_client_user: UserDetail,
+        async_session: AsyncSession,
+    ):
+        """Test adding a principal without proper system role."""
+        from app.core.db.database import get_db
+        from app.routes.deps import get_current_user
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as test_client:
+            principal_data = {"principal_id": str(test_principal.id)}
+            response = await test_client.post(
+                f"/organizations/{test_organization.id}/principals",
+                json=principal_data,
+            )
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    async def test_update_principal_without_system_role(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_principal: KPrincipal,
+        mock_client_user: UserDetail,
+        mock_user_detail: UserDetail,
+        async_session: AsyncSession,
+    ):
+        """Test updating a principal without proper system role."""
+        from app.core.db.database import get_db
+        from app.routes.deps import get_current_user
+
+        # First create an organization principal with admin user
+        org_principal = KOrganizationPrincipal(
+            org_id=test_organization.id,
+            principal_id=test_principal.id,
+            role="member",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+        await async_session.refresh(org_principal)
+
+        # Now try to update with client user
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as test_client:
+            update_data = {"role": "admin"}
+            response = await test_client.patch(
+                f"/organizations/{org_principal.org_id}/principals/{org_principal.principal_id}",
+                json=update_data,
+            )
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    async def test_remove_principal_without_system_role(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_principal: KPrincipal,
+        mock_client_user: UserDetail,
+        mock_user_detail: UserDetail,
+        async_session: AsyncSession,
+    ):
+        """Test removing a principal without proper system role."""
+        from app.core.db.database import get_db
+        from app.routes.deps import get_current_user
+
+        # First create an organization principal with admin user
+        org_principal = KOrganizationPrincipal(
+            org_id=test_organization.id,
+            principal_id=test_principal.id,
+            role="member",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+        await async_session.refresh(org_principal)
+
+        # Now try to remove with client user
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return mock_client_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as test_client:
+            response = await test_client.delete(
+                f"/organizations/{org_principal.org_id}/principals/{org_principal.principal_id}"
+            )
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()
+
+    async def test_remove_principal_hard_delete_without_privileges(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_principal: KPrincipal,
+        mock_user_detail: UserDetail,
+        async_session: AsyncSession,
+    ):
+        """Test hard delete requires SYSTEM or SYSTEM_ROOT role (not SYSTEM_ADMIN)."""
+        from app.core.db.database import get_db
+        from app.models.k_principal import SystemRole
+        from app.routes.deps import get_current_user
+        from app.schemas.user import UserDetail as UD
+
+        # First create an organization principal
+        org_principal = KOrganizationPrincipal(
+            org_id=test_organization.id,
+            principal_id=test_principal.id,
+            role="member",
+            created_by=mock_user_detail.id,
+            last_modified_by=mock_user_detail.id,
+        )
+        async_session.add(org_principal)
+        await async_session.commit()
+        await async_session.refresh(org_principal)
+
+        # Create a user with SYSTEM_ADMIN role (not allowed for hard delete)
+        system_admin_user = UD(
+            id=mock_user_detail.id,
+            username=mock_user_detail.username,
+            primary_email=mock_user_detail.primary_email,
+            scope=mock_user_detail.scope,
+            system_role=SystemRole.SYSTEM_ADMIN,  # This role can't hard delete
+            meta=mock_user_detail.meta,
+        )
+
+        app = FastAPI()
+        app.include_router(router)
+
+        async def override_get_db():
+            yield async_session
+
+        async def override_get_current_user():
+            return system_admin_user
+
+        app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_current_user] = override_get_current_user
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as test_client:
+            response = await test_client.delete(
+                f"/organizations/{org_principal.org_id}/principals/{org_principal.principal_id}?hard_delete=true"
+            )
+
+            assert response.status_code == 403
+            assert "insufficient privileges" in response.json()["detail"].lower()

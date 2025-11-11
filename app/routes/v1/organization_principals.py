@@ -22,7 +22,7 @@ from ...schemas.organization_principal import (
     OrganizationPrincipalUpdate,
 )
 from ...schemas.user import TokenData, UserDetail
-from ..deps import get_current_token, get_system_admin_user
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(
     prefix="/organizations/{org_id}/principals", tags=["organization-principals"]
@@ -35,7 +35,7 @@ router = APIRouter(
 async def add_organization_principal(
     org_id: UUID,
     principal_data: OrganizationPrincipalCreate,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalDetail:
     """Add a new principal to an organization.
@@ -49,9 +49,15 @@ async def add_organization_principal(
             org_id=org_id,
             principal_data=principal_data,
             user_id=user_id,
+            system_role=current_user.system_role,
             db=db,
         )
         return OrganizationPrincipalDetail.model_validate(principal)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -135,7 +141,7 @@ async def update_organization_principal(
     org_id: UUID,
     principal_id: UUID,
     principal_data: OrganizationPrincipalUpdate,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationPrincipalDetail:
     """Update an organization principal.
@@ -150,17 +156,18 @@ async def update_organization_principal(
             principal_id=principal_id,
             principal_data=principal_data,
             user_id=user_id,
+            system_role=current_user.system_role,
             db=db,
         )
         return OrganizationPrincipalDetail.model_validate(principal)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationPrincipalNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        ) from e
-    except UnauthorizedOrganizationAccessException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e
 
@@ -169,7 +176,7 @@ async def update_organization_principal(
 async def remove_organization_principal(
     org_id: UUID,
     principal_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[
         bool, Query(description="Hard delete the relationship")
@@ -183,13 +190,13 @@ async def remove_organization_principal(
     user_id = current_user.id
 
     # Check authorization for hard delete
-    if hard_delete:  # pragma: no cover
-        from ...logic import deps as deps_logic  # pragma: no cover
+    if hard_delete:
+        from ...logic import deps as deps_logic
 
-        try:  # pragma: no cover
-            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
-        except InsufficientPrivilegesException as e:  # pragma: no cover
-            raise HTTPException(  # pragma: no cover
+        try:
+            deps_logic.check_hard_delete_privileges(current_user)
+        except InsufficientPrivilegesException as e:
+            raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=e.message,
             ) from e
@@ -199,16 +206,17 @@ async def remove_organization_principal(
             org_id=org_id,
             principal_id=principal_id,
             user_id=user_id,
+            system_role=current_user.system_role,
             db=db,
             hard_delete=hard_delete,
         )
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationPrincipalNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        ) from e
-    except UnauthorizedOrganizationAccessException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e

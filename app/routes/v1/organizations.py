@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import get_db
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     OrganizationAlreadyExistsException,
     OrganizationNotFoundException,
     OrganizationUpdateConflictException,
@@ -21,7 +22,7 @@ from ...schemas.organization import (
     OrganizationUpdate,
 )
 from ...schemas.user import TokenData, UserDetail
-from ..deps import get_current_token, get_system_admin_user
+from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 @router.post("", response_model=OrganizationDetail, status_code=status.HTTP_201_CREATED)
 async def create_organization(
     org_data: OrganizationCreate,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
     """Create a new organization.
@@ -43,9 +44,15 @@ async def create_organization(
             org_data=org_data,
             user_id=user_id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return OrganizationDetail.model_validate(org)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationAlreadyExistsException as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -100,7 +107,7 @@ async def get_organization(
 async def update_organization(
     org_id: UUID,
     org_data: OrganizationUpdate,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrganizationDetail:
     """Update an organization.
@@ -115,9 +122,15 @@ async def update_organization(
             org_data=org_data,
             user_id=user_id,
             scope=current_user.scope,
+            system_role=current_user.system_role,
             db=db,
         )
         return OrganizationDetail.model_validate(org)
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -128,17 +141,12 @@ async def update_organization(
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message,
         ) from e
-    except UnauthorizedOrganizationAccessException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        ) from e
 
 
 @router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_organization(
     org_id: UUID,
-    current_user: Annotated[UserDetail, Depends(get_system_admin_user)],
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
     hard_delete: Annotated[
         bool, Query(description="Hard delete the organization")
@@ -152,14 +160,13 @@ async def delete_organization(
     user_id = current_user.id
 
     # Check authorization for hard delete
-    if hard_delete:  # pragma: no cover
-        from ...core.exceptions.domain_exceptions import InsufficientPrivilegesException
-        from ...logic import deps as deps_logic  # pragma: no cover
+    if hard_delete:
+        from ...logic import deps as deps_logic
 
-        try:  # pragma: no cover
-            deps_logic.check_hard_delete_privileges(current_user)  # pragma: no cover
-        except InsufficientPrivilegesException as e:  # pragma: no cover
-            raise HTTPException(  # pragma: no cover
+        try:
+            deps_logic.check_hard_delete_privileges(current_user)
+        except InsufficientPrivilegesException as e:
+            raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=e.message,
             ) from e
@@ -169,16 +176,17 @@ async def delete_organization(
             org_id=org_id,
             scope=current_user.scope,
             user_id=user_id,
+            system_role=current_user.system_role,
             db=db,
             hard_delete=hard_delete,
         )
+    except InsufficientPrivilegesException as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=e.message,
+        ) from e
     except OrganizationNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        ) from e
-    except UnauthorizedOrganizationAccessException as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
         ) from e

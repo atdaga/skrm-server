@@ -16,6 +16,8 @@ from app.core.exceptions.domain_exceptions import (
 from app.logic.deps import (
     check_hard_delete_privileges,
     check_superuser_privileges,
+    check_system_admin_role,
+    check_system_or_system_root_role,
     check_system_root_role,
     check_system_user_role,
     get_token_data,
@@ -937,4 +939,249 @@ class TestCheckHardDeletePrivileges:
             check_hard_delete_privileges(user)
 
         assert exc_info.value.required_privilege == "system or systemRoot"
+        assert exc_info.value.user_id == user.id
+
+
+class TestCheckSystemOrSystemRootRole:
+    """Test suite for check_system_or_system_root_role function."""
+
+    def test_check_system_or_system_root_role_system_root_success(self, creator_id):
+        """Test that SYSTEM_ROOT role passes the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemroot",
+            primary_email="systemroot@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Root",
+            name_suffix=None,
+            display_name="System Root",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ROOT,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        # Should not raise an exception
+        check_system_or_system_root_role(user)
+
+    def test_check_system_or_system_root_role_system_success(self, creator_id):
+        """Test that SYSTEM role passes the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="system",
+            primary_email="system@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Account",
+            name_suffix=None,
+            display_name="System Account",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        # Should not raise an exception
+        check_system_or_system_root_role(user)
+
+    def test_check_system_or_system_root_role_system_admin_fails(self, creator_id):
+        """Test that SYSTEM_ADMIN role fails the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemadmin",
+            primary_email="systemadmin@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Admin",
+            name_suffix=None,
+            display_name="System Admin",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ADMIN,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        with pytest.raises(InsufficientPrivilegesException) as exc_info:
+            check_system_or_system_root_role(user)
+
+        assert exc_info.value.required_privilege == "system or systemRoot"
+        assert exc_info.value.user_id == user.id
+
+
+class TestCheckSystemAdminRole:
+    """Test suite for check_system_admin_role function."""
+
+    def test_check_system_admin_role_system_root_success(self, creator_id):
+        """Test that SYSTEM_ROOT role passes the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemroot",
+            primary_email="systemroot@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Root",
+            name_suffix=None,
+            display_name="System Root",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ROOT,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        # Should not raise an exception
+        check_system_admin_role(user)
+
+    def test_check_system_admin_role_system_success(self, creator_id):
+        """Test that SYSTEM role passes the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="system",
+            primary_email="system@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Account",
+            name_suffix=None,
+            display_name="System Account",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        # Should not raise an exception
+        check_system_admin_role(user)
+
+    def test_check_system_admin_role_system_admin_success(self, creator_id):
+        """Test that SYSTEM_ADMIN role passes the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemadmin",
+            primary_email="systemadmin@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="Admin",
+            name_suffix=None,
+            display_name="System Admin",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_ADMIN,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        # Should not raise an exception
+        check_system_admin_role(user)
+
+    def test_check_system_admin_role_system_user_fails(self, creator_id):
+        """Test that SYSTEM_USER role fails the check."""
+        user_id = uuid7()
+        now = datetime.now()
+        user = UserDetail(
+            id=user_id,
+            scope="global",
+            username="systemuser",
+            primary_email="systemuser@example.com",
+            primary_email_verified=True,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="System",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="System User",
+            default_locale="en",
+            system_role=SystemRole.SYSTEM_USER,
+            meta={},
+            deleted_at=None,
+            created=now,
+            created_by=creator_id,
+            last_modified=now,
+            last_modified_by=creator_id,
+        )
+
+        with pytest.raises(InsufficientPrivilegesException) as exc_info:
+            check_system_admin_role(user)
+
+        assert exc_info.value.required_privilege == "system, systemRoot, or systemAdmin"
         assert exc_info.value.user_id == user.id

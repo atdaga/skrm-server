@@ -8,11 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     OrganizationNotFoundException,
     OrganizationPrincipalAlreadyExistsException,
     OrganizationPrincipalNotFoundException,
 )
 from ...models import KOrganization, KOrganizationPrincipal
+from ...models.k_principal import SystemRole
 from ...schemas.organization_principal import (
     OrganizationPrincipalCreate,
     OrganizationPrincipalUpdate,
@@ -24,6 +26,7 @@ async def add_organization_principal(
     org_id: UUID,
     principal_data: OrganizationPrincipalCreate,
     user_id: UUID,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KOrganizationPrincipal:
     """Add a new principal to an organization.
@@ -32,18 +35,23 @@ async def add_organization_principal(
         org_id: ID of the organization
         principal_data: Organization principal creation data
         user_id: ID of the user adding the principal
+        system_role: System role of the user
         db: Database session
 
     Returns:
         The created organization principal model
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationNotFoundException: If the organization is not found
-        UnauthorizedOrganizationAccessException: If user is not a member of the organization
         OrganizationPrincipalAlreadyExistsException: If the principal already exists in the organization
     """
-    # Verify user has access to this organization
-    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can add organization principals
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
 
     # Verify organization exists
     stmt = select(KOrganization).where(KOrganization.id == org_id, KOrganization.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
@@ -156,6 +164,7 @@ async def update_organization_principal(
     principal_id: UUID,
     principal_data: OrganizationPrincipalUpdate,
     user_id: UUID,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KOrganizationPrincipal:
     """Update an organization principal.
@@ -165,17 +174,22 @@ async def update_organization_principal(
         principal_id: ID of the principal
         principal_data: Organization principal update data
         user_id: ID of the user performing the update
+        system_role: System role of the user
         db: Database session
 
     Returns:
         The updated organization principal model
 
     Raises:
-        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
-    # Verify user has access to this organization
-    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can update organization principals
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
 
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]
@@ -209,6 +223,7 @@ async def remove_organization_principal(
     org_id: UUID,
     principal_id: UUID,
     user_id: UUID,
+    system_role: SystemRole,
     db: AsyncSession,
     hard_delete: bool = False,
 ) -> None:
@@ -218,15 +233,20 @@ async def remove_organization_principal(
         org_id: ID of the organization
         principal_id: ID of the principal
         user_id: ID of the user making the request
+        system_role: System role of the user
         db: Database session
         hard_delete: If True, permanently delete the relationship. If False, soft delete.
 
     Raises:
-        UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
-    # Verify user has access to this organization
-    await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
+    # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can remove organization principals
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
+            user_id=user_id,
+        )
 
     stmt = select(KOrganizationPrincipal).where(
         KOrganizationPrincipal.org_id == org_id,  # type: ignore[arg-type]

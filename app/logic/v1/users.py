@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.auth import get_password_hash
 from ...core.exceptions.domain_exceptions import (
+    InsufficientPrivilegesException,
     UserAlreadyExistsException,
     UserNotFoundException,
     UserUpdateConflictException,
@@ -42,22 +43,32 @@ async def create_user(
     user_data: UserCreate,
     created_by_user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KPrincipal:
     """Create a new user.
 
     Args:
         user_data: User creation data
-        created_by_user_id: ID of the user creating the user (must be systemRoot)
+        created_by_user_id: ID of the user creating the user
         scope: Scope for multi-tenancy
+        system_role: System role of the user creating the user
         db: Database session
 
     Returns:
         The created user model
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         UserAlreadyExistsException: If a user with the same username already exists in the scope
     """
+    # Check authorization: only SYSTEM or SYSTEM_ROOT can create users
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role",
+            user_id=created_by_user_id,
+        )
+
     # Create new user principal with audit fields
     new_user = KPrincipal(
         scope=scope,
@@ -158,6 +169,7 @@ async def update_user(
     user_data: UserUpdate,
     requesting_user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KPrincipal:
     """Update a user.
@@ -167,14 +179,23 @@ async def update_user(
         user_data: User update data
         requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
-        db: Database session
+        system_role: System role of the user performing the update
+        db: DatabaseSession
 
     Returns:
         The updated user model
 
     Raises:
+        InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
+    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
+            user_id=requesting_user_id,
+        )
+
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -223,6 +244,7 @@ async def update_user_username(
     user_data: UserUpdateUsername,
     requesting_user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KPrincipal:
     """Update a user's username.
@@ -232,15 +254,24 @@ async def update_user_username(
         user_data: Username update data
         requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
+        system_role: System role of the user performing the update
         db: Database session
 
     Returns:
         The updated user model
 
     Raises:
+        InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
         UserUpdateConflictException: If the new username already exists
     """
+    # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
+    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
+            user_id=requesting_user_id,
+        )
+
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -276,6 +307,7 @@ async def update_user_email(
     user_data: UserUpdateEmail,
     requesting_user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KPrincipal:
     """Update a user's primary email.
@@ -285,14 +317,23 @@ async def update_user_email(
         user_data: Email update data
         requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
+        system_role: System role of the user performing the update
         db: Database session
 
     Returns:
         The updated user model
 
     Raises:
+        InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
+    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
+            user_id=requesting_user_id,
+        )
+
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -323,6 +364,7 @@ async def update_user_primary_phone(
     user_data: UserUpdatePrimaryPhone,
     requesting_user_id: UUID,
     scope: str,
+    system_role: SystemRole,
     db: AsyncSession,
 ) -> KPrincipal:
     """Update a user's primary phone.
@@ -332,14 +374,23 @@ async def update_user_primary_phone(
         user_data: Phone update data
         requesting_user_id: ID of the user performing the update
         scope: Scope for multi-tenancy
+        system_role: System role of the user performing the update
         db: Database session
 
     Returns:
         The updated user model
 
     Raises:
+        InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
+    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
+            user_id=requesting_user_id,
+        )
+
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]
@@ -366,19 +417,34 @@ async def update_user_primary_phone(
 
 
 async def delete_user(
-    user_id: UUID, scope: str, db: AsyncSession, hard_delete: bool = False
+    user_id: UUID,
+    scope: str,
+    requesting_user_id: UUID,
+    system_role: SystemRole,
+    db: AsyncSession,
+    hard_delete: bool = False,
 ) -> None:
     """Delete a user.
 
     Args:
         user_id: ID of the user to delete
         scope: Scope for multi-tenancy
+        requesting_user_id: ID of the user requesting the deletion
+        system_role: System role of the user requesting the deletion
         db: Database session
         hard_delete: If True, permanently delete the user. If False, soft delete.
 
     Raises:
+        InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check authorization: only SYSTEM or SYSTEM_ROOT can delete users
+    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+        raise InsufficientPrivilegesException(
+            required_privilege="SYSTEM or SYSTEM_ROOT role",
+            user_id=requesting_user_id,
+        )
+
     stmt = select(KPrincipal).where(
         KPrincipal.id == user_id,  # type: ignore[arg-type]
         KPrincipal.scope == scope,  # type: ignore[arg-type]

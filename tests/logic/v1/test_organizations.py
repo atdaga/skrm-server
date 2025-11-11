@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions.domain_exceptions import OrganizationAlreadyExistsException
 from app.logic.v1.organizations import create_organization
 from app.models import KOrganization
+from app.models.k_principal import SystemRole
 from app.schemas.organization import OrganizationCreate
 
 
@@ -33,6 +34,7 @@ class TestCreateOrganization:
             org_data=org_data,
             user_id=test_user_id,
             scope=test_scope,
+            system_role=SystemRole.SYSTEM_ROOT,
             db=async_session,
         )
 
@@ -63,6 +65,7 @@ class TestCreateOrganization:
             org_data=org_data,
             user_id=test_user_id,
             scope=test_scope,
+            system_role=SystemRole.SYSTEM_ROOT,
             db=async_session,
         )
 
@@ -78,6 +81,7 @@ class TestCreateOrganization:
                 org_data=duplicate_data,
                 user_id=test_user_id,
                 scope=test_scope,
+                system_role=SystemRole.SYSTEM_ROOT,
                 db=async_session,
             )
 

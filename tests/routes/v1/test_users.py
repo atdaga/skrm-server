@@ -160,7 +160,7 @@ class TestCreateUser:
     async def test_create_user_without_root_role(
         self,
         async_session: AsyncSession,
-        mock_user_detail: UserDetail,
+        mock_client_user: UserDetail,
     ):
         """Test that non-root users cannot create users."""
         from app.core.db.database import get_db
@@ -172,7 +172,7 @@ class TestCreateUser:
             yield async_session
 
         async def override_get_current_user():
-            return mock_user_detail
+            return mock_client_user
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[get_current_user] = override_get_current_user
@@ -531,7 +531,7 @@ class TestUpdateUser:
 
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
-            assert "system or systemroot" in response.json()["detail"].lower()
+            assert "system or system_root" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_user_not_found(
@@ -822,7 +822,7 @@ class TestUpdateUserUsername:
 
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
-            assert "system or systemroot" in response.json()["detail"].lower()
+            assert "system or system_root" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_username_not_found(
@@ -986,7 +986,7 @@ class TestUpdateUserEmail:
 
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
-            assert "system or systemroot" in response.json()["detail"].lower()
+            assert "system or system_root" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_email_not_found(
@@ -1151,7 +1151,7 @@ class TestUpdateUserPrimaryPhone:
 
             assert response.status_code == 403
             assert "insufficient privileges" in response.json()["detail"].lower()
-            assert "system or systemroot" in response.json()["detail"].lower()
+            assert "system or system_root" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_update_phone_not_found(
