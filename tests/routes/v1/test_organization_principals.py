@@ -161,6 +161,37 @@ class TestAddOrganizationPrincipal:
         data = response.json()
         assert data["meta"] == principal_data["meta"]
 
+    async def test_add_organization_principal_unauthorized_access(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_principal: KPrincipal,
+    ):
+        """Test adding a principal when user is not authorized to access the organization."""
+        from unittest.mock import AsyncMock, patch
+
+        from app.core.exceptions.domain_exceptions import (
+            UnauthorizedOrganizationAccessException,
+        )
+
+        principal_data = {"principal_id": str(test_principal.id)}
+
+        # Mock the logic function to raise UnauthorizedOrganizationAccessException
+        with patch(
+            "app.routes.v1.organization_principals.organization_principals_logic.add_organization_principal",
+            new_callable=AsyncMock,
+        ) as mock_add:
+            mock_add.side_effect = UnauthorizedOrganizationAccessException(
+                org_id=test_organization.id, user_id=test_principal.id
+            )
+
+            response = await client.post(
+                f"/organizations/{test_organization.id}/principals", json=principal_data
+            )
+
+            assert response.status_code == 403
+            assert "not authorized" in response.json()["detail"].lower()
+
 
 class TestListOrganizationPrincipals:
     """Test suite for GET /organizations/{org_id}/principals endpoint."""
@@ -564,6 +595,7 @@ class TestUnauthorizedOrganizationPrincipalAccess:
 
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
+
 
 class TestOrganizationPrincipalDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""

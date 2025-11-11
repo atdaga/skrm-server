@@ -47,7 +47,11 @@ async def add_organization_principal(
         OrganizationPrincipalAlreadyExistsException: If the principal already exists in the organization
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can add organization principals
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,
@@ -185,7 +189,11 @@ async def update_organization_principal(
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can update organization principals
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,
@@ -242,7 +250,11 @@ async def remove_organization_principal(
         OrganizationPrincipalNotFoundException: If the organization principal is not found
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can remove organization principals
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,

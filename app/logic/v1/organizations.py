@@ -43,7 +43,11 @@ async def create_organization(
         OrganizationAlreadyExistsException: If an organization with the same name or alias already exists
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can create organizations
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,
@@ -154,7 +158,11 @@ async def update_organization(
         OrganizationUpdateConflictException: If updating causes a name or alias conflict
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can update organizations
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,
@@ -226,7 +234,11 @@ async def delete_organization(
         OrganizationNotFoundException: If the organization is not found
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can delete organizations
-    if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT, SystemRole.SYSTEM_ADMIN):
+    if system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+        SystemRole.SYSTEM_ADMIN,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN role",
             user_id=user_id,

@@ -190,7 +190,10 @@ async def update_user(
         UserNotFoundException: If the user is not found
     """
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
-    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+    if user_id != requesting_user_id and system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
             user_id=requesting_user_id,
@@ -266,7 +269,10 @@ async def update_user_username(
         UserUpdateConflictException: If the new username already exists
     """
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
-    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+    if user_id != requesting_user_id and system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
             user_id=requesting_user_id,
@@ -328,7 +334,10 @@ async def update_user_email(
         UserNotFoundException: If the user is not found
     """
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
-    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+    if user_id != requesting_user_id and system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
             user_id=requesting_user_id,
@@ -385,7 +394,10 @@ async def update_user_primary_phone(
         UserNotFoundException: If the user is not found
     """
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
-    if user_id != requesting_user_id and system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
+    if user_id != requesting_user_id and system_role not in (
+        SystemRole.SYSTEM,
+        SystemRole.SYSTEM_ROOT,
+    ):
         raise InsufficientPrivilegesException(
             required_privilege="SYSTEM or SYSTEM_ROOT role, or updating own user",
             user_id=requesting_user_id,

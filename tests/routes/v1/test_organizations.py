@@ -1036,6 +1036,7 @@ class TestUnauthorizedOrganizationAccess:
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
 
+
 class TestOrganizationDataInconsistency:
     """Test suite for data inconsistency scenarios (membership exists but org doesn't)."""
 

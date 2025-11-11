@@ -24,9 +24,7 @@ from ...schemas.user import (
     UserUpdatePrimaryPhone,
     UserUpdateUsername,
 )
-from ..deps import (
-    get_current_user,
-)
+from ..deps import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 

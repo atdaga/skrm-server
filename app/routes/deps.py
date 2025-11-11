@@ -166,26 +166,6 @@ async def get_system_user(
         raise HTTPException(status_code=403, detail=e.message) from e
 
 
-async def get_system_root_user(
-    current_user: Annotated[UserDetail, Depends(get_current_user)]
-) -> UserDetail:
-    """Get current user with system root role.
-
-    This dependency ensures the user has the systemRoot role.
-
-    Returns:
-        The current user if they have the required role
-
-    Raises:
-        HTTPException: 403 if user does not have system root role
-    """
-    try:
-        deps_logic.check_system_root_role(current_user)
-        return current_user
-    except InsufficientPrivilegesException as e:
-        raise HTTPException(status_code=403, detail=e.message) from e
-
-
 async def check_hard_delete_authorization(
     current_user: Annotated[UserDetail, Depends(get_current_user)]
 ) -> UserDetail:
