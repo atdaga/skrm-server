@@ -1,7 +1,5 @@
 # TODO
 
-* Soft delete.
-  
 * Upgrade library versions.
 
 * Enforce authorizations on domain object endpoints.

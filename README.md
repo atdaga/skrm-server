@@ -16,44 +16,136 @@ Backend API for the sKrm application built with FastAPI, featuring structured lo
 
 ### Prerequisites
 
-- Python 3.13+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
-- [PostgreSQL](https://www.postgresql.org/download/)
+Install the following before proceeding:
+
+- **Python 3.14+** - [Download](https://www.python.org/downloads/)
+- **[uv](https://docs.astral.sh/uv/getting-started/installation/)** - Fast Python package installer and resolver
+- **[PostgreSQL](https://www.postgresql.org/download/)** - Database server
 
 ### Installation
 
+1. **Install dependencies:**
+
+   ```bash
+   uv sync
+   ```
+
+2. **Set up environment variables:**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` with your database credentials and other settings.
+
+### Database Setup
+
+1. **Create database and database user:**
+
+   ```sql
+   postgres=# CREATE DATABASE skrm_local;
+   postgres=# CREATE USER skrm_user WITH ENCRYPTED PASSWORD 'P@ssword12';
+   postgres=# GRANT ALL PRIVILEGES ON DATABASE skrm_local TO skrm_user;
+   postgres=# \c skrm_local;
+   postgres=# GRANT ALL PRIVILEGES ON SCHEMA public TO skrm_user;
+   postgres=# \q
+   ```
+
+2. **Run database migrations:**
+
+   ```bash
+   uv run alembic upgrade head
+   ```
+
+   > See [Database Migrations](#database-migrations) for detailed migration information.
+
+   **Initial Root User Credentials for local (from migration):**
+   - Username: `root`
+   - Password: `P@ssword12`
+
+### Start the Server
+
 ```bash
-# Install dependencies
-uv sync
+# Using the development script
+uv run scripts/dev.py serve
 
-# Copy environment file
-cp .env.example .env
+# Or directly with uvicorn
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Database
+The API will be available at `http://localhost:8000`. Visit `http://localhost:8000/docs` for interactive API documentation.
 
-```sql
-postgres=# CREATE DATABASE skrm_local;
-postgres=# CREATE USER skrm_user WITH ENCRYPTED PASSWORD 'P@ssword12';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE skrm_local TO skrm_user;
-postgres=# \c skrm_local;
-postgres=# GRANT ALL PRIVILEGES ON SCHEMA public TO skrm_user;
-postgres=# \q
+---
+
+## Development
+
+You can either use the provided development scripts or run commands directly with uv:
+
+### Using development scripts
+
+```bash
+# Start development server
+uv run scripts/dev.py serve
+
+# Run tests
+uv run scripts/dev.py test
+
+# Format code
+uv run scripts/dev.py format
+
+# Run linting
+uv run scripts/dev.py lint
+
+# Clean up test results and build artifacts
+uv run scripts/dev.py clean
+
+# Remove all generated files and caches (reset to git state)
+uv run scripts/dev.py pristine
 ```
 
-#### Initial User
+### Using uv directly
 
-Username: ***root***
+```bash
+# Start development server
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-Password: ***P@ssword12***
+# Run tests
+uv run pytest -v --cov=app --cov-report=term-missing
 
-```sql
-INSERT INTO k_principal (id,"scope",username,primary_email,primary_email_verified,primary_phone,primary_phone_verified,human,enabled,time_zone,name_prefix,first_name,middle_name,last_name,name_suffix,display_name,default_locale,system_role,meta,created,created_by,last_modified,last_modified_by) VALUES
- ('00000000-0000-0000-0000-000000000000'::uuid,'global','root','root@global.scope',false,NULL,false,true,true,'UTC',NULL,'Root',NULL,'User',NULL,'Root User','en','systemRoot','{}','2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:35:05.226091','00000000-0000-0000-0000-000000000000'::uuid);
+# Format code
+uv run black .
+uv run isort .
+uv run ruff check --fix .
 
-INSERT INTO k_principal_identity (id,principal_id,"password",public_key,device_id,expires,details,created,created_by,last_modified,last_modified_by) VALUES
- ('00000000-0000-0000-0000-000000000000'::uuid,'00000000-0000-0000-0000-000000000000'::uuid,'$2b$12$rdK6qPYTy0OEmjrHSlqsv.GSkqqi2gcJJyMIsMma.SeQS1HwqG002',NULL,NULL,NULL,'{}','2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid,'2025-10-05 21:38:16.33076','00000000-0000-0000-0000-000000000000'::uuid);
+# Run linting
+uv run ruff check .
+uv run black --check .
+uv run isort --check-only .
+uv run mypy app
+
+# Clean up test results and build artifacts
+rm -rf .pytest_cache .coverage dist build
+
+# Remove all generated files and caches (reset to git state)
+rm -rf .pytest_cache .coverage dist build .mypy_cache .ruff_cache .venv
+find . -type d -name "__pycache__" -exec rm -rf {} +
 ```
+
+### Dependency Management
+
+Always check if your lock file is up-to-date.
+
+```bash
+uv lock --check
+```
+
+If you manually modify dependencies in `pyproject.toml`, you need to run:
+
+```bash
+uv lock
+```
+
+This command updates the `uv.lock` file to reflect your changes. The lock file contains exact versions and dependency resolution for reproducible installations across different environments. This ensures all developers and deployment environments use identical dependency versions.
 
 ## Database Migrations
 
@@ -562,76 +654,6 @@ uv run alembic upgrade head --sql
 - Implement custom downgrade logic for complex migrations
 - Test rollbacks in development before production
 
-### Development
-
-You can either use the provided development scripts or run commands directly with uv:
-
-#### Using development scripts
-
-```bash
-# Start development server
-uv run scripts/dev.py serve
-
-# Run tests
-uv run scripts/dev.py test
-
-# Format code
-uv run scripts/dev.py format
-
-# Run linting
-uv run scripts/dev.py lint
-
-# Clean up test results and build artifacts
-uv run scripts/dev.py clean
-
-# Remove all generated files and caches (reset to git state)
-uv run scripts/dev.py pristine
-```
-
-#### Using uv directly
-
-```bash
-# Start development server
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Run tests
-uv run pytest -v --cov=app --cov-report=term-missing
-
-# Format code
-uv run black .
-uv run isort .
-uv run ruff check --fix .
-
-# Run linting
-uv run ruff check .
-uv run black --check .
-uv run isort --check-only .
-uv run mypy app
-
-# Clean up test results and build artifacts
-rm -rf .pytest_cache .coverage dist build
-
-# Remove all generated files and caches (reset to git state)
-rm -rf .pytest_cache .coverage dist build .mypy_cache .ruff_cache .venv
-find . -type d -name "__pycache__" -exec rm -rf {} +
-```
-
-#### Dependency Management
-
-Always check if your lock file is up-to-date.
-
-```bash
-uv lock --check
-```
-
-If you manually modify dependencies in `pyproject.toml`, you need to run:
-
-```bash
-uv lock
-```
-
-This command updates the `uv.lock` file to reflect your changes. The lock file contains exact versions and dependency resolution for reproducible installations across different environments. This ensures all developers and deployment environments use identical dependency versions.
-
 ## Authentication & Refresh Tokens
 
 The API implements a dual-strategy refresh token system that supports both web SPAs and mobile applications with optimal security for each platform.
@@ -909,25 +931,62 @@ X-Client-Type: mobile
 }
 ```
 
-## General API Endpoints
-
-- `GET /` - Hello World endpoint
-- `GET /health` - Health check endpoint
-
-See the [Authentication & Refresh Tokens](#authentication--refresh-tokens) section above for authentication endpoints.
-
 ## Project Structure
 
 ```text
-├── app/
-│   ├── __init__.py
-│   ├── main.py          # FastAPI application
-│   ├── config.py        # Configuration management
-│   └── logging.py       # Logging setup
-├── tests/
-│   ├── __init__.py
-│   └── test_main.py     # API tests
-├── scripts/
-│   └── dev.py           # Development scripts
-└── pyproject.toml       # Project configuration
+├── alembic/                    # Database migrations
+│   ├── versions/               # Migration files
+│   └── env.py                  # Alembic environment configuration
+├── app/                        # Main application code
+│   ├── core/                   # Core functionality
+│   │   ├── auth.py             # Authentication utilities
+│   │   ├── context.py          # Request context management
+│   │   ├── db/                 # Database connection and session management
+│   │   ├── exceptions/         # Custom exception classes
+│   │   ├── fido2_server.py     # FIDO2 authentication server
+│   │   ├── logging.py          # Logging configuration
+│   │   ├── middleware.py       # FastAPI middleware
+│   │   └── weaviate/           # Weaviate vector database integration
+│   ├── logic/                  # Business logic layer
+│   │   ├── auth.py             # Authentication logic
+│   │   ├── deps.py             # Dependency injection functions
+│   │   └── v1/                 # API v1 business logic
+│   │       ├── organizations.py
+│   │       ├── projects.py
+│   │       ├── tasks.py
+│   │       └── ...             # Other domain logic modules
+│   ├── models/                 # SQLModel database models
+│   │   ├── k_principal.py      # Principal/user model
+│   │   ├── k_organization.py   # Organization model
+│   │   ├── k_project.py        # Project model
+│   │   ├── k_task.py           # Task model
+│   │   └── ...                 # Other domain models
+│   ├── routes/                 # API route handlers
+│   │   ├── auth.py             # Authentication routes
+│   │   ├── health.py           # Health check endpoint
+│   │   └── v1/                 # API v1 routes
+│   │       ├── organizations.py
+│   │       ├── projects.py
+│   │       ├── tasks.py
+│   │       └── ...             # Other domain route modules
+│   ├── schemas/                # Pydantic schemas for request/response
+│   │   ├── user.py
+│   │   ├── organization.py
+│   │   ├── project.py
+│   │   ├── task.py
+│   │   └── ...                 # Other domain schemas
+│   ├── config.py               # Application configuration
+│   └── main.py                 # FastAPI application entry point
+├── tests/                      # Test suite
+│   ├── core/                   # Core functionality tests
+│   ├── logic/                  # Business logic tests
+│   ├── models/                 # Model tests
+│   ├── routes/                 # Route handler tests
+│   └── conftest.py             # Pytest configuration and fixtures
+├── scripts/                     # Utility scripts
+│   ├── alembic_revision.py     # Alembic migration helper
+│   └── dev.py                  # Development workflow scripts
+├── alembic.ini                 # Alembic configuration
+├── pyproject.toml               # Project configuration and dependencies
+└── uv.lock                      # Dependency lock file
 ```
