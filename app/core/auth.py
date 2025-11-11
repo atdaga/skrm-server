@@ -24,15 +24,23 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    correct_password: bool = bcrypt.checkpw(
-        plain_password.encode(), hashed_password.encode()
-    )
+    password_bytes = plain_password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+
+    correct_password: bool = bcrypt.checkpw(password_bytes, hashed_password.encode())
     return correct_password
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password using bcrypt."""
-    hashed_password: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    password_bytes = password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        password_bytes = password_bytes[:72]
+
+    hashed_password: str = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode()
     return hashed_password
 
 
