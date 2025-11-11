@@ -147,6 +147,64 @@ uv lock
 
 This command updates the `uv.lock` file to reflect your changes. The lock file contains exact versions and dependency resolution for reproducible installations across different environments. This ensures all developers and deployment environments use identical dependency versions.
 
+## Update Package Versions Flow
+
+### Why Upgrade Package Dependencies?
+
+Upgrading package dependencies in a software project is important for several key reasons:
+
+- **Security fixes**: Newer package versions often include patches for known vulnerabilities, protecting your project from exploits. Staying updated prevents security risks and reduces the maintenance effort associated with emergency patches.
+
+- **New features and improved APIs**: Upgrades frequently provide new functionalities and enhanced interfaces, enabling you to develop additional capabilities in your software.
+
+- **Bug fixes and performance improvements**: Updated versions address bugs and often improve performance and efficiency, contributing to a more robust and faster software product.
+
+- **Avoiding technical debt**: Regular updates prevent the accumulation of outdated dependencies that become increasingly difficult and risky to upgrade later, especially when multiple versions behind.
+
+- **Maintain forward compatibility**: Keeping dependencies current ensures your environment continues to build and integrate smoothly over time, reducing the risk of breaking changes.
+
+**Best practice**: Upgrade packages regularly during development cycles, test thoroughly before committing, and lock versions as you approach release. This strategy balances the benefits of updates early in development with stability at release time, helping you avoid falling behind on security and features while ensuring stable releases.
+
+### Upgrade Workflow
+
+1. **Upgrade dependency versions in lock file**
+
+   ```bash
+   uv lock --upgrade
+   ```
+
+   This updates uv.lock to the latest compatible versions but does not modify pyproject.toml or install packages.
+
+2. **Install upgraded versions**
+
+   ```bash
+   uv sync
+   ```
+
+   This installs the upgraded versions specified in the updated uv.lock file.
+
+3. **Test thoroughly**
+
+   The exact command is in the Development section above.
+   Run the full test suite to ensure the upgraded dependencies don't break anything.
+
+4. **Update pyproject.toml with tested versions**
+
+   After confirming everything works, update the version constraints in pyproject.toml to match the successfully tested versions. Use this command to see installed versions:
+
+   ```bash
+   uv pip list
+   ```
+
+   This approach ensures you only commit version constraints that have been tested, avoiding the need to revert changes if something breaks.
+
+5. **Commit both pyproject.toml and uv.lock**
+
+   ```bash
+   git add pyproject.toml uv.lock
+   git commit -m "Update dependencies"
+   ```
+
 ## Database Migrations
 
 This project uses [Alembic](https://alembic.sqlalchemy.org/) for database schema migrations. Alembic provides version control for your database schema, allowing you to track changes, apply updates, and rollback modifications safely.
