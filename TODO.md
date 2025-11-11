@@ -2,6 +2,8 @@
 
 * Upgrade library versions.
 
+* Create Docker image for ECS.
+
 * Enforce authorizations on domain object endpoints.
   
 
