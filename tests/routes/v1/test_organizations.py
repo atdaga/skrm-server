@@ -6,7 +6,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KOrganization
+from app.models import KOrganization, KPrincipal
 from app.routes.v1.organizations import router
 from tests.conftest import add_user_to_organization
 
@@ -1394,6 +1394,11 @@ class TestSystemRoleAuthorization:
         test_user_id: UUID,
     ):
         """Test hard delete requires SYSTEM or SYSTEM_ROOT role (not SYSTEM_ADMIN)."""
+        from datetime import datetime
+
+        from fastapi import FastAPI
+        from httpx import ASGITransport, AsyncClient
+
         from app.core.db.database import get_db
         from app.models.k_principal import SystemRole
         from app.routes.deps import get_current_user
@@ -1427,13 +1432,31 @@ class TestSystemRoleAuthorization:
         await async_session.refresh(org)
 
         # Create system admin user (not allowed for hard delete)
+        now = datetime.now()
         system_admin_user = UserDetail(
             id=test_user_id,
             username="testuser",
             primary_email="test@example.com",
+            primary_email_verified=False,
+            primary_phone=None,
+            primary_phone_verified=False,
+            enabled=True,
+            time_zone="UTC",
+            name_prefix=None,
+            first_name="Test",
+            middle_name=None,
+            last_name="User",
+            name_suffix=None,
+            display_name="Test User",
+            default_locale="en_US",
             scope="org::test_org",
             system_role=SystemRole.SYSTEM_ADMIN,  # This role can't hard delete
             meta={},
+            deleted_at=None,
+            created=now,
+            created_by=test_user_id,
+            last_modified=now,
+            last_modified_by=test_user_id,
         )
 
         # Create app with system admin user

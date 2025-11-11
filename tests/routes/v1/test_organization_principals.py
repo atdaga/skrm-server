@@ -834,9 +834,26 @@ class TestSystemRoleAuthorization:
             id=mock_user_detail.id,
             username=mock_user_detail.username,
             primary_email=mock_user_detail.primary_email,
+            primary_email_verified=mock_user_detail.primary_email_verified,
+            primary_phone=mock_user_detail.primary_phone,
+            primary_phone_verified=mock_user_detail.primary_phone_verified,
+            enabled=mock_user_detail.enabled,
+            time_zone=mock_user_detail.time_zone,
+            name_prefix=mock_user_detail.name_prefix,
+            first_name=mock_user_detail.first_name,
+            middle_name=mock_user_detail.middle_name,
+            last_name=mock_user_detail.last_name,
+            name_suffix=mock_user_detail.name_suffix,
+            display_name=mock_user_detail.display_name,
+            default_locale=mock_user_detail.default_locale,
             scope=mock_user_detail.scope,
             system_role=SystemRole.SYSTEM_ADMIN,  # This role can't hard delete
             meta=mock_user_detail.meta,
+            deleted_at=mock_user_detail.deleted_at,
+            created=mock_user_detail.created,
+            created_by=mock_user_detail.created_by,
+            last_modified=mock_user_detail.last_modified,
+            last_modified_by=mock_user_detail.last_modified_by,
         )
 
         app = FastAPI()
