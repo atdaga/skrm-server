@@ -4,6 +4,7 @@ import base64
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from fido2.utils import websafe_encode
 from fido2.webauthn import (
     AuthenticatorAttachment,
     ResidentKeyRequirement,
@@ -31,7 +32,6 @@ from ..core.fido2_server import (
     encode_options_for_client,
     generate_session_id,
     get_fido2_server,
-    parse_attestation_object,
     parse_authenticator_data,
     parse_client_data,
     retrieve_challenge,
@@ -294,21 +294,22 @@ async def complete_fido2_registration(
     if not challenge:
         raise InvalidTokenException(reason="Invalid or expired registration session")
 
-    # Parse client response
+    # Verify registration
     try:
-        client_data = parse_client_data(
-            attestation_response["response"]["clientDataJSON"]
-        )
-        attestation_object = parse_attestation_object(
-            attestation_response["response"]["attestationObject"]
-        )
-
-        # Verify registration
         server = get_fido2_server()
-        auth_data = server.register_complete(  # type: ignore[call-arg]
-            state={"challenge": challenge, "user_verification": "preferred"},
-            client_data=client_data,
-            attestation_object=attestation_object,
+
+        # Reconstruct state dict in fido2 v2 format
+        # State needs websafe-encoded challenge and user_verification
+        state = {
+            "challenge": websafe_encode(challenge),
+            "user_verification": UserVerificationRequirement.PREFERRED,
+        }
+
+        # Pass the attestation_response dict directly as RegistrationResponse
+        # The fido2 library will parse it internally
+        auth_data = server.register_complete(
+            state=state,
+            response=attestation_response,
         )
 
         # Extract credential data

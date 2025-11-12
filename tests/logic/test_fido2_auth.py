@@ -206,10 +206,13 @@ class TestCompleteFido2Registration:
     ):
         """Test registration fails with invalid session."""
         attestation_response = {
+            "id": base64.urlsafe_b64encode(secrets.token_bytes(32))
+            .decode()
+            .rstrip("="),
             "response": {
                 "clientDataJSON": base64.urlsafe_b64encode(b"{}").decode(),
                 "attestationObject": base64.urlsafe_b64encode(b"test").decode(),
-            }
+            },
         }
 
         with pytest.raises(InvalidTokenException):
@@ -231,14 +234,8 @@ class TestCompleteFido2Registration:
         store_challenge(session_id, challenge)
 
         # Mock the FIDO2 server verification
-        with patch("app.logic.auth.get_fido2_server") as mock_server, patch(
-            "app.logic.auth.parse_client_data"
-        ) as mock_parse_client, patch(
-            "app.logic.auth.parse_attestation_object"
-        ) as mock_parse_attest:
+        with patch("app.logic.auth.get_fido2_server") as mock_server:
             # Create mock objects
-            mock_client_data = MagicMock()
-            mock_attestation_obj = MagicMock()
             mock_auth_data = MagicMock()
 
             # Mock credential data
@@ -257,15 +254,18 @@ class TestCompleteFido2Registration:
             mock_server_instance.register_complete.return_value = mock_auth_data
 
             mock_server.return_value = mock_server_instance
-            mock_parse_client.return_value = mock_client_data
-            mock_parse_attest.return_value = mock_attestation_obj
 
+            # RegistrationResponse requires an "id" field
+            credential_id_b64 = (
+                base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("=")
+            )
             attestation_response = {
+                "id": credential_id_b64,
                 "response": {
                     "clientDataJSON": base64.urlsafe_b64encode(b"{}").decode(),
                     "attestationObject": base64.urlsafe_b64encode(b"test").decode(),
                     "transports": ["usb"],
-                }
+                },
             }
 
             credential_id = await complete_fido2_registration(
@@ -274,6 +274,19 @@ class TestCompleteFido2Registration:
 
             assert credential_id is not None
             assert isinstance(credential_id, str)
+
+            # Verify register_complete was called with correct parameters
+            mock_server_instance.register_complete.assert_called_once()
+            call_args = mock_server_instance.register_complete.call_args
+            assert "state" in call_args.kwargs
+            assert "response" in call_args.kwargs
+            # Verify state has websafe-encoded challenge
+            state = call_args.kwargs["state"]
+            assert "challenge" in state
+            assert isinstance(state["challenge"], str)  # websafe-encoded string
+            assert "user_verification" in state
+            # Verify response is passed as-is
+            assert call_args.kwargs["response"] == attestation_response
 
 
 class TestBeginFido2Authentication:
