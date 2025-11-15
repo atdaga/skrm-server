@@ -7,11 +7,11 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "aiohttp>=3.9.1,<4.0.0",
-    "alembic>=1.17.1",
+    "alembic>=1.17.2",
     "asyncpg>=0.30.0",
     "bcrypt>=5.0.0",
     "email-validator>=2.3.0",
-    "fastapi>=0.121.1",
+    "fastapi>=0.121.2",
     "fido2>=2.0.0",
     "greenlet>=3.2.4",
     "langchain>=1.0.5",
@@ -44,13 +44,13 @@ lint = [
     "black>=23.11.0,<24.0.0",
     "isort>=5.12.0",
     "mypy>=1.7.1,<2.0.0",
-    "ruff>=0.1.6,<0.2.0",
+    "ruff>=0.1.6",
 ]
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
     "ipykernel>=7.1.0",
-    "uv>=0.9.8",
+    "uv>=0.9.9",
     "jupyter>=1.1.1",
     "types-python-jose>=3.5.0.20250531",
 ]
@@ -108,6 +108,8 @@ ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -123,8 +125,9 @@ ignore = [
     "C901",  # too complex
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"app/models/*.py" = ["UP007"]  # SQLAlchemy relationships need quoted forward references
 
 [tool.pytest.ini_options]
 minversion = "6.0"

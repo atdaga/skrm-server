@@ -4,6 +4,8 @@
 
 * Create Docker image for ECS.
 
+* /init creates claude.md. This is memory. Add to it with "#" command.
+
 * Enforce authorizations on domain object endpoints.
   
 
