@@ -888,13 +888,15 @@ async def execute_operation(
             elif isinstance(result, list):
                 result_dict = {
                     "items": [
-                        item.model_dump()
-                        if hasattr(item, "model_dump")
-                        else {
-                            k: v
-                            for k, v in item.__dict__.items()
-                            if not k.startswith("_")
-                        }
+                        (
+                            item.model_dump()
+                            if hasattr(item, "model_dump")
+                            else {
+                                k: v
+                                for k, v in item.__dict__.items()
+                                if not k.startswith("_")
+                            }
+                        )
                         for item in result
                     ]
                 }

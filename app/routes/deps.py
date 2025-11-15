@@ -132,7 +132,7 @@ async def get_optional_user(
 
 
 async def get_current_superuser(
-    current_user: Annotated[UserDetail, Depends(get_current_user)]
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
 ) -> UserDetail:
     """Get current superuser."""
     try:
@@ -143,7 +143,7 @@ async def get_current_superuser(
 
 
 async def get_system_user(
-    current_user: Annotated[UserDetail, Depends(get_current_user)]
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
 ) -> UserDetail:
     """Get current user with system user role or higher.
 
@@ -167,7 +167,7 @@ async def get_system_user(
 
 
 async def check_hard_delete_authorization(
-    current_user: Annotated[UserDetail, Depends(get_current_user)]
+    current_user: Annotated[UserDetail, Depends(get_current_user)],
 ) -> UserDetail:
     """Check if current user has privileges to perform hard deletes.
 

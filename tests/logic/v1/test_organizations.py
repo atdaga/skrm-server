@@ -1,6 +1,5 @@
 """Unit tests for organization business logic."""
 
-
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 

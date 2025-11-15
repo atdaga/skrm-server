@@ -1,6 +1,5 @@
 """Unit tests for sprint business logic."""
 
-
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

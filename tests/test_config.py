@@ -1,6 +1,5 @@
 """Tests for application configuration (app/config.py)."""
 
-
 from app.config import Settings
 
 

@@ -365,11 +365,14 @@ class TestUpdateCredentialEndpoint:
         """Test successful credential update."""
         credential_id = uuid7()
 
-        with patch(
-            "app.logic.auth.update_credential_nickname", new_callable=AsyncMock
-        ) as mock_update, patch(
-            "app.logic.auth.list_user_credentials", new_callable=AsyncMock
-        ) as mock_list:
+        with (
+            patch(
+                "app.logic.auth.update_credential_nickname", new_callable=AsyncMock
+            ) as mock_update,
+            patch(
+                "app.logic.auth.list_user_credentials", new_callable=AsyncMock
+            ) as mock_list,
+        ):
             updated_credential = Fido2CredentialDetail(
                 id=credential_id,
                 credential_id="test_cred",

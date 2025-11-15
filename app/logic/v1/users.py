@@ -83,9 +83,11 @@ async def create_user(
         name_suffix=user_data.name_suffix,
         display_name=user_data.display_name,
         default_locale=user_data.default_locale or "en",
-        system_role=user_data.system_role
-        if user_data.system_role is not None
-        else SystemRole.SYSTEM_USER,
+        system_role=(
+            user_data.system_role
+            if user_data.system_role is not None
+            else SystemRole.SYSTEM_USER
+        ),
         created_by=created_by_user_id,
         last_modified_by=created_by_user_id,
     )

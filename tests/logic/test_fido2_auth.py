@@ -388,13 +388,17 @@ class TestPerformPasswordlessLogin:
     @pytest.mark.asyncio
     async def test_passwordless_login_success(self, async_session, test_user):
         """Test successful passwordless login."""
-        with patch(
-            "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
-        ) as mock_complete, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
+            ) as mock_complete,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_credential = MagicMock()
             mock_complete.return_value = (test_user, mock_credential)
             mock_access.return_value = "access_token"
@@ -415,15 +419,20 @@ class TestPerform2faLogin:
     @pytest.mark.asyncio
     async def test_2fa_login_success(self, async_session, test_user):
         """Test successful 2FA login."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
-        ) as mock_fido2, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
+            ) as mock_fido2,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_credential = MagicMock()
             mock_auth.return_value = test_user
             mock_fido2.return_value = (test_user, mock_credential)
@@ -466,11 +475,14 @@ class TestPerform2faLogin:
         user2 = MagicMock()
         user2.id = user2_id
 
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
-        ) as mock_fido2:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.complete_fido2_authentication", new_callable=AsyncMock
+            ) as mock_fido2,
+        ):
             mock_auth.return_value = user1
             mock_fido2.return_value = (user2, MagicMock())
 

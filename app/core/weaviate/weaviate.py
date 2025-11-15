@@ -9,9 +9,9 @@ from weaviate.classes.config import Configure, DataType, Property
 
 from ..logging import get_logger
 
-os.environ[
-    "OPENAI_APIKEY"
-] = "TODO: Add OpenAI API key"
+os.environ["OPENAI_APIKEY"] = (
+    "TODO: Add OpenAI API key"
+)
 
 logger = get_logger(__name__)
 
@@ -52,22 +52,8 @@ async def create_collection(name: str):
                 Property(name="date", data_type=DataType.DATE),
                 Property(name="tags", data_type=DataType.TEXT_ARRAY),
             ],
-            vector_config=[
-                Configure.Vectors.text2vec_cohere(
-                    name="text",
-                    source_properties=["text"],
-                    vector_index_config=Configure.VectorIndex.dynamic(
-                        hnsw=Configure.VectorIndex.hnsw(
-                            quantizer=Configure.VectorIndex.Quantizer.sq(training_limit=50000)
-                        ),
-                        flat=Configure.VectorIndex.flat(
-                            quantizer=Configure.VectorIndex.Quantizer.bq()
-                        ),
-                        threshold=10000
-                    )
-                )
-            ],
-            generative_config=Configure.Generative.cohere(model="command-r-plus")
+            vector_config=[text2vec_openai],
+            generative_config=Configure.Generative.cohere(model="command-r-plus"),
             # MTConfig
         )
     logger.info(f"Collection {name} created")

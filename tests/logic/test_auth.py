@@ -54,13 +54,17 @@ class TestPerformLogin:
         self, mock_user: UserDetail, async_session
     ):
         """Test successful login with default scope."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_auth.return_value = mock_user
             mock_access.return_value = "test_access_token_12345"
             mock_refresh.return_value = "test_refresh_token_12345"
@@ -95,13 +99,17 @@ class TestPerformLogin:
         self, mock_user: UserDetail, async_session
     ):
         """Test successful login with custom scopes."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_auth.return_value = mock_user
             mock_access.return_value = "test_token"
             mock_refresh.return_value = "test_refresh_token"
@@ -119,13 +127,17 @@ class TestPerformLogin:
         self, mock_user: UserDetail, async_session
     ):
         """Test login with empty scopes list defaults to 'global'."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_auth.return_value = mock_user
             mock_access.return_value = "test_token"
             mock_refresh.return_value = "test_refresh_token"
@@ -169,13 +181,17 @@ class TestPerformLogin:
         self, mock_user: UserDetail, async_session
     ):
         """Test that generated token always includes issuer."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_auth.return_value = mock_user
             mock_access.return_value = "test_token"
             mock_refresh.return_value = "test_refresh_token"
@@ -193,13 +209,17 @@ class TestPerformLogin:
         self, mock_user: UserDetail, async_session
     ):
         """Test login with multiple scopes joins them correctly."""
-        with patch(
-            "app.logic.auth.authenticate_user", new_callable=AsyncMock
-        ) as mock_auth, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch(
+                "app.logic.auth.authenticate_user", new_callable=AsyncMock
+            ) as mock_auth,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_auth.return_value = mock_user
             mock_access.return_value = "test_token"
             mock_refresh.return_value = "test_refresh_token"
@@ -236,13 +256,15 @@ class TestRefreshAccessToken:
             "ss": now_ts,
         }
 
-        with patch(
-            "app.logic.auth.verify_token", new_callable=AsyncMock
-        ) as mock_verify, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch("app.logic.auth.verify_token", new_callable=AsyncMock) as mock_verify,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_verify.return_value = mock_payload
             mock_access.return_value = "new_access_token"
             mock_refresh.return_value = "new_refresh_token"
@@ -329,13 +351,15 @@ class TestRefreshAccessToken:
             "ss": now_ts,
         }
 
-        with patch(
-            "app.logic.auth.verify_token", new_callable=AsyncMock
-        ) as mock_verify, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch("app.logic.auth.verify_token", new_callable=AsyncMock) as mock_verify,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_verify.return_value = mock_payload
             mock_access.return_value = "new_token"
             mock_refresh.return_value = "new_refresh"
@@ -364,13 +388,15 @@ class TestRefreshAccessToken:
             "ss": now_ts,
         }
 
-        with patch(
-            "app.logic.auth.verify_token", new_callable=AsyncMock
-        ) as mock_verify, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch("app.logic.auth.verify_token", new_callable=AsyncMock) as mock_verify,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_verify.return_value = mock_payload
             mock_access.return_value = "new_token"
             mock_refresh.return_value = "new_refresh"
@@ -399,13 +425,15 @@ class TestRefreshAccessToken:
             "ss": now_ts,
         }
 
-        with patch(
-            "app.logic.auth.verify_token", new_callable=AsyncMock
-        ) as mock_verify, patch(
-            "app.logic.auth.create_access_token", new_callable=AsyncMock
-        ) as mock_access, patch(
-            "app.logic.auth.create_refresh_token", new_callable=AsyncMock
-        ) as mock_refresh:
+        with (
+            patch("app.logic.auth.verify_token", new_callable=AsyncMock) as mock_verify,
+            patch(
+                "app.logic.auth.create_access_token", new_callable=AsyncMock
+            ) as mock_access,
+            patch(
+                "app.logic.auth.create_refresh_token", new_callable=AsyncMock
+            ) as mock_refresh,
+        ):
             mock_verify.return_value = mock_payload
             mock_access.return_value = "new_token"
             mock_refresh.return_value = "new_refresh"
