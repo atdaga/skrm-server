@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Development scripts for the Python server project."""
+"""Development scripts for the sKrm server project."""
 
 import os
 import shutil

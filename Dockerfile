@@ -1,11 +1,11 @@
 # Multi-stage Dockerfile for AWS ECS deployment
 #
 # Build with docker buildx (recommended):
-#   docker buildx build --platform linux/amd64 -t python-server:latest .
+#   docker buildx build --platform linux/amd64 -t skrm-server:latest .
 #
 # For AWS ECS, build and push to ECR:
-#   docker buildx build --platform linux/amd64 -t <account-id>.dkr.ecr.<region>.amazonaws.com/python-server:<tag> .
-#   docker push <account-id>.dkr.ecr.<region>.amazonaws.com/python-server:<tag>
+#   docker buildx build --platform linux/amd64 -t <account-id>.dkr.ecr.<region>.amazonaws.com/skrm-server:<tag> .
+#   docker push <account-id>.dkr.ecr.<region>.amazonaws.com/skrm-server:<tag>
 #
 # Stage 1: Builder - Install dependencies using uv
 FROM python:3.14-slim AS builder

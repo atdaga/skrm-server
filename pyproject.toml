@@ -1,5 +1,5 @@
 [project]
-name = "python-server"
+name = "skrm-server"
 version = "0.1.0"
 description = "Backend API for the sKrm application"
 authors = [{name = "Anthony Daga", email = "anthony@korrelated.com"}]
