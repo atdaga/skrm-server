@@ -54,7 +54,7 @@ class KFeature(SQLModel, table=True):
 
     # Relationships
     organization: "KOrganization" = Relationship()
-    parent_feature: Optional["KFeature"] = Relationship(
+    parent_feature: Optional["KFeature"] = Relationship(  # noqa: UP007, UP045
         sa_relationship_kwargs={"remote_side": "KFeature.id"}
     )
     feature_docs: list["KFeatureDoc"] = Relationship(

@@ -1,8 +1,8 @@
 """Database configuration and session management for SQLModel."""
 
 import atexit
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -77,7 +77,7 @@ db_config = DatabaseConfig()
 
 
 @asynccontextmanager
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """Get a database session with proper cleanup."""
     if not db_config._initialized:
         db_config.initialize()
@@ -95,7 +95,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession]:
     """Dependency for FastAPI to get database session."""
     async with get_db_session() as session:
         yield session

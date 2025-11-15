@@ -44,7 +44,7 @@ lint = [
     "black>=23.11.0,<24.0.0",
     "isort>=5.12.0",
     "mypy>=1.7.1,<2.0.0",
-    "ruff>=0.1.6",
+    "ruff>=0.14.5",
 ]
 dev = [
     { include-group = "test" },
@@ -127,7 +127,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"app/models/*.py" = ["UP007"]  # SQLAlchemy relationships need quoted forward references
+"app/models/*.py" = ["UP007", "UP037"]  # SQLAlchemy relationships need quoted forward references
 "tests/**/*.py" = ["UP037"]  # Keep quotes for forward references in tests
 
 [tool.pytest.ini_options]

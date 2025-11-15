@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     )
 
     # CORS configuration
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default=["http://localhost:3000"],
         description="Allowed CORS origins (comma-separated string in env)",
     )
@@ -77,11 +77,11 @@ class Settings(BaseSettings):
         default=True,
         description="Allow credentials (cookies, authorization headers) in CORS requests",
     )
-    cors_allow_methods: List[str] = Field(
+    cors_allow_methods: list[str] = Field(
         default=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         description="Allowed HTTP methods for CORS requests",
     )
-    cors_allow_headers: List[str] = Field(
+    cors_allow_headers: list[str] = Field(
         default=["*"], description="Allowed headers for CORS requests"
     )
     cors_max_age: int = Field(
@@ -90,7 +90,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: str | List[str]) -> List[str]:
+    def parse_cors_origins(cls, v: str | list[str]) -> list[str]:
         """Parse comma-separated origins string into list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
@@ -98,7 +98,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_allow_methods", mode="before")
     @classmethod
-    def parse_cors_methods(cls, v: str | List[str]) -> List[str]:
+    def parse_cors_methods(cls, v: str | list[str]) -> list[str]:
         """Parse comma-separated methods string into list."""
         if isinstance(v, str):
             return [method.strip().upper() for method in v.split(",") if method.strip()]
@@ -106,7 +106,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_allow_headers", mode="before")
     @classmethod
-    def parse_cors_headers(cls, v: str | List[str]) -> List[str]:
+    def parse_cors_headers(cls, v: str | list[str]) -> list[str]:
         """Parse comma-separated headers string into list."""
         if isinstance(v, str):
             return [header.strip() for header in v.split(",") if header.strip()]
@@ -122,7 +122,7 @@ class Settings(BaseSettings):
         return {k: v for k, v in data.items() if not k.startswith("alembic_")}
 
     @model_validator(mode="after")
-    def set_cookie_secure_from_debug(self) -> "Settings":
+    def set_cookie_secure_from_debug(self) -> Settings:
         """Auto-set cookie_secure to False when in debug mode (for HTTP development)."""
         if self.debug and self.cookie_secure:
             # In debug mode, allow HTTP cookies for local development

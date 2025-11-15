@@ -4,13 +4,13 @@ from logging.config import fileConfig
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlmodel import SQLModel
 
 from alembic import context
 
 # Import all models to register them with SQLModel metadata
 # This ensures Alembic can detect all tables
 from app.models import *  # noqa: F401, F403
-from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -34,25 +34,25 @@ target_metadata = SQLModel.metadata
 def get_url() -> str:
     """Get database URL from environment variable or use default."""
     import os
-    
+
     # Check for ALEMBIC_DATABASE_URL environment variable first
     url = os.getenv("ALEMBIC_DATABASE_URL")
-    
+
     if url:
         return url
-    
+
     # Fallback to constructing from individual environment variables
     db_host = os.getenv("ALEMBIC_DB_HOST", "127.0.0.1")
     db_port = os.getenv("ALEMBIC_DB_PORT", "5432")
     db_name = os.getenv("ALEMBIC_DB_NAME", "skrm_local")
     db_user = os.getenv("ALEMBIC_DB_USER", "skrm_user")
     db_password = os.getenv("ALEMBIC_DB_PASSWORD", "P@ssword12")
-    
+
     # Use asyncpg driver for async migrations
     # URL encode password to handle special characters
     from urllib.parse import quote_plus
     encoded_password = quote_plus(db_password)
-    
+
     return f"postgresql+asyncpg://{db_user}:{encoded_password}@{db_host}:{db_port}/{db_name}"
 
 
@@ -84,19 +84,19 @@ def do_run_migrations(connection: Connection) -> None:
     # Patch SQLAlchemy's enum creation to check if enum types exist first
     # This prevents errors when enum types already exist in the database
     from sqlalchemy.dialects.postgresql import ENUM
-    
+
     # Store original _on_table_create method
     original_on_table_create = ENUM._on_table_create
-    
+
     def patched_on_table_create(self, target, bind, **kw):
         """Patched version that uses checkfirst=True."""
         # Ensure checkfirst=True is set
         kw['checkfirst'] = True
         return original_on_table_create(self, target, bind, **kw)
-    
+
     # Temporarily patch the method
     ENUM._on_table_create = patched_on_table_create
-    
+
     try:
         context.configure(
             connection=connection,
@@ -115,11 +115,11 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """Run migrations in async mode."""
     import sys
-    
+
     configuration = config.get_section(config.config_ini_section, {})
     database_url = get_url()
     configuration["sqlalchemy.url"] = database_url
-    
+
     try:
         connectable = async_engine_from_config(
             configuration,

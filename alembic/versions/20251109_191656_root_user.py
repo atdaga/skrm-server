@@ -5,19 +5,17 @@ Revises: e3a2157c0a5e
 Create Date: 2025-11-09 19:16:56.444747
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
 
 # Import sqlmodel for SQLModel-specific types (AutoString, etc.)
-import sqlmodel
 
 # revision identifiers, used by Alembic.
 revision: str = '9609fa391edc'
-down_revision: Union[str, Sequence[str], None] = 'e3a2157c0a5e'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = 'e3a2157c0a5e'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

@@ -31,7 +31,7 @@ if sys.platform != "win32":
 
 
 @asynccontextmanager
-async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None]:
     """Application lifespan manager."""
     logger.info("Starting up application", app_name=settings.app_name)
 
