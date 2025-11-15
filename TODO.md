@@ -1,7 +1,5 @@
 # TODO
 
-* Upgrade library versions.
-
 * Create Docker image for ECS.
 
 * /init creates claude.md. This is memory. Add to it with "#" command.

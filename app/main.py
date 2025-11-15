@@ -1,5 +1,3 @@
-import asyncio
-import sys
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -15,19 +13,6 @@ from .routes import auth, health, v1
 # Setup logging first
 setup_logging()
 logger = get_logger(__name__)
-
-
-# Use uvloop if available
-if sys.platform != "win32":
-    try:
-        import uvloop
-
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())  # pragma: no cover
-        logger.info("Using uvloop for improved async performance")  # pragma: no cover
-    except (ImportError, AttributeError):  # pragma: no cover
-        logger.warning(
-            "uvloop not available, using default asyncio loop"
-        )  # pragma: no cover
 
 
 @asynccontextmanager
