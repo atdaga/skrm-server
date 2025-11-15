@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.json
+htmlcov/
+.tox/
+tests/
+
+# Linting and type checking
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and examples
+*.md
+!README.md
+*.bak
+experiment.ipynb
+prd_examples/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build artifacts
+*.whl
+*.tar.gz
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Alembic (keep alembic.ini and alembic/ directory, but ignore versions cache if any)
+alembic/versions/__pycache__/
+
+# Scripts (development scripts not needed in production)
+scripts/
+
+# Lock file backups
+*.lock.bak
+uv.lock.bak
