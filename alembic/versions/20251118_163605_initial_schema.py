@@ -1,24 +1,23 @@
 """initial_schema
 
-Revision ID: e3a2157c0a5e
-Revises:
-Create Date: 2025-11-09 18:54:51.029449
+Revision ID: 602e96e4aee9
+Revises: 
+Create Date: 2025-11-18 16:36:05.199880
 
 """
-from collections.abc import Sequence
+from typing import Sequence, Union
 
+from alembic import op
 import sqlalchemy as sa
 
 # Import sqlmodel for SQLModel-specific types (AutoString, etc.)
 import sqlmodel
 
-from alembic import op
-
 # revision identifiers, used by Alembic.
-revision: str = 'e3a2157c0a5e'
-down_revision: str | Sequence[str] | None = None
-branch_labels: str | Sequence[str] | None = None
-depends_on: str | Sequence[str] | None = None
+revision: str = '602e96e4aee9'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
@@ -29,7 +28,7 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('alias', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -58,7 +57,7 @@ def upgrade() -> None:
     sa.Column('default_locale', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('system_role', sa.String(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -71,7 +70,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -88,7 +87,7 @@ def upgrade() -> None:
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -106,12 +105,12 @@ def upgrade() -> None:
     sa.Column('parent_path', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('feature_type', sa.String(), nullable=True),
     sa.Column('summary', sa.Text(), nullable=True),
-    sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('details', sa.Text(), nullable=True),
     sa.Column('guestimate', sa.Float(), nullable=True),
     sa.Column('derived_guestimate', sa.Float(), nullable=True),
     sa.Column('review_result', sa.String(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -134,7 +133,7 @@ def upgrade() -> None:
     sa.Column('is_discoverable', sa.Boolean(), nullable=False),
     sa.Column('nickname', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('last_used', sa.DateTime(), nullable=True),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -149,6 +148,7 @@ def upgrade() -> None:
     sa.Column('principal_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -179,7 +179,7 @@ def upgrade() -> None:
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -196,7 +196,7 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('BACKLOG', 'ACTIVE', 'DONE', name='sprintstatus'), nullable=False),
     sa.Column('end_ts', sa.DateTime(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -210,7 +210,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('name', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=False),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -226,6 +226,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -242,6 +243,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -258,6 +260,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -274,6 +277,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -294,7 +298,7 @@ def upgrade() -> None:
     sa.Column('status', sa.String(), nullable=True),
     sa.Column('review_result', sa.String(), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
-    sa.Column('deleted', sa.Boolean(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -311,6 +315,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -327,6 +332,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -343,6 +349,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -359,6 +366,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -375,6 +383,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -391,6 +400,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),
@@ -407,6 +417,7 @@ def upgrade() -> None:
     sa.Column('org_id', sa.Uuid(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=255), nullable=True),
     sa.Column('meta', sa.JSON(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(), nullable=True),
     sa.Column('created', sa.DateTime(), nullable=False),
     sa.Column('created_by', sa.Uuid(), nullable=False),
     sa.Column('last_modified', sa.DateTime(), nullable=False),

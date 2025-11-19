@@ -57,7 +57,7 @@ class TestKFeatureModel:
         assert feature.parent is None
         assert feature.parent_path is None
         assert feature.summary is None
-        assert feature.notes is None
+        assert feature.details is None
         assert feature.guestimate is None
         assert feature.derived_guestimate is None
         assert feature.review_result is None
@@ -88,7 +88,7 @@ class TestKFeatureModel:
             parent_path="/parent",
             feature_type=FeatureType.ENGINEERING,
             summary="This is a summary",
-            notes="These are some detailed notes",
+            details="These are some detailed notes",
             guestimate=5.5,
             derived_guestimate=6.0,
             review_result=ReviewResult.PASSED,
@@ -104,7 +104,7 @@ class TestKFeatureModel:
         assert feature.parent == parent_feature.id
         assert feature.parent_path == "/parent"
         assert feature.summary == "This is a summary"
-        assert feature.notes == "These are some detailed notes"
+        assert feature.details == "These are some detailed notes"
         assert feature.guestimate == 5.5
         assert feature.derived_guestimate == 6.0
         assert feature.review_result == ReviewResult.PASSED

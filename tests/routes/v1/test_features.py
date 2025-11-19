@@ -32,7 +32,7 @@ class TestCreateFeature:
             "name": "User Authentication",
             "feature_type": "Product",
             "summary": "Implement user authentication system",
-            "notes": "Use OAuth 2.0",
+            "details": "Use OAuth 2.0",
             "guestimate": 5.0,
             "meta": {"priority": "high"},
         }
@@ -46,7 +46,7 @@ class TestCreateFeature:
         assert data["name"] == "User Authentication"
         assert data["feature_type"] == "Product"
         assert data["summary"] == "Implement user authentication system"
-        assert data["notes"] == "Use OAuth 2.0"
+        assert data["details"] == "Use OAuth 2.0"
         assert data["guestimate"] == 5.0
         assert data["review_result"] is None
         assert data["meta"] == {"priority": "high"}
@@ -76,7 +76,7 @@ class TestCreateFeature:
         assert data["parent"] is None
         assert data["parent_path"] is None
         assert data["summary"] is None
-        assert data["notes"] is None
+        assert data["details"] is None
         assert data["guestimate"] is None
         assert data["derived_guestimate"] is None
         assert data["review_result"] is None
@@ -368,7 +368,7 @@ class TestUpdateFeature:
         async_session: AsyncSession,
         test_user_id: UUID,
     ):
-        """Test updating all optional fields including parent, parent_path, feature_type, notes, and derived_guestimate."""
+        """Test updating all optional fields including parent, parent_path, feature_type, details, and derived_guestimate."""
         # Create parent features
         parent1 = KFeature(
             name="Parent Feature 1",
@@ -396,7 +396,7 @@ class TestUpdateFeature:
             parent=parent1.id,
             parent_path="/Parent Feature 1",
             summary="Initial summary",
-            notes="Initial notes",
+            details="Initial notes",
             guestimate=3.0,
             derived_guestimate=3.5,
             org_id=test_organization.id,
@@ -412,7 +412,7 @@ class TestUpdateFeature:
             "parent": str(parent2.id),
             "parent_path": "/Parent Feature 2",
             "feature_type": "Engineering",
-            "notes": "Updated notes with more details",
+            "details": "Updated notes with more details",
             "derived_guestimate": 7.5,
         }
 
@@ -426,7 +426,7 @@ class TestUpdateFeature:
         assert data["parent"] == str(parent2.id)
         assert data["parent_path"] == "/Parent Feature 2"
         assert data["feature_type"] == "Engineering"
-        assert data["notes"] == "Updated notes with more details"
+        assert data["details"] == "Updated notes with more details"
         assert data["derived_guestimate"] == 7.5
         # Verify unchanged fields
         assert data["name"] == "Child Feature"

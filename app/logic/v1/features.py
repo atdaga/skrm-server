@@ -49,7 +49,7 @@ async def create_feature(
         parent_path=feature_data.parent_path,
         feature_type=feature_data.feature_type,
         summary=feature_data.summary,
-        notes=feature_data.notes,
+        details=feature_data.details,
         guestimate=feature_data.guestimate,
         derived_guestimate=feature_data.derived_guestimate,
         review_result=feature_data.review_result,
@@ -173,8 +173,8 @@ async def update_feature(
         feature.feature_type = feature_data.feature_type
     if feature_data.summary is not None:
         feature.summary = feature_data.summary
-    if feature_data.notes is not None:
-        feature.notes = feature_data.notes
+    if feature_data.details is not None:
+        feature.details = feature_data.details
     if feature_data.guestimate is not None:
         feature.guestimate = feature_data.guestimate
     if feature_data.derived_guestimate is not None:

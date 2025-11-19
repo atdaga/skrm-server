@@ -14,7 +14,7 @@ class FeatureCreate(BaseModel):
     parent_path: str | None = None
     feature_type: FeatureType
     summary: str | None = None
-    notes: str | None = None
+    details: str | None = None
     guestimate: float | None = Field(None, gt=0)
     derived_guestimate: float | None = Field(None, gt=0)
     review_result: ReviewResult | None = None
@@ -29,7 +29,7 @@ class FeatureUpdate(BaseModel):
     parent_path: str | None = None
     feature_type: FeatureType | None = None
     summary: str | None = None
-    notes: str | None = None
+    details: str | None = None
     guestimate: float | None = Field(None, gt=0)
     derived_guestimate: float | None = Field(None, gt=0)
     review_result: ReviewResult | None = None
@@ -46,7 +46,7 @@ class Feature(BaseModel):
     parent_path: str | None
     feature_type: FeatureType
     summary: str | None
-    notes: str | None
+    details: str | None
     guestimate: float | None
     derived_guestimate: float | None
     review_result: ReviewResult | None

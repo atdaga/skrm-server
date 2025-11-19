@@ -41,7 +41,7 @@ class KFeature(SQLModel, table=True):
     parent_path: str | None = Field(default=None, max_length=None)
     feature_type: FeatureType = Field(sa_column=Column(String))
     summary: str | None = Field(default=None, sa_type=Text)
-    notes: str | None = Field(default=None, sa_type=Text)
+    details: str | None = Field(default=None, sa_type=Text)
     guestimate: float | None = Field(default=None, gt=0)
     derived_guestimate: float | None = Field(default=None, gt=0)
     review_result: ReviewResult | None = Field(default=None, sa_column=Column(String))
