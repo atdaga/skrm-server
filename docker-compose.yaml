@@ -1,0 +1,36 @@
+# Docker Compose for local development
+#
+# Usage:
+#   docker compose up        # Start in foreground
+#   docker compose up -d     # Start in background
+#   docker compose down      # Stop services
+#   docker compose logs -f   # Follow logs
+#
+# Prerequisites:
+#   - PostgreSQL running locally (not included in this compose file)
+#   - .env file with database credentials and settings
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Override database host to connect to host machine's PostgreSQL
+      - DB_HOST=host.docker.internal
+    extra_hosts:
+      # Allow container to connect to host machine's services
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Mount source code for development (optional - remove for production-like testing)
+      - ./app:/app/app:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3

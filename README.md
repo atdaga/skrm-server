@@ -131,6 +131,38 @@ rm -rf .pytest_cache .coverage dist build .mypy_cache .ruff_cache .venv
 find . -type d -name "__pycache__" -exec rm -rf {} +
 ```
 
+### Using Docker Compose
+
+Run the application in a Docker container while connecting to your local PostgreSQL:
+
+```bash
+# Ensure .env exists with your database credentials
+cp .env.example .env  # if not already done
+
+# Start the application
+docker compose up
+
+# Start in background (detached mode)
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop the application
+docker compose down
+
+# Rebuild after code changes
+docker compose up --build
+```
+
+**Note:** The container connects to your local PostgreSQL via `host.docker.internal`. Ensure your PostgreSQL is configured to accept connections from Docker (check `pg_hba.conf` if needed).
+
+**Running migrations:** Migrations are not run automatically. Run them separately:
+
+```bash
+uv run alembic upgrade head
+```
+
 ### Dependency Management
 
 Always check if your lock file is up-to-date.
