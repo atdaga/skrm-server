@@ -3,10 +3,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.core.repr_mixin import SecureReprMixin
 from app.models.k_principal import SystemRole
 
 
-class UserCreate(BaseModel):
+class UserCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new user."""
 
     username: str
@@ -25,25 +26,25 @@ class UserCreate(BaseModel):
     # meta: dict
 
 
-class UserUpdateUsername(BaseModel):
+class UserUpdateUsername(SecureReprMixin, BaseModel):
     """Schema for updating user username."""
 
     username: str
 
 
-class UserUpdateEmail(BaseModel):
+class UserUpdateEmail(SecureReprMixin, BaseModel):
     """Schema for updating user email."""
 
     email: EmailStr
 
 
-class UserUpdatePrimaryPhone(BaseModel):
+class UserUpdatePrimaryPhone(SecureReprMixin, BaseModel):
     """Schema for updating user phone."""
 
     primary_phone: str
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(SecureReprMixin, BaseModel):
     """Schema for updating user information."""
 
     time_zone: str | None = None
@@ -58,7 +59,7 @@ class UserUpdate(BaseModel):
     meta: dict | None = None
 
 
-class User(BaseModel):
+class User(SecureReprMixin, BaseModel):
     """Schema for user response (without audit fields)."""
 
     id: UUID
@@ -93,13 +94,13 @@ class UserDetail(User):
     last_modified_by: UUID
 
 
-class UserList(BaseModel):
+class UserList(SecureReprMixin, BaseModel):
     """Schema for user list response."""
 
     users: list[User]
 
 
-class Token(BaseModel):
+class Token(SecureReprMixin, BaseModel):
     """Schema for authentication token response."""
 
     access_token: str
@@ -107,7 +108,7 @@ class Token(BaseModel):
     refresh_token: str
 
 
-class TokenData(BaseModel):
+class TokenData(SecureReprMixin, BaseModel):
     """Schema for token payload data."""
 
     sub: str

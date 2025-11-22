@@ -3,9 +3,14 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class Settings(BaseSettings):
+
+class Settings(SecureReprMixin, BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    # Sensitive fields to mask in repr
+    _sensitive_fields = {"secret_key", "db_password"}
 
     app_name: str = Field(default="sKrm Server", description="Application name")
     debug: bool = Field(

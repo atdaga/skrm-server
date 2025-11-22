@@ -9,9 +9,7 @@ from weaviate.classes.config import Configure, DataType, Property
 
 from ..logging import get_logger
 
-os.environ["OPENAI_APIKEY"] = (
-    "TODO: Add OpenAI API key"
-)
+os.environ["OPENAI_APIKEY"] = "TODO: Add OpenAI API key"
 
 logger = get_logger(__name__)
 

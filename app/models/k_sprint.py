@@ -6,6 +6,8 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, Text
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_organization import KOrganization
     from .k_sprint_task import KSprintTask
@@ -20,7 +22,7 @@ class SprintStatus(str, Enum):
     DONE = "Done"
 
 
-class KSprint(SQLModel, table=True):
+class KSprint(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_sprint"
 
     id: UUID = Field(default_factory=uuid7, primary_key=True)

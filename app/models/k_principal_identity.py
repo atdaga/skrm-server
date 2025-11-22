@@ -4,8 +4,10 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON
 from sqlmodel import Field, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
 
-class KPrincipalIdentity(SQLModel, table=True):
+
+class KPrincipalIdentity(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_principal_identity"
 
     id: UUID = Field(default_factory=uuid7, primary_key=True)

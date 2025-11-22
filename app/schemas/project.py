@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class ProjectCreate(BaseModel):
+
+class ProjectCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new project."""
 
     name: str
@@ -12,7 +14,7 @@ class ProjectCreate(BaseModel):
     meta: dict = {}
 
 
-class ProjectUpdate(BaseModel):
+class ProjectUpdate(SecureReprMixin, BaseModel):
     """Schema for updating project information."""
 
     name: str | None = None
@@ -20,7 +22,7 @@ class ProjectUpdate(BaseModel):
     meta: dict | None = None
 
 
-class Project(BaseModel):
+class Project(SecureReprMixin, BaseModel):
     """Schema for project response."""
 
     id: UUID
@@ -42,7 +44,7 @@ class ProjectDetail(Project):
     last_modified_by: UUID
 
 
-class ProjectList(BaseModel):
+class ProjectList(SecureReprMixin, BaseModel):
     """Schema for project list response."""
 
     projects: list[ProjectDetail]

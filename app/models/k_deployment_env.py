@@ -5,12 +5,14 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_organization import KOrganization
     from .k_task_deployment_env import KTaskDeploymentEnv
 
 
-class KDeploymentEnv(SQLModel, table=True):
+class KDeploymentEnv(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_deployment_env"
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 

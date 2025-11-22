@@ -5,12 +5,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.core.repr_mixin import SecureReprMixin
+
 # ============================================================================
 # Request Schemas (Operation Parameters)
 # ============================================================================
 
 
-class CreateParams(BaseModel):
+class CreateParams(SecureReprMixin, BaseModel):
     """Parameters for create operation."""
 
     data: dict[str, Any] = Field(
@@ -18,7 +20,7 @@ class CreateParams(BaseModel):
     )
 
 
-class GetParams(BaseModel):
+class GetParams(SecureReprMixin, BaseModel):
     """Parameters for get operation."""
 
     id: str | UUID = Field(..., description="ID of the domain object to get")
@@ -43,21 +45,21 @@ class GetParams(BaseModel):
     fields: list[str] | None = Field(None, description="Specific fields to return")
 
 
-class SortCriteria(BaseModel):
+class SortCriteria(SecureReprMixin, BaseModel):
     """Sort criteria for list operations."""
 
     field: str = Field(..., description="Field name to sort by")
     direction: Literal["asc", "desc"] = Field(..., description="Sort direction")
 
 
-class PaginationParams(BaseModel):
+class PaginationParams(SecureReprMixin, BaseModel):
     """Pagination parameters for list operations."""
 
     page: int = Field(1, ge=1, description="Page number")
     page_size: int = Field(100, ge=1, le=1000, description="Number of items per page")
 
 
-class ListParams(BaseModel):
+class ListParams(SecureReprMixin, BaseModel):
     """Parameters for list operation."""
 
     filters: dict[str, Any] | None = Field(None, description="Filter criteria")
@@ -68,7 +70,7 @@ class ListParams(BaseModel):
     fields: list[str] | None = Field(None, description="Specific fields to return")
 
 
-class UpdateParams(BaseModel):
+class UpdateParams(SecureReprMixin, BaseModel):
     """Parameters for update operation."""
 
     id: str | UUID = Field(..., description="ID of the domain object to update")
@@ -81,7 +83,7 @@ class UpdateParams(BaseModel):
     )
 
 
-class DeleteParams(BaseModel):
+class DeleteParams(SecureReprMixin, BaseModel):
     """Parameters for delete operation."""
 
     id: str | UUID = Field(..., description="ID of the domain object to delete")
@@ -95,7 +97,7 @@ class DeleteParams(BaseModel):
 # ============================================================================
 
 
-class Operation(BaseModel):
+class Operation(SecureReprMixin, BaseModel):
     """A CRUD operation on a domain object."""
 
     id: str | None = Field(None, description="Unique identifier for the operation")
@@ -117,7 +119,7 @@ class Operation(BaseModel):
 # ============================================================================
 
 
-class TransactionGroup(BaseModel):
+class TransactionGroup(SecureReprMixin, BaseModel):
     """A transaction containing CRUD operations."""
 
     id: str | None = Field(None, description="Unique identifier for the transaction")
@@ -134,7 +136,7 @@ class TransactionGroup(BaseModel):
 # ============================================================================
 
 
-class TransactionsRequest(BaseModel):
+class TransactionsRequest(SecureReprMixin, BaseModel):
     """Top-level transaction batch request."""
 
     execution_mode: Literal["serial", "parallel"] = Field(
@@ -150,7 +152,7 @@ class TransactionsRequest(BaseModel):
 # ============================================================================
 
 
-class OperationResult(BaseModel):
+class OperationResult(SecureReprMixin, BaseModel):
     """Result of a single operation."""
 
     id: str | None = None
@@ -162,7 +164,7 @@ class OperationResult(BaseModel):
     error_type: str | None = None
 
 
-class TransactionResult(BaseModel):
+class TransactionResult(SecureReprMixin, BaseModel):
     """Result of a single transaction."""
 
     id: str | None = None
@@ -171,7 +173,7 @@ class TransactionResult(BaseModel):
     error: str | None = None
 
 
-class TransactionsResponse(BaseModel):
+class TransactionsResponse(SecureReprMixin, BaseModel):
     """Response for transaction batch request."""
 
     status: Literal["success", "failure"] = Field(..., description="Overall status")

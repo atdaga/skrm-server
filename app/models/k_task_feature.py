@@ -5,13 +5,15 @@ from uuid import UUID
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_feature import KFeature
     from .k_organization import KOrganization
     from .k_task import KTask
 
 
-class KTaskFeature(SQLModel, table=True):
+class KTaskFeature(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_task_feature"
 
     task_id: UUID = Field(

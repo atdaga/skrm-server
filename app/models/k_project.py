@@ -5,13 +5,15 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_organization import KOrganization
     from .k_project_feature import KProjectFeature
     from .k_project_team import KProjectTeam
 
 
-class KProject(SQLModel, table=True):
+class KProject(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_project"
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 

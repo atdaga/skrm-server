@@ -5,13 +5,15 @@ from uuid import UUID
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_deployment_env import KDeploymentEnv
     from .k_organization import KOrganization
     from .k_task import KTask
 
 
-class KTaskDeploymentEnv(SQLModel, table=True):
+class KTaskDeploymentEnv(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_task_deployment_env"
 
     task_id: UUID = Field(

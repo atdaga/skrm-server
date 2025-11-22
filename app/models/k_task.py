@@ -6,6 +6,8 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, Text
 from sqlmodel import Column, Field, Relationship, SQLModel, String
 
+from app.core.repr_mixin import SecureReprMixin
+
 from .k_feature import ReviewResult
 
 if TYPE_CHECKING:
@@ -31,7 +33,7 @@ class TaskStatus(str, Enum):
     ARCHIVED = "Archived"
 
 
-class KTask(SQLModel, table=True):
+class KTask(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_task"
 
     id: UUID = Field(default_factory=uuid7, primary_key=True)

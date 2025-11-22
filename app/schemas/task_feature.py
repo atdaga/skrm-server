@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TaskFeatureCreate(BaseModel):
+
+class TaskFeatureCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new task feature relationship."""
 
     feature_id: UUID
@@ -12,14 +14,14 @@ class TaskFeatureCreate(BaseModel):
     meta: dict = {}
 
 
-class TaskFeatureUpdate(BaseModel):
+class TaskFeatureUpdate(SecureReprMixin, BaseModel):
     """Schema for updating task feature relationship information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class TaskFeature(BaseModel):
+class TaskFeature(SecureReprMixin, BaseModel):
     """Schema for task feature relationship response."""
 
     task_id: UUID
@@ -41,7 +43,7 @@ class TaskFeatureDetail(TaskFeature):
     last_modified_by: UUID
 
 
-class TaskFeatureList(BaseModel):
+class TaskFeatureList(SecureReprMixin, BaseModel):
     """Schema for task feature relationship list response."""
 
     features: list[TaskFeatureDetail]

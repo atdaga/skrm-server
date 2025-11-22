@@ -4,8 +4,10 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, LargeBinary
 from sqlmodel import Field, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
 
-class KFido2Credential(SQLModel, table=True):
+
+class KFido2Credential(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_fido2_credential"
 
     id: UUID = Field(default_factory=uuid7, primary_key=True)

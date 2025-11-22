@@ -4,11 +4,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.core.repr_mixin import SecureReprMixin
+
 from .user import Token
 
 
 # Registration schemas
-class Fido2RegistrationBeginRequest(BaseModel):
+class Fido2RegistrationBeginRequest(SecureReprMixin, BaseModel):
     """Request to begin FIDO2 credential registration."""
 
     username: str | None = Field(
@@ -17,7 +19,7 @@ class Fido2RegistrationBeginRequest(BaseModel):
     )
 
 
-class Fido2RegistrationBeginResponse(BaseModel):
+class Fido2RegistrationBeginResponse(SecureReprMixin, BaseModel):
     """Response containing credential creation options for the browser/client."""
 
     publicKey: dict[str, Any] = Field(
@@ -25,7 +27,7 @@ class Fido2RegistrationBeginResponse(BaseModel):
     )
 
 
-class Fido2RegistrationCompleteRequest(BaseModel):
+class Fido2RegistrationCompleteRequest(SecureReprMixin, BaseModel):
     """Request to complete FIDO2 credential registration."""
 
     credential: dict[str, Any] = Field(
@@ -37,7 +39,7 @@ class Fido2RegistrationCompleteRequest(BaseModel):
     session_id: str = Field(description="Session ID from registration begin")
 
 
-class Fido2RegistrationCompleteResponse(BaseModel):
+class Fido2RegistrationCompleteResponse(SecureReprMixin, BaseModel):
     """Response after successful registration."""
 
     credential_id: str = Field(description="Base64-encoded credential ID")
@@ -45,7 +47,7 @@ class Fido2RegistrationCompleteResponse(BaseModel):
 
 
 # Authentication schemas
-class Fido2AuthenticationBeginRequest(BaseModel):
+class Fido2AuthenticationBeginRequest(SecureReprMixin, BaseModel):
     """Request to begin FIDO2 authentication."""
 
     username: str | None = Field(
@@ -58,7 +60,7 @@ class Fido2AuthenticationBeginRequest(BaseModel):
     )
 
 
-class Fido2AuthenticationBeginResponse(BaseModel):
+class Fido2AuthenticationBeginResponse(SecureReprMixin, BaseModel):
     """Response containing credential request options for the browser/client."""
 
     publicKey: dict[str, Any] = Field(
@@ -66,7 +68,7 @@ class Fido2AuthenticationBeginResponse(BaseModel):
     )
 
 
-class Fido2AuthenticationCompleteRequest(BaseModel):
+class Fido2AuthenticationCompleteRequest(SecureReprMixin, BaseModel):
     """Request to complete FIDO2 authentication."""
 
     credential: dict[str, Any] = Field(
@@ -75,13 +77,13 @@ class Fido2AuthenticationCompleteRequest(BaseModel):
     session_id: str = Field(description="Session ID from authentication begin")
 
 
-class Fido2AuthenticationCompleteResponse(BaseModel):
+class Fido2AuthenticationCompleteResponse(SecureReprMixin, BaseModel):
     """Response after successful authentication (for passwordless flow)."""
 
     token: Token = Field(description="JWT access and refresh tokens")
 
 
-class Fido2VerificationToken(BaseModel):
+class Fido2VerificationToken(SecureReprMixin, BaseModel):
     """Temporary token issued after FIDO2 verification for 2FA completion."""
 
     verification_token: str = Field(
@@ -91,7 +93,7 @@ class Fido2VerificationToken(BaseModel):
 
 
 # 2FA Login schemas
-class Fido2TwoFactorLoginRequest(BaseModel):
+class Fido2TwoFactorLoginRequest(SecureReprMixin, BaseModel):
     """Request for combined password + FIDO2 two-factor authentication."""
 
     username: str
@@ -102,7 +104,7 @@ class Fido2TwoFactorLoginRequest(BaseModel):
     )
 
 
-class Fido2TwoFactorLoginResponse(BaseModel):
+class Fido2TwoFactorLoginResponse(SecureReprMixin, BaseModel):
     """Response for 2FA login - either challenge or token."""
 
     token: Token | None = Field(
@@ -115,7 +117,7 @@ class Fido2TwoFactorLoginResponse(BaseModel):
 
 
 # Credential management schemas
-class Fido2CredentialDetail(BaseModel):
+class Fido2CredentialDetail(SecureReprMixin, BaseModel):
     """Detailed information about a FIDO2 credential."""
 
     id: UUID
@@ -129,20 +131,20 @@ class Fido2CredentialDetail(BaseModel):
     created: datetime
 
 
-class Fido2CredentialList(BaseModel):
+class Fido2CredentialList(SecureReprMixin, BaseModel):
     """List of FIDO2 credentials."""
 
     credentials: list[Fido2CredentialDetail]
     total: int
 
 
-class Fido2CredentialUpdateRequest(BaseModel):
+class Fido2CredentialUpdateRequest(SecureReprMixin, BaseModel):
     """Request to update a FIDO2 credential."""
 
     nickname: str = Field(max_length=255, description="New nickname for the credential")
 
 
-class Fido2CredentialDeleteResponse(BaseModel):
+class Fido2CredentialDeleteResponse(SecureReprMixin, BaseModel):
     """Response after deleting a credential."""
 
     message: str = Field(default="FIDO2 credential deleted successfully")

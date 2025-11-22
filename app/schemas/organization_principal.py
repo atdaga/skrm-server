@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class OrganizationPrincipalCreate(BaseModel):
+
+class OrganizationPrincipalCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new organization principal."""
 
     principal_id: UUID
@@ -12,14 +14,14 @@ class OrganizationPrincipalCreate(BaseModel):
     meta: dict = {}
 
 
-class OrganizationPrincipalUpdate(BaseModel):
+class OrganizationPrincipalUpdate(SecureReprMixin, BaseModel):
     """Schema for updating organization principal information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class OrganizationPrincipal(BaseModel):
+class OrganizationPrincipal(SecureReprMixin, BaseModel):
     """Schema for organization principal response."""
 
     org_id: UUID
@@ -40,7 +42,7 @@ class OrganizationPrincipalDetail(OrganizationPrincipal):
     last_modified_by: UUID
 
 
-class OrganizationPrincipalList(BaseModel):
+class OrganizationPrincipalList(SecureReprMixin, BaseModel):
     """Schema for organization principal list response."""
 
     principals: list[OrganizationPrincipalDetail]

@@ -5,12 +5,14 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, Text, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_feature_doc import KFeatureDoc
     from .k_organization import KOrganization
 
 
-class KDoc(SQLModel, table=True):
+class KDoc(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_doc"
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 

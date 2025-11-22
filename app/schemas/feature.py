@@ -3,10 +3,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.repr_mixin import SecureReprMixin
+
 from ..models.k_feature import FeatureType, ReviewResult
 
 
-class FeatureCreate(BaseModel):
+class FeatureCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new feature."""
 
     name: str
@@ -21,7 +23,7 @@ class FeatureCreate(BaseModel):
     meta: dict = {}
 
 
-class FeatureUpdate(BaseModel):
+class FeatureUpdate(SecureReprMixin, BaseModel):
     """Schema for updating feature information."""
 
     name: str | None = None
@@ -36,7 +38,7 @@ class FeatureUpdate(BaseModel):
     meta: dict | None = None
 
 
-class Feature(BaseModel):
+class Feature(SecureReprMixin, BaseModel):
     """Schema for feature response."""
 
     id: UUID
@@ -65,7 +67,7 @@ class FeatureDetail(Feature):
     last_modified_by: UUID
 
 
-class FeatureList(BaseModel):
+class FeatureList(SecureReprMixin, BaseModel):
     """Schema for feature list response."""
 
     features: list[FeatureDetail]

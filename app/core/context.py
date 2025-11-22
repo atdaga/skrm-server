@@ -22,6 +22,18 @@ class RequestContext(NamedTuple):
     principal_id: str | None
     request_time: datetime | None
 
+    def __repr__(self) -> str:
+        """Generate a readable repr for RequestContext."""
+        request_id_str = repr(str(self.request_id)) if self.request_id else "None"
+        request_time_str = (
+            repr(self.request_time.isoformat()) if self.request_time else "None"
+        )
+        return (
+            f"RequestContext(request_id={request_id_str}, "
+            f"principal_id={self.principal_id!r}, "
+            f"request_time={request_time_str})"
+        )
+
 
 def get_request_id() -> UUID | None:
     """Get the current request ID from context.

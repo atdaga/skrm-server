@@ -3,22 +3,24 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TeamCreate(BaseModel):
+
+class TeamCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new team."""
 
     name: str
     meta: dict = {}
 
 
-class TeamUpdate(BaseModel):
+class TeamUpdate(SecureReprMixin, BaseModel):
     """Schema for updating team information."""
 
     name: str | None = None
     meta: dict | None = None
 
 
-class Team(BaseModel):
+class Team(SecureReprMixin, BaseModel):
     """Schema for team response."""
 
     id: UUID
@@ -39,7 +41,7 @@ class TeamDetail(Team):
     last_modified_by: UUID
 
 
-class TeamList(BaseModel):
+class TeamList(SecureReprMixin, BaseModel):
     """Schema for team list response."""
 
     teams: list[TeamDetail]

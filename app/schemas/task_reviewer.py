@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TaskReviewerCreate(BaseModel):
+
+class TaskReviewerCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new task reviewer relationship."""
 
     principal_id: UUID
@@ -12,14 +14,14 @@ class TaskReviewerCreate(BaseModel):
     meta: dict = {}
 
 
-class TaskReviewerUpdate(BaseModel):
+class TaskReviewerUpdate(SecureReprMixin, BaseModel):
     """Schema for updating task reviewer relationship information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class TaskReviewer(BaseModel):
+class TaskReviewer(SecureReprMixin, BaseModel):
     """Schema for task reviewer relationship response."""
 
     task_id: UUID
@@ -41,7 +43,7 @@ class TaskReviewerDetail(TaskReviewer):
     last_modified_by: UUID
 
 
-class TaskReviewerList(BaseModel):
+class TaskReviewerList(SecureReprMixin, BaseModel):
     """Schema for task reviewer relationship list response."""
 
     reviewers: list[TaskReviewerDetail]

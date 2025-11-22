@@ -6,6 +6,8 @@ from uuid import UUID, uuid7
 from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Column, Field, Relationship, SQLModel, String
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_organization_principal import KOrganizationPrincipal
     from .k_task_owner import KTaskOwner
@@ -24,7 +26,7 @@ class SystemRole(str, Enum):
     SYSTEM_CLIENT = "systemClient"
 
 
-class KPrincipal(SQLModel, table=True):
+class KPrincipal(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_principal"
     __table_args__ = (UniqueConstraint("scope", "username"),)
 

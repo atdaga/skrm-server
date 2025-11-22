@@ -5,13 +5,15 @@ from uuid import UUID
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_doc import KDoc
     from .k_feature import KFeature
     from .k_organization import KOrganization
 
 
-class KFeatureDoc(SQLModel, table=True):
+class KFeatureDoc(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_feature_doc"
 
     feature_id: UUID = Field(

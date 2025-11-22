@@ -7,8 +7,10 @@ by the route handlers. This allows business logic to remain independent of HTTP 
 from typing import Any
 from uuid import UUID
 
+from app.core.repr_mixin import ExceptionReprMixin
 
-class DomainException(Exception):
+
+class DomainException(ExceptionReprMixin, Exception):
     """Base class for all domain exceptions."""
 
     def __init__(

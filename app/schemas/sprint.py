@@ -3,10 +3,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
+
 from ..models.k_sprint import SprintStatus
 
 
-class SprintCreate(BaseModel):
+class SprintCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new sprint."""
 
     title: str | None = None
@@ -15,7 +17,7 @@ class SprintCreate(BaseModel):
     meta: dict = {}
 
 
-class SprintUpdate(BaseModel):
+class SprintUpdate(SecureReprMixin, BaseModel):
     """Schema for updating sprint information."""
 
     title: str | None = None
@@ -24,7 +26,7 @@ class SprintUpdate(BaseModel):
     meta: dict | None = None
 
 
-class Sprint(BaseModel):
+class Sprint(SecureReprMixin, BaseModel):
     """Schema for sprint response."""
 
     id: UUID
@@ -47,7 +49,7 @@ class SprintDetail(Sprint):
     last_modified_by: UUID
 
 
-class SprintList(BaseModel):
+class SprintList(SecureReprMixin, BaseModel):
     """Schema for sprint list response."""
 
     sprints: list[SprintDetail]

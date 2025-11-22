@@ -3,11 +3,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.repr_mixin import SecureReprMixin
+
 from ..models.k_feature import ReviewResult
 from ..models.k_task import TaskStatus
 
 
-class TaskCreate(BaseModel):
+class TaskCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new task."""
 
     summary: str | None = None
@@ -19,7 +21,7 @@ class TaskCreate(BaseModel):
     meta: dict = {}
 
 
-class TaskUpdate(BaseModel):
+class TaskUpdate(SecureReprMixin, BaseModel):
     """Schema for updating task information."""
 
     summary: str | None = None
@@ -31,7 +33,7 @@ class TaskUpdate(BaseModel):
     meta: dict | None = None
 
 
-class Task(BaseModel):
+class Task(SecureReprMixin, BaseModel):
     """Schema for task response."""
 
     id: UUID
@@ -57,7 +59,7 @@ class TaskDetail(Task):
     last_modified_by: UUID
 
 
-class TaskList(BaseModel):
+class TaskList(SecureReprMixin, BaseModel):
     """Schema for task list response."""
 
     tasks: list[TaskDetail]

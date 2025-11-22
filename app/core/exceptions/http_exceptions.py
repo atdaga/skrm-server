@@ -11,6 +11,9 @@ class UnauthorizedException(HTTPException):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    def __repr__(self) -> str:
+        return f"UnauthorizedException(status_code={self.status_code}, detail={self.detail!r})"
+
 
 class ForbiddenException(HTTPException):
     """Exception for forbidden access."""
@@ -21,6 +24,9 @@ class ForbiddenException(HTTPException):
             detail=detail,
         )
 
+    def __repr__(self) -> str:
+        return f"ForbiddenException(status_code={self.status_code}, detail={self.detail!r})"
+
 
 class RateLimitException(HTTPException):
     """Exception for rate limit exceeded."""
@@ -30,3 +36,6 @@ class RateLimitException(HTTPException):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=detail,
         )
+
+    def __repr__(self) -> str:
+        return f"RateLimitException(status_code={self.status_code}, detail={self.detail!r})"

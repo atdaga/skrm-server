@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TeamReviewerCreate(BaseModel):
+
+class TeamReviewerCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new team reviewer."""
 
     principal_id: UUID
@@ -12,14 +14,14 @@ class TeamReviewerCreate(BaseModel):
     meta: dict = {}
 
 
-class TeamReviewerUpdate(BaseModel):
+class TeamReviewerUpdate(SecureReprMixin, BaseModel):
     """Schema for updating team reviewer information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class TeamReviewer(BaseModel):
+class TeamReviewer(SecureReprMixin, BaseModel):
     """Schema for team reviewer response."""
 
     team_id: UUID
@@ -41,7 +43,7 @@ class TeamReviewerDetail(TeamReviewer):
     last_modified_by: UUID
 
 
-class TeamReviewerList(BaseModel):
+class TeamReviewerList(SecureReprMixin, BaseModel):
     """Schema for team reviewer list response."""
 
     reviewers: list[TeamReviewerDetail]

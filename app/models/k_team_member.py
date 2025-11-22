@@ -5,13 +5,15 @@ from uuid import UUID
 from sqlalchemy import JSON, Column, ForeignKey
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.core.repr_mixin import SecureReprMixin
+
 if TYPE_CHECKING:
     from .k_organization import KOrganization
     from .k_principal import KPrincipal
     from .k_team import KTeam
 
 
-class KTeamMember(SQLModel, table=True):
+class KTeamMember(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_team_member"
 
     team_id: UUID = Field(

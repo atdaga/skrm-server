@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TaskDeploymentEnvCreate(BaseModel):
+
+class TaskDeploymentEnvCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new task deployment environment relationship."""
 
     deployment_env_id: UUID
@@ -12,14 +14,14 @@ class TaskDeploymentEnvCreate(BaseModel):
     meta: dict = {}
 
 
-class TaskDeploymentEnvUpdate(BaseModel):
+class TaskDeploymentEnvUpdate(SecureReprMixin, BaseModel):
     """Schema for updating task deployment environment relationship information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class TaskDeploymentEnv(BaseModel):
+class TaskDeploymentEnv(SecureReprMixin, BaseModel):
     """Schema for task deployment environment relationship response."""
 
     task_id: UUID
@@ -41,7 +43,7 @@ class TaskDeploymentEnvDetail(TaskDeploymentEnv):
     last_modified_by: UUID
 
 
-class TaskDeploymentEnvList(BaseModel):
+class TaskDeploymentEnvList(SecureReprMixin, BaseModel):
     """Schema for task deployment environment relationship list response."""
 
     deployment_envs: list[TaskDeploymentEnvDetail]

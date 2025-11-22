@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from app.core.repr_mixin import SecureReprMixin
 
-class OrganizationCreate(BaseModel):
+
+class OrganizationCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new organization."""
 
     name: str
@@ -28,7 +30,7 @@ class OrganizationCreate(BaseModel):
         return v
 
 
-class OrganizationUpdate(BaseModel):
+class OrganizationUpdate(SecureReprMixin, BaseModel):
     """Schema for updating organization information."""
 
     name: str | None = None
@@ -54,7 +56,7 @@ class OrganizationUpdate(BaseModel):
         return v
 
 
-class Organization(BaseModel):
+class Organization(SecureReprMixin, BaseModel):
     """Schema for organization response."""
 
     id: UUID
@@ -75,7 +77,7 @@ class OrganizationDetail(Organization):
     last_modified_by: UUID
 
 
-class OrganizationList(BaseModel):
+class OrganizationList(SecureReprMixin, BaseModel):
     """Schema for organization list response."""
 
     organizations: list[OrganizationDetail]

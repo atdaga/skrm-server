@@ -3,22 +3,24 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class DeploymentEnvCreate(BaseModel):
+
+class DeploymentEnvCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new deployment environment."""
 
     name: str
     meta: dict = {}
 
 
-class DeploymentEnvUpdate(BaseModel):
+class DeploymentEnvUpdate(SecureReprMixin, BaseModel):
     """Schema for updating deployment environment information."""
 
     name: str | None = None
     meta: dict | None = None
 
 
-class DeploymentEnv(BaseModel):
+class DeploymentEnv(SecureReprMixin, BaseModel):
     """Schema for deployment environment response."""
 
     id: UUID
@@ -39,7 +41,7 @@ class DeploymentEnvDetail(DeploymentEnv):
     last_modified_by: UUID
 
 
-class DeploymentEnvList(BaseModel):
+class DeploymentEnvList(SecureReprMixin, BaseModel):
     """Schema for deployment environment list response."""
 
     deployment_envs: list[DeploymentEnvDetail]

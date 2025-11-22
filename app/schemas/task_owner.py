@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class TaskOwnerCreate(BaseModel):
+
+class TaskOwnerCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new task owner relationship."""
 
     principal_id: UUID
@@ -12,14 +14,14 @@ class TaskOwnerCreate(BaseModel):
     meta: dict = {}
 
 
-class TaskOwnerUpdate(BaseModel):
+class TaskOwnerUpdate(SecureReprMixin, BaseModel):
     """Schema for updating task owner relationship information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class TaskOwner(BaseModel):
+class TaskOwner(SecureReprMixin, BaseModel):
     """Schema for task owner relationship response."""
 
     task_id: UUID
@@ -41,7 +43,7 @@ class TaskOwnerDetail(TaskOwner):
     last_modified_by: UUID
 
 
-class TaskOwnerList(BaseModel):
+class TaskOwnerList(SecureReprMixin, BaseModel):
     """Schema for task owner relationship list response."""
 
     owners: list[TaskOwnerDetail]

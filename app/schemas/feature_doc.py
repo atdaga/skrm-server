@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class FeatureDocCreate(BaseModel):
+
+class FeatureDocCreate(SecureReprMixin, BaseModel):
     """Schema for adding a new feature doc relationship."""
 
     doc_id: UUID
@@ -12,14 +14,14 @@ class FeatureDocCreate(BaseModel):
     meta: dict = {}
 
 
-class FeatureDocUpdate(BaseModel):
+class FeatureDocUpdate(SecureReprMixin, BaseModel):
     """Schema for updating feature doc relationship information."""
 
     role: str | None = None
     meta: dict | None = None
 
 
-class FeatureDoc(BaseModel):
+class FeatureDoc(SecureReprMixin, BaseModel):
     """Schema for feature doc relationship response."""
 
     feature_id: UUID
@@ -41,7 +43,7 @@ class FeatureDocDetail(FeatureDoc):
     last_modified_by: UUID
 
 
-class FeatureDocList(BaseModel):
+class FeatureDocList(SecureReprMixin, BaseModel):
     """Schema for feature doc relationship list response."""
 
     docs: list[FeatureDocDetail]

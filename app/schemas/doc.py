@@ -3,8 +3,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.repr_mixin import SecureReprMixin
 
-class DocCreate(BaseModel):
+
+class DocCreate(SecureReprMixin, BaseModel):
     """Schema for creating a new doc."""
 
     name: str
@@ -13,7 +15,7 @@ class DocCreate(BaseModel):
     meta: dict = {}
 
 
-class DocUpdate(BaseModel):
+class DocUpdate(SecureReprMixin, BaseModel):
     """Schema for updating doc information."""
 
     name: str | None = None
@@ -22,7 +24,7 @@ class DocUpdate(BaseModel):
     meta: dict | None = None
 
 
-class Doc(BaseModel):
+class Doc(SecureReprMixin, BaseModel):
     """Schema for doc response."""
 
     id: UUID
@@ -45,7 +47,7 @@ class DocDetail(Doc):
     last_modified_by: UUID
 
 
-class DocList(BaseModel):
+class DocList(SecureReprMixin, BaseModel):
     """Schema for doc list response."""
 
     docs: list[DocDetail]
