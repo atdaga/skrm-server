@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid7
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from .k_team import KTeam
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     """Task status enumeration."""
 
     BACKLOG = "Backlog"

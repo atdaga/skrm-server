@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid7
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from .k_team_reviewer import KTeamReviewer
 
 
-class SystemRole(str, Enum):
+class SystemRole(StrEnum):
     """System role enumeration."""
 
     SYSTEM = "system"

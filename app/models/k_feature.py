@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid7
 
@@ -15,14 +15,14 @@ if TYPE_CHECKING:
     from .k_task_feature import KTaskFeature
 
 
-class FeatureType(str, Enum):
+class FeatureType(StrEnum):
     """Feature type enumeration."""
 
     PRODUCT = "Product"
     ENGINEERING = "Engineering"
 
 
-class ReviewResult(str, Enum):
+class ReviewResult(StrEnum):
     """Review result enumeration."""
 
     QUEUED = "Queued"

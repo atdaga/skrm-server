@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid7
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .k_sprint_team import KSprintTeam
 
 
-class SprintStatus(str, Enum):
+class SprintStatus(StrEnum):
     """Sprint status enumeration."""
 
     BACKLOG = "Backlog"
