@@ -8,6 +8,7 @@ from .config import settings
 from .core.db.database import cleanup_database, initialize_database
 from .core.logging import get_logger, setup_logging
 from .core.middleware import RequestContextMiddleware
+from .core.yjs import yjs_manager
 from .routes import auth, health, v1
 
 # Setup logging first
@@ -34,9 +35,25 @@ async def lifespan(fastapi_app: FastAPI) -> AsyncGenerator[None]:
         logger.error("Failed to initialize database", error=str(e))
         raise
 
+    # Start Y.js WebSocket server
+    try:
+        logger.debug("Starting Y.js WebSocket server")
+        await yjs_manager.start()
+    except Exception as e:  # pragma: no cover
+        logger.error("Failed to start Y.js WebSocket server", error=str(e))
+        raise
+
     yield
 
     logger.info("Shutting down application")
+
+    # Stop Y.js WebSocket server
+    try:
+        logger.debug("Stopping Y.js WebSocket server")
+        await yjs_manager.stop()
+        logger.debug("Y.js WebSocket server stopped")
+    except Exception as e:  # pragma: no cover
+        logger.error("Error stopping Y.js WebSocket server", error=str(e))
 
     # Cleanup database connections
     try:

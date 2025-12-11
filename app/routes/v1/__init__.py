@@ -24,6 +24,7 @@ from . import (
     teams,
     txs,
     users,
+    ws,
 )
 
 # Create main v1 router
@@ -51,5 +52,8 @@ router.include_router(task_features.router)
 router.include_router(task_owners.router)
 router.include_router(task_reviewers.router)
 router.include_router(txs.router)
+
+# WebSocket routes
+router.include_router(ws.router)
 
 __all__ = ["router"]

@@ -8,6 +8,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.core.repr_mixin import SecureReprMixin
 
 if TYPE_CHECKING:
+    from .k_doc_yupdate import KDocYupdate
     from .k_feature_doc import KFeatureDoc
     from .k_organization import KOrganization
 
@@ -31,6 +32,10 @@ class KDoc(SecureReprMixin, SQLModel, table=True):
     # Relationships
     organization: "KOrganization" = Relationship()
     feature_docs: list["KFeatureDoc"] = Relationship(
+        back_populates="doc",
+        sa_relationship_kwargs={"passive_deletes": True},
+    )
+    yupdates: list["KDocYupdate"] = Relationship(
         back_populates="doc",
         sa_relationship_kwargs={"passive_deletes": True},
     )

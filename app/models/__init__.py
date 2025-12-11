@@ -2,6 +2,7 @@
 
 from .k_deployment_env import KDeploymentEnv
 from .k_doc import KDoc
+from .k_doc_yupdate import KDocYupdate
 from .k_feature import FeatureType, KFeature, ReviewResult
 from .k_feature_doc import KFeatureDoc
 from .k_fido2_credential import KFido2Credential
@@ -28,6 +29,7 @@ __all__ = [
     "FeatureType",
     "KDeploymentEnv",
     "KDoc",
+    "KDocYupdate",
     "KFeature",
     "KFeatureDoc",
     "KFido2Credential",

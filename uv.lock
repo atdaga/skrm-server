@@ -1863,6 +1863,54 @@ wheels = [
 ]
 
 [[package]]
+name = "pycrdt"
+version = "0.12.44"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/b9/efed7cc3ed07342a11033285ad2d01c823f98121b6d48f8076693a67f095/pycrdt-0.12.44.tar.gz", hash = "sha256:afd317f540ca6c7c830bfadda26f26b811681e70fe1a260894065d3b8f5b359c", size = 83226, upload-time = "2025-12-04T15:18:10.681Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/3d/dd25cd6fedfff27f459193ddbfeef209c7c7084666fe8fbf9e61dda70410/pycrdt-0.12.44-cp314-cp314-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:468eb3e6ba009e364ebcfba78183f308d2f97010d85459a2c6a7b04a85b8a3b8", size = 1769929, upload-time = "2025-12-04T15:17:42.584Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/de/8188b2bca6e9cd1113ada1604bcafad9e0b1261daf0093eea2ea10581335/pycrdt-0.12.44-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d41cb23cc8bf46427fabf6830a99ca5c623fd10fa33ac1661d39ad2e8c62f628", size = 970753, upload-time = "2025-12-04T15:17:44.342Z" },
+    { url = "https://files.pythonhosted.org/packages/85/79/d0bb806e484809883342f3df177f33ffcdda9dc46d6a39eed0fec1191d40/pycrdt-0.12.44-cp314-cp314-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a24831a6d5d27da9a6eae32eb05556450a609b0ff7b88ae544ea2ed70ccb9f9f", size = 985683, upload-time = "2025-12-04T15:17:46.064Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/13/7233c4b5aef7da833d9ae3849355512033387f08155990c66905aa360d8e/pycrdt-0.12.44-cp314-cp314-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:771fe480bcecfa4d89c5fe3738655ee7de860171b4a16d1181af7ed1974bf4be", size = 1165475, upload-time = "2025-12-04T15:17:48.259Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/20/4e0d08c83f9f20642cef3d98013c2fdef4eaa64ed32a2baee3937a448a4c/pycrdt-0.12.44-cp314-cp314-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:d33884753d49b36b8eb11ea75ca4377b32544c462e269a4c1cc4628ba09b7dce", size = 1016161, upload-time = "2025-12-04T15:17:50.246Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/46/a20fc66300a891f684d986c9da1a1cd78d646d2ac2e258712f9e7d814aa2/pycrdt-0.12.44-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1984f4b5381a5ad810f8ecbd7e72044c494f9ead436776f26fb86f320bd9f294", size = 976264, upload-time = "2025-12-04T15:17:51.756Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/31/c7a64f8940d3c830c95a8a11a1f0e8eb53790b944e7d0754807bc816e7ce/pycrdt-0.12.44-cp314-cp314-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:155589040b3ec3cb13e841cd272720a207c9d47a72c064827c29f92dac03a33c", size = 1076751, upload-time = "2025-12-04T15:17:54.127Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/3c/de15d173370a7057f50908eb19cc5fd3a29810cca777f77e3cb03a22d08a/pycrdt-0.12.44-cp314-cp314-win32.whl", hash = "sha256:e51d5b3293e7f569c52e7cee37621b84cf67bfa864f636f73227dfa97cb25060", size = 712949, upload-time = "2025-12-04T15:17:55.538Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/da/61a71ad89771efa6b0cf681c527f1db2a31c88843f65dad228cc50409069/pycrdt-0.12.44-cp314-cp314-win_amd64.whl", hash = "sha256:d86f2f87e250cc21ed6d5d91bc89ec12317c1114b227d4a1a16415fa607d9d1b", size = 768334, upload-time = "2025-12-04T15:17:57.11Z" },
+]
+
+[[package]]
+name = "pycrdt-store"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "pycrdt" },
+    { name = "sqlite-anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/14/cd/644281d79ed3e28a322c39ad8f0befaacc3c8e17afccdfee5fdcfa60e117/pycrdt_store-0.1.2.tar.gz", hash = "sha256:f2dfb6277f26ee3e6a072547c6fe64c9ae2decf5915206a8e0644ea4ff2b1c64", size = 10438, upload-time = "2025-07-09T10:07:26.758Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/43/a09876c868be2e9518153852e6b22a9ed920a9c5c1f5393ed84ae3545d55/pycrdt_store-0.1.2-py3-none-any.whl", hash = "sha256:332fe01855fdbed4d3e5fc2701108e91220badc4445b2156f96dabe71740d28b", size = 9293, upload-time = "2025-07-09T10:07:25.654Z" },
+]
+
+[[package]]
+name = "pycrdt-websocket"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "pycrdt" },
+    { name = "pycrdt-store" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4f/91/a412af8792af22e7e67a7424e7b6c64baada4897777fed885a2cb825155d/pycrdt_websocket-0.16.0.tar.gz", hash = "sha256:89d4d830f41028c55cc9877635f73f94f49131ca73ffac7353d0be421150d0fd", size = 23152, upload-time = "2025-06-11T07:15:54.298Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f4/b7/a1dd4d149fa6279f321bd7dacab66ac31e728fbae175a7d75cf8211b1f30/pycrdt_websocket-0.16.0-py3-none-any.whl", hash = "sha256:4b9ffe47c40867b7e637922680e93471fd801b6e8d6c9f6aa688fd2a17351141", size = 14568, upload-time = "2025-06-11T07:15:52.364Z" },
+]
+
+[[package]]
 name = "pydantic"
 version = "2.12.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2364,6 +2412,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langchain-text-splitters" },
     { name = "openai" },
+    { name = "pycrdt-websocket" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -2423,6 +2472,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.0.2" },
     { name = "langchain-text-splitters", specifier = ">=1.0.0" },
     { name = "openai", specifier = ">=2.7.2" },
+    { name = "pycrdt-websocket", specifier = ">=0.16.0" },
     { name = "pydantic", specifier = ">=2.12.4" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyjwt", specifier = ">=2.10.1" },
@@ -2497,6 +2547,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f0/f2/840d7b9496825333f532d2e3976b8eadbf52034178aac53630d09fe6e1ef/sqlalchemy-2.0.44.tar.gz", hash = "sha256:0ae7454e1ab1d780aee69fd2aae7d6b8670a581d8847f2d1e0f7ddfbf47e5a22", size = 9819830, upload-time = "2025-10-10T14:39:12.935Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9c/5e/6a29fa884d9fb7ddadf6b69490a9d45fded3b38541713010dad16b77d015/sqlalchemy-2.0.44-py3-none-any.whl", hash = "sha256:19de7ca1246fbef9f9d1bff8f1ab25641569df226364a0e40457dc5457c54b05", size = 1928718, upload-time = "2025-10-10T15:29:45.32Z" },
+]
+
+[[package]]
+name = "sqlite-anyio"
+version = "0.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/7c/fddd3d72346519b4e93ea28152ff7626e533278ed914d82df292c850dfe0/sqlite_anyio-0.2.3.tar.gz", hash = "sha256:12a8b0ececaa63d70d5cc5f91edbd932fc1eca9da70ebce2b31d3a199767b3d3", size = 5409, upload-time = "2024-07-22T21:42:49.753Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/bb/6b3d94f713b8cf11f1f802bf625c5df8b98d1a176b9b4ce33c2da12dc977/sqlite_anyio-0.2.3-py3-none-any.whl", hash = "sha256:aa10fa23b7e2ce9c792376630572e1e5837e6f6a9892d90c9ad57419daf4bc01", size = 4711, upload-time = "2024-07-22T21:42:48.855Z" },
 ]
 
 [[package]]
