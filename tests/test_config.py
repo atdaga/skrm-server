@@ -137,7 +137,10 @@ class TestSettingsDefaults:
     def test_default_cors_settings(self):
         """Test default CORS configuration values."""
         settings = Settings()
-        assert settings.cors_origins == ["http://localhost:3000"]
+        assert settings.cors_origins == [
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ]
         assert settings.cors_allow_credentials is True
         assert settings.cors_allow_methods == [
             "GET",

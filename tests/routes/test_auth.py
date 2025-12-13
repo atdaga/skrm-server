@@ -408,10 +408,28 @@ class TestRefreshEndpoint:
 class TestLogoutEndpoint:
     """Test suite for POST /auth/logout endpoint."""
 
+    @pytest.fixture
+    def authenticated_app(self, app, mock_user: UserDetail):
+        """Create a FastAPI app with authentication dependencies overridden."""
+        from app.routes.deps import get_current_user
+
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        return app
+
+    @pytest.fixture
+    async def authenticated_client(self, authenticated_app) -> AsyncClient:
+        """Create an async HTTP client with authentication overrides."""
+        from httpx import ASGITransport
+
+        async with AsyncClient(
+            transport=ASGITransport(app=authenticated_app), base_url="http://test"
+        ) as ac:
+            yield ac
+
     @pytest.mark.asyncio
-    async def test_logout_web_client(self, client: AsyncClient):
+    async def test_logout_web_client(self, authenticated_client: AsyncClient):
         """Test logout clears refresh token cookie for web clients."""
-        response = await client.post("/auth/logout")
+        response = await authenticated_client.post("/auth/logout")
 
         assert response.status_code == 200
         data = response.json()
@@ -420,9 +438,9 @@ class TestLogoutEndpoint:
         # The endpoint successfully executes the logout logic
 
     @pytest.mark.asyncio
-    async def test_logout_mobile_client(self, client: AsyncClient):
+    async def test_logout_mobile_client(self, authenticated_client: AsyncClient):
         """Test logout for mobile clients (no cookie clearing)."""
-        response = await client.post(
+        response = await authenticated_client.post(
             "/auth/logout",
             headers={"X-Client-Type": "mobile"},
         )
@@ -431,6 +449,13 @@ class TestLogoutEndpoint:
         data = response.json()
         assert data["message"] == "Logged out successfully"
         # Mobile clients don't have cookies, so no cookie clearing happens
+
+    @pytest.mark.asyncio
+    async def test_logout_unauthenticated(self, client: AsyncClient):
+        """Test logout returns 401 for unauthenticated requests."""
+        response = await client.post("/auth/logout")
+
+        assert response.status_code == 401
 
 
 class TestMobileClientDetection:

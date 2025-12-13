@@ -207,6 +207,7 @@ async def refresh_token(
 
 @router.post("/logout")
 async def logout(
+    _current_user: Annotated[UserDetail, Depends(get_current_user)],
     request: Request,
     response: Response,
 ) -> dict[str, str]:

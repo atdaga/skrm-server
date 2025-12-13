@@ -75,7 +75,7 @@ class Settings(SecureReprMixin, BaseSettings):
 
     # CORS configuration
     cors_origins: list[str] = Field(
-        default=["http://localhost:3000"],
+        default=["http://localhost:3000", "http://localhost:5173"],
         description="Allowed CORS origins (comma-separated string in env)",
     )
     cors_allow_credentials: bool = Field(
