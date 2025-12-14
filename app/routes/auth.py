@@ -105,6 +105,10 @@ def _create_token_response(
         return token
     else:
         # Web: set cookie, exclude from body
+        # Token from auth logic always has a refresh_token
+        assert (
+            token.refresh_token is not None
+        ), "Refresh token must be present for web clients"
         _set_refresh_token_cookie(
             response, token.refresh_token, settings.refresh_token_expire_days
         )
