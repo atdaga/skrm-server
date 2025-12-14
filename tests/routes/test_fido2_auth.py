@@ -213,7 +213,7 @@ class TestFido2AuthenticateCompleteEndpoint:
             assert data["access_token"] == "test_access_token"
             assert data["token_type"] == "bearer"
             # For web clients, refresh_token is in cookie, not response body
-            assert data["refresh_token"] == ""
+            assert data["refresh_token"] is None
             # Verify refresh token cookie is set
             assert "refresh_token" in result.cookies
             assert result.cookies["refresh_token"] == "test_refresh_token"
@@ -268,7 +268,7 @@ class TestLogin2faEndpoint:
             data = result.json()
             assert data["access_token"] == "test_access_token"
             # For web clients, refresh_token is in cookie, not response body
-            assert data["refresh_token"] == ""
+            assert data["refresh_token"] is None
             # Verify refresh token cookie is set
             assert "refresh_token" in result.cookies
             assert result.cookies["refresh_token"] == "test_refresh_token"

@@ -105,7 +105,7 @@ class Token(SecureReprMixin, BaseModel):
 
     access_token: str
     token_type: str
-    refresh_token: str
+    refresh_token: str | None = None  # None for web clients (token in cookie), str for mobile clients
 
 
 class TokenData(SecureReprMixin, BaseModel):

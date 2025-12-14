@@ -111,7 +111,7 @@ def _create_token_response(
         return Token(
             access_token=token.access_token,
             token_type=token.token_type,
-            refresh_token="",  # Don't expose in body for web clients
+            refresh_token=None,  # Don't expose in body for web clients (token in cookie)
         )
 
 

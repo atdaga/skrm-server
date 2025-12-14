@@ -964,7 +964,7 @@ username=user@example.com&password=password123
 {
   "access_token": "eyJ...",
   "token_type": "bearer",
-  "refresh_token": ""  # Empty for web clients (in cookie)
+  "refresh_token": null  # null for web clients (token in cookie)
 }
 # Set-Cookie: refresh_token=eyJ...; HttpOnly; SameSite=Strict; Path=/api/auth
 ```
@@ -998,7 +998,7 @@ Cookie: refresh_token=eyJ...
 {
   "access_token": "eyJ...",
   "token_type": "bearer",
-  "refresh_token": ""  # Empty (new token in cookie)
+  "refresh_token": null  # null (new token in cookie)
 }
 # Set-Cookie: refresh_token=eyJ...; HttpOnly; SameSite=Strict; Path=/api/auth
 ```

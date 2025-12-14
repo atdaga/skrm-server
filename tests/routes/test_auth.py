@@ -42,7 +42,7 @@ class TestLoginEndpoint:
             assert data["access_token"] == "test_access_token_12345"
             assert data["token_type"] == "bearer"
             # For web clients, refresh_token is in cookie, not response body
-            assert data["refresh_token"] == ""
+            assert data["refresh_token"] is None
             # Verify refresh token cookie is set
             assert "refresh_token" in response.cookies
             assert response.cookies["refresh_token"] == "test_refresh_token_12345"
@@ -217,7 +217,7 @@ class TestRefreshEndpoint:
             assert data["access_token"] == "new_access_token"
             assert data["token_type"] == "bearer"
             # For web clients, refresh_token is in cookie, not response body
-            assert data["refresh_token"] == ""
+            assert data["refresh_token"] is None
             # Verify new refresh token cookie is set
             assert "refresh_token" in response.cookies
             assert response.cookies["refresh_token"] == "new_refresh_token"
@@ -280,7 +280,7 @@ class TestRefreshEndpoint:
             # Verify invalid cookie is cleared
             assert (
                 "refresh_token" not in response.cookies
-                or response.cookies.get("refresh_token") == ""
+                or response.cookies.get("refresh_token") is None
             )
 
     @pytest.mark.asyncio
@@ -371,8 +371,8 @@ class TestRefreshEndpoint:
             data = response.json()
             assert "access_token" in data
             assert data["access_token"] == "new_access_token_xyz"
-            # For web clients, refresh_token is empty in body but set in cookie
-            assert data["refresh_token"] == ""
+            # For web clients, refresh_token is None in body but set in cookie
+            assert data["refresh_token"] is None
             assert "refresh_token" in response.cookies
             assert response.cookies["refresh_token"] == "new_refresh_token_xyz"
 
