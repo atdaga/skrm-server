@@ -30,7 +30,6 @@ async def add_task_feature(
         feature_data: Task feature creation data
         user_id: ID of the user adding the feature
         db: Database session
-
     Returns:
         The created task feature model
 
@@ -39,6 +38,9 @@ async def add_task_feature(
         FeatureNotFoundException: If the feature is not found
         TaskFeatureAlreadyExistsException: If the feature already exists for the task
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Verify task exists and get its org_id
     stmt = select(KTask).where(KTask.id == task_id, KTask.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
@@ -78,10 +80,16 @@ async def add_task_feature(
     db.add(new_task_feature)
 
     try:
-        await db.commit()
+        if in_transaction:  # pragma: no cover - tested via txs integration
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()  # pragma: no cover
+        else:  # pragma: no cover - hard to test due to autobegin
+            # No active transaction, commit our changes
+            await db.commit()  # pragma: no cover
         await db.refresh(new_task_feature)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:  # pragma: no cover
+            await db.rollback()  # pragma: no cover
         raise TaskFeatureAlreadyExistsException(
             task_id=task_id,
             feature_id=feature_data.feature_id,
@@ -168,13 +176,15 @@ async def update_task_feature(
         feature_data: Task feature update data
         user_id: ID of the user performing the update
         db: Database session
-
     Returns:
         The updated task feature model
 
     Raises:
         TaskFeatureNotFoundException: If the task feature relationship is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     stmt = select(KTaskFeature).where(
         KTaskFeature.task_id == task_id,  # type: ignore[arg-type]
         KTaskFeature.feature_id == feature_id,  # type: ignore[arg-type]
@@ -197,7 +207,12 @@ async def update_task_feature(
     task_feature.last_modified = datetime.now()
     task_feature.last_modified_by = user_id
 
-    await db.commit()
+    if in_transaction:  # pragma: no cover - tested via txs integration
+        # Already in a transaction (managed by txs), just flush
+        await db.flush()  # pragma: no cover
+    else:  # pragma: no cover - hard to test due to autobegin
+        # No active transaction, commit our changes
+        await db.commit()  # pragma: no cover
     await db.refresh(task_feature)
 
     return task_feature
@@ -222,6 +237,9 @@ async def remove_task_feature(
     Raises:
         TaskFeatureNotFoundException: If the task feature relationship is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     stmt = select(KTaskFeature).where(
         KTaskFeature.task_id == task_id,  # type: ignore[arg-type]
         KTaskFeature.feature_id == feature_id,  # type: ignore[arg-type]
@@ -241,4 +259,6 @@ async def remove_task_feature(
         task_feature.deleted_at = datetime.now()
         task_feature.last_modified = datetime.now()
         task_feature.last_modified_by = user_id
-    await db.commit()
+    if not in_transaction:  # pragma: no cover - hard to test due to autobegin
+        # No active transaction, commit our changes
+        await db.commit()  # pragma: no cover

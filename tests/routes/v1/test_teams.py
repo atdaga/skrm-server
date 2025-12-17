@@ -511,9 +511,12 @@ class TestDeleteTeam:
         assert response.status_code == 204
         assert response.content == b""  # No content in response
 
-        # Verify team is soft-deleted
-        await async_session.refresh(team)
-        assert team.deleted_at is not None
+        # Verify team is soft-deleted by re-querying
+        from sqlmodel import select
+
+        result = await async_session.execute(select(KTeam).where(KTeam.id == team_id))
+        team_after_delete = result.scalar_one()
+        assert team_after_delete.deleted_at is not None
 
     async def test_delete_team_not_found(
         self,

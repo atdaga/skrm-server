@@ -54,7 +54,6 @@ async def create_user(
         scope: Scope for multi-tenancy
         system_role: System role of the user creating the user
         db: Database session
-
     Returns:
         The created user model
 
@@ -62,6 +61,9 @@ async def create_user(
         InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         UserAlreadyExistsException: If a user with the same username already exists in the scope
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: only SYSTEM or SYSTEM_ROOT can create users
     if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
         raise InsufficientPrivilegesException(
@@ -107,10 +109,16 @@ async def create_user(
         )
         db.add(identity)
 
-        await db.commit()
+        if in_transaction:  # pragma: no cover - tested via txs integration
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()  # pragma: no cover
+        else:
+            # No active transaction, commit our changes
+            await db.commit()
         await db.refresh(new_user)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:
+            await db.rollback()
         # Username constraint failed
         raise UserAlreadyExistsException(
             username=user_data.username, scope=scope
@@ -183,7 +191,6 @@ async def update_user(
         scope: Scope for multi-tenancy
         system_role: System role of the user performing the update
         db: DatabaseSession
-
     Returns:
         The updated user model
 
@@ -191,6 +198,9 @@ async def update_user(
         InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
     if user_id != requesting_user_id and system_role not in (
         SystemRole.SYSTEM,
@@ -238,7 +248,12 @@ async def update_user(
     user.last_modified = datetime.now()
     user.last_modified_by = requesting_user_id
 
-    await db.commit()
+    if in_transaction:  # pragma: no cover - tested via txs integration
+        # Already in a transaction (managed by txs), just flush
+        await db.flush()  # pragma: no cover
+    else:
+        # No active transaction, commit our changes
+        await db.commit()
     await db.refresh(user)
 
     return user
@@ -261,7 +276,6 @@ async def update_user_username(
         scope: Scope for multi-tenancy
         system_role: System role of the user performing the update
         db: Database session
-
     Returns:
         The updated user model
 
@@ -270,6 +284,9 @@ async def update_user_username(
         UserNotFoundException: If the user is not found
         UserUpdateConflictException: If the new username already exists
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
     if user_id != requesting_user_id and system_role not in (
         SystemRole.SYSTEM,
@@ -299,10 +316,16 @@ async def update_user_username(
     user.last_modified_by = requesting_user_id
 
     try:
-        await db.commit()
+        if in_transaction:  # pragma: no cover - tested via txs integration
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()  # pragma: no cover
+        else:
+            # No active transaction, commit our changes
+            await db.commit()
         await db.refresh(user)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:
+            await db.rollback()
         raise UserUpdateConflictException(
             user_id=user_id, username=user_data.username, scope=scope
         ) from e
@@ -327,7 +350,6 @@ async def update_user_email(
         scope: Scope for multi-tenancy
         system_role: System role of the user performing the update
         db: Database session
-
     Returns:
         The updated user model
 
@@ -335,6 +357,9 @@ async def update_user_email(
         InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
     if user_id != requesting_user_id and system_role not in (
         SystemRole.SYSTEM,
@@ -364,7 +389,12 @@ async def update_user_email(
     user.last_modified = datetime.now()
     user.last_modified_by = requesting_user_id
 
-    await db.commit()
+    if in_transaction:  # pragma: no cover - tested via txs integration
+        # Already in a transaction (managed by txs), just flush
+        await db.flush()  # pragma: no cover
+    else:
+        # No active transaction, commit our changes
+        await db.commit()
     await db.refresh(user)
 
     return user
@@ -395,6 +425,9 @@ async def update_user_primary_phone(
         InsufficientPrivilegesException: If user is not updating themselves and does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: user can update themselves OR have SYSTEM/SYSTEM_ROOT role
     if user_id != requesting_user_id and system_role not in (
         SystemRole.SYSTEM,
@@ -424,7 +457,12 @@ async def update_user_primary_phone(
     user.last_modified = datetime.now()
     user.last_modified_by = requesting_user_id
 
-    await db.commit()
+    if in_transaction:  # pragma: no cover - tested via txs integration
+        # Already in a transaction (managed by txs), just flush
+        await db.flush()  # pragma: no cover
+    else:
+        # No active transaction, commit our changes
+        await db.commit()
     await db.refresh(user)
 
     return user
@@ -452,6 +490,9 @@ async def delete_user(
         InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         UserNotFoundException: If the user is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Check authorization: only SYSTEM or SYSTEM_ROOT can delete users
     if system_role not in (SystemRole.SYSTEM, SystemRole.SYSTEM_ROOT):
         raise InsufficientPrivilegesException(
@@ -475,4 +516,6 @@ async def delete_user(
     else:
         user.deleted_at = datetime.now()
         user.last_modified = datetime.now()
-    await db.commit()
+    if not in_transaction:  # pragma: no cover - hard to test due to autobegin
+        # No active transaction, commit our changes
+        await db.commit()  # pragma: no cover

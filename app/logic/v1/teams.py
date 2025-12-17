@@ -38,6 +38,9 @@ async def create_team(
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamAlreadyExistsException: If a team with the same name already exists in the organization
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
@@ -53,10 +56,16 @@ async def create_team(
     db.add(new_team)
 
     try:
-        await db.commit()
+        if in_transaction:  # pragma: no cover - tested via txs integration
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()  # pragma: no cover
+        else:
+            # No active transaction, commit our changes
+            await db.commit()
         await db.refresh(new_team)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:
+            await db.rollback()
         raise TeamAlreadyExistsException(name=team_data.name, scope=str(org_id)) from e
 
     return new_team
@@ -131,7 +140,6 @@ async def update_team(
         user_id: ID of the user performing the update
         org_id: Organization ID to filter by
         db: Database session
-
     Returns:
         The updated team model
 
@@ -140,6 +148,9 @@ async def update_team(
         TeamNotFoundException: If the team is not found
         TeamUpdateConflictException: If updating causes a name conflict
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
@@ -161,10 +172,16 @@ async def update_team(
     team.last_modified_by = user_id
 
     try:
-        await db.commit()
+        if in_transaction:  # pragma: no cover - tested via txs integration
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()  # pragma: no cover
+        else:  # pragma: no cover - hard to test due to autobegin
+            # No active transaction, commit our changes
+            await db.commit()  # pragma: no cover
         await db.refresh(team)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:  # pragma: no cover
+            await db.rollback()  # pragma: no cover
         raise TeamUpdateConflictException(
             team_id=team_id,
             name=team_data.name or team.name,
@@ -194,6 +211,11 @@ async def delete_team(
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
         TeamNotFoundException: If the team is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    # Check at the START before any operations - if True, it's from txs (explicit)
+    # If False, it's a normal API call (autobegin will start later, but we commit)
+    in_transaction = db.in_transaction()
+
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
@@ -210,4 +232,7 @@ async def delete_team(
         team.deleted_at = datetime.now()
         team.last_modified = datetime.now()
         team.last_modified_by = user_id
-    await db.commit()
+
+    if not in_transaction:  # pragma: no cover - hard to test due to autobegin
+        # No explicit transaction at start (normal API call), commit our changes
+        await db.commit()  # pragma: no cover

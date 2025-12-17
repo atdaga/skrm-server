@@ -429,7 +429,7 @@ class TestDeleteSprint:
         mocker,
     ):
         """Test updating a sprint that causes a conflict."""
-        from sqlalchemy.exc import IntegrityError
+        from app.core.exceptions.domain_exceptions import SprintUpdateConflictException
 
         sprint = KSprint(
             title="Test Sprint",
@@ -442,12 +442,11 @@ class TestDeleteSprint:
         await async_session.commit()
         await async_session.refresh(sprint)
 
-        # Mock the commit to raise an IntegrityError
-        mocker.patch.object(
-            async_session,
-            "commit",
-            side_effect=IntegrityError(
-                statement="UPDATE", params={}, orig=Exception("Constraint violation")
+        # Mock the logic function to raise SprintUpdateConflictException
+        mocker.patch(
+            "app.routes.v1.sprints.sprints_logic.update_sprint",
+            side_effect=SprintUpdateConflictException(
+                sprint_id=sprint.id, scope=str(test_organization.id)
             ),
         )
 

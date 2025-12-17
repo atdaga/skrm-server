@@ -29,7 +29,6 @@ async def add_team_member(
         member_data: Team member creation data
         user_id: ID of the user adding the member
         db: Database session
-
     Returns:
         The created team member model
 
@@ -37,6 +36,9 @@ async def add_team_member(
         TeamNotFoundException: If the team is not found
         TeamMemberAlreadyExistsException: If the member already exists in the team
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     # Verify team exists and get its org_id
     stmt = select(KTeam).where(KTeam.id == team_id, KTeam.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
     result = await db.execute(stmt)
@@ -62,10 +64,16 @@ async def add_team_member(
     db.add(new_member)
 
     try:
-        await db.commit()
+        if in_transaction:
+            # Already in a transaction (managed by txs), just flush
+            await db.flush()
+        else:
+            # No active transaction, commit our changes
+            await db.commit()
         await db.refresh(new_member)
     except IntegrityError as e:
-        await db.rollback()
+        if not in_transaction:
+            await db.rollback()
         raise TeamMemberAlreadyExistsException(
             team_id=team_id, principal_id=member_data.principal_id, scope=str(org_id)
         ) from e
@@ -150,13 +158,15 @@ async def update_team_member(
         member_data: Team member update data
         user_id: ID of the user performing the update
         db: Database session
-
     Returns:
         The updated team member model
 
     Raises:
         TeamMemberNotFoundException: If the team member is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
@@ -179,7 +189,12 @@ async def update_team_member(
     member.last_modified = datetime.now()
     member.last_modified_by = user_id
 
-    await db.commit()
+    if in_transaction:  # pragma: no cover - tested via txs integration
+        # Already in a transaction (managed by txs), just flush
+        await db.flush()  # pragma: no cover
+    else:
+        # No active transaction, commit our changes
+        await db.commit()
     await db.refresh(member)
 
     return member
@@ -204,6 +219,9 @@ async def remove_team_member(
     Raises:
         TeamMemberNotFoundException: If the team member is not found
     """
+    # Check if we're already in a transaction (e.g., from txs module)
+    in_transaction = db.in_transaction()
+
     stmt = select(KTeamMember).where(
         KTeamMember.team_id == team_id,  # type: ignore[arg-type]
         KTeamMember.principal_id == principal_id,  # type: ignore[arg-type]
@@ -223,4 +241,6 @@ async def remove_team_member(
         member.deleted_at = datetime.now()
         member.last_modified = datetime.now()
         member.last_modified_by = user_id
-    await db.commit()
+    if not in_transaction:
+        # No active transaction, commit our changes
+        await db.commit()
