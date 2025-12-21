@@ -57,11 +57,17 @@ Install the following before proceeding:
    uv run alembic upgrade head
    ```
 
+   or, with mock data,
+
+   ```bash
+   SEED_MOCK_DATA=true uv run alembic upgrade head
+   ```
+
    > See [Database Migrations](#database-migrations) for detailed migration information.
 
    **Initial Root User Credentials for local (from migration):**
    - Username: `root`
-   - Password: `P@ssword12`
+   - Password: `P@ssword12` (same for mock users)
 
 ### Start the Server
 
