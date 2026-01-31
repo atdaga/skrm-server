@@ -15,6 +15,7 @@ from ...core.exceptions.domain_exceptions import (
     TaskNotFoundException,
 )
 from ...logic.v1 import task_features as task_features_logic
+from ...schemas.task import TaskDetail, TaskList
 from ...schemas.task_feature import (
     TaskFeatureCreate,
     TaskFeatureDetail,
@@ -25,6 +26,7 @@ from ...schemas.user import TokenData, UserDetail
 from ..deps import get_current_token, get_current_user
 
 router = APIRouter(prefix="/tasks/{task_id}/features", tags=["task-features"])
+feature_tasks_router = APIRouter(prefix="/tasks/feature", tags=["task-features"])
 
 
 @router.post("", response_model=TaskFeatureDetail, status_code=status.HTTP_201_CREATED)
@@ -165,6 +167,39 @@ async def remove_task_feature(
             hard_delete=hard_delete,
         )
     except TaskFeatureNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+        ) from e
+
+
+@feature_tasks_router.get("/{feature_id}", response_model=TaskList | TaskFeatureList)
+async def list_tasks_by_feature(
+    feature_id: UUID,
+    token_data: Annotated[TokenData, Depends(get_current_token)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    detail: Annotated[
+        bool,
+        Query(
+            description="Return full task details (true) or junction records (false)"
+        ),
+    ] = True,
+) -> TaskList | TaskFeatureList:
+    """List all tasks associated with a feature."""
+    try:
+        if detail:
+            tasks = await task_features_logic.list_tasks_by_feature_detailed(
+                feature_id=feature_id, db=db
+            )
+            return TaskList(tasks=[TaskDetail.model_validate(t) for t in tasks])
+        else:
+            task_features = await task_features_logic.list_tasks_by_feature(
+                feature_id=feature_id, db=db
+            )
+            return TaskFeatureList(
+                features=[TaskFeatureDetail.model_validate(tf) for tf in task_features]
+            )
+    except FeatureNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=e.message,

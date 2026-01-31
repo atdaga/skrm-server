@@ -8,13 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KFeature, KTask, KTaskFeature, KTeam
 from app.models.k_feature import FeatureType
-from app.routes.v1.task_features import router
+from app.routes.v1.task_features import feature_tasks_router, router
 
 
 @pytest.fixture
 def app_with_overrides(app_with_overrides):
     """Create a FastAPI app with task_features router included."""
     app_with_overrides.include_router(router)
+    app_with_overrides.include_router(feature_tasks_router)
     return app_with_overrides
 
 
@@ -441,4 +442,180 @@ class TestRemoveTaskFeature:
         response = await client.delete(
             f"/tasks/{task.id}/features/{non_existent_feature_id}"
         )
+        assert response.status_code == 404
+
+
+class TestListTasksByFeature:
+    """Test suite for GET /tasks/feature/{feature_id} endpoint."""
+
+    async def test_list_tasks_by_feature_empty(
+        self,
+        client: AsyncClient,
+        feature: KFeature,
+    ):
+        """Test listing tasks when none are linked to the feature (default detail=true)."""
+        response = await client.get(f"/tasks/feature/{feature.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["tasks"] == []
+
+    async def test_list_tasks_by_feature_detail_true(
+        self,
+        client: AsyncClient,
+        feature: KFeature,
+        async_session: AsyncSession,
+        test_org_id: UUID,
+        test_user_id: UUID,
+    ):
+        """Test listing tasks with detail=true returns full task objects."""
+        # Create a team for the tasks
+        team = KTeam(
+            name="Feature Team",
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(team)
+        await async_session.commit()
+        await async_session.refresh(team)
+
+        # Create multiple tasks
+        task1 = KTask(
+            summary="Task one",
+            team_id=team.id,
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        task2 = KTask(
+            summary="Task two",
+            team_id=team.id,
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add_all([task1, task2])
+        await async_session.commit()
+        await async_session.refresh(task1)
+        await async_session.refresh(task2)
+
+        # Link both tasks to the feature
+        tf1 = KTaskFeature(
+            task_id=task1.id,
+            feature_id=feature.id,
+            org_id=test_org_id,
+            role="implements",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        tf2 = KTaskFeature(
+            task_id=task2.id,
+            feature_id=feature.id,
+            org_id=test_org_id,
+            role="tests",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add_all([tf1, tf2])
+        await async_session.commit()
+
+        response = await client.get(f"/tasks/feature/{feature.id}?detail=true")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["tasks"]) == 2
+        task_ids = {t["id"] for t in data["tasks"]}
+        assert str(task1.id) in task_ids
+        assert str(task2.id) in task_ids
+        # Verify full task shape
+        for t in data["tasks"]:
+            assert "summary" in t
+            assert "status" in t
+            assert "team_id" in t
+            assert "created" in t
+            assert "created_by" in t
+
+    async def test_list_tasks_by_feature_detail_false(
+        self,
+        client: AsyncClient,
+        feature: KFeature,
+        async_session: AsyncSession,
+        test_org_id: UUID,
+        test_user_id: UUID,
+    ):
+        """Test listing tasks with detail=false returns junction records."""
+        # Create a team for the tasks
+        team = KTeam(
+            name="Feature Team",
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(team)
+        await async_session.commit()
+        await async_session.refresh(team)
+
+        # Create multiple tasks
+        task1 = KTask(
+            summary="Task one",
+            team_id=team.id,
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        task2 = KTask(
+            summary="Task two",
+            team_id=team.id,
+            org_id=test_org_id,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add_all([task1, task2])
+        await async_session.commit()
+        await async_session.refresh(task1)
+        await async_session.refresh(task2)
+
+        # Link both tasks to the feature
+        tf1 = KTaskFeature(
+            task_id=task1.id,
+            feature_id=feature.id,
+            org_id=test_org_id,
+            role="implements",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        tf2 = KTaskFeature(
+            task_id=task2.id,
+            feature_id=feature.id,
+            org_id=test_org_id,
+            role="tests",
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add_all([tf1, tf2])
+        await async_session.commit()
+
+        response = await client.get(f"/tasks/feature/{feature.id}?detail=false")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["features"]) == 2
+        task_ids = {f["task_id"] for f in data["features"]}
+        assert str(task1.id) in task_ids
+        assert str(task2.id) in task_ids
+        # Verify junction record shape
+        for f in data["features"]:
+            assert "task_id" in f
+            assert "feature_id" in f
+            assert "role" in f
+
+    async def test_list_tasks_by_feature_nonexistent(
+        self,
+        client: AsyncClient,
+    ):
+        """Test listing tasks for a non-existent feature returns 404."""
+        non_existent_id = uuid7()
+
+        response = await client.get(f"/tasks/feature/{non_existent_id}")
         assert response.status_code == 404

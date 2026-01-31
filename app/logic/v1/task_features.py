@@ -218,6 +218,76 @@ async def update_task_feature(
     return task_feature
 
 
+async def list_tasks_by_feature(
+    feature_id: UUID, db: AsyncSession
+) -> list[KTaskFeature]:
+    """List all tasks associated with a feature.
+
+    Args:
+        feature_id: ID of the feature
+        db: Database session
+
+    Returns:
+        List of task feature models
+
+    Raises:
+        FeatureNotFoundException: If the feature is not found
+    """
+    # Verify feature exists
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
+    result = await db.execute(stmt)
+    feature = result.scalar_one_or_none()
+
+    if not feature:
+        raise FeatureNotFoundException(feature_id=feature_id, scope=None)
+
+    # Get all task-feature records for this feature
+    stmt = select(KTaskFeature).where(  # type: ignore[assignment]
+        KTaskFeature.feature_id == feature_id  # type: ignore[arg-type]
+    )
+    result = await db.execute(stmt)
+    task_features = result.scalars().all()
+    return list(task_features)  # type: ignore[arg-type]
+
+
+async def list_tasks_by_feature_detailed(
+    feature_id: UUID, db: AsyncSession
+) -> list[KTask]:
+    """List all tasks associated with a feature, returning full task objects.
+
+    Args:
+        feature_id: ID of the feature
+        db: Database session
+
+    Returns:
+        List of task models
+
+    Raises:
+        FeatureNotFoundException: If the feature is not found
+    """
+    # Verify feature exists
+    stmt = select(KFeature).where(KFeature.id == feature_id, KFeature.deleted_at.is_(None))  # type: ignore[arg-type,union-attr]
+    result = await db.execute(stmt)
+    feature = result.scalar_one_or_none()
+
+    if not feature:
+        raise FeatureNotFoundException(feature_id=feature_id, scope=None)
+
+    # Join KTaskFeature → KTask to get full task objects
+    task_stmt = (
+        select(KTask)
+        .join(KTaskFeature, KTaskFeature.task_id == KTask.id)  # type: ignore[arg-type]
+        .where(
+            KTaskFeature.feature_id == feature_id,  # type: ignore[arg-type]
+            KTaskFeature.deleted_at.is_(None),  # type: ignore[union-attr]
+            KTask.deleted_at.is_(None),  # type: ignore[union-attr]
+        )
+    )
+    result = await db.execute(task_stmt)
+    tasks = result.scalars().all()
+    return list(tasks)  # type: ignore[arg-type]
+
+
 async def remove_task_feature(
     task_id: UUID,
     feature_id: UUID,

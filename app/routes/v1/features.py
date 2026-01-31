@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.db.database import get_db
+from ...core.db.database import get_db, logger
 from ...core.exceptions.domain_exceptions import (
     FeatureAlreadyExistsException,
     FeatureNotFoundException,
@@ -59,16 +59,20 @@ async def list_features(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> FeatureList:
     """List all features in the given organization."""
+    logger.info(f"Listing features for organization {org_id}")
     user_id = UUID(token_data.sub)
+    logger.info(f"User ID: {user_id}")
 
     try:
         features = await features_logic.list_features(
             org_id=org_id, user_id=user_id, db=db
         )
+        logger.info(f"Features: {features}")
         return FeatureList(
             features=[FeatureDetail.model_validate(feature) for feature in features]
         )
     except UnauthorizedOrganizationAccessException as e:
+        logger.error(f"Unauthorized organization access: {e}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=e.message,
