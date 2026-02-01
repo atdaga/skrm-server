@@ -60,6 +60,13 @@ UUIDS = {
     "feature_notifications": "00000040-0000-0000-0006-000000000040",
     "feature_api_gateway": "00000040-0000-0000-0007-000000000040",
     "feature_mobile_app": "00000040-0000-0000-0008-000000000040",
+    "feature_password_recovery": "00000040-0000-0000-0009-000000000040",
+    "feature_chart_components": "00000040-0000-0000-000a-000000000040",
+    "feature_realtime_charts": "00000040-0000-0000-000b-000000000040",
+    "feature_user_mgmt_core": "00000040-0000-0000-000c-000000000040",
+    "feature_user_auth_core": "00000040-0000-0000-000d-000000000040",
+    "feature_analytics_core": "00000040-0000-0000-000e-000000000040",
+    "feature_chart_core": "00000040-0000-0000-000f-000000000040",
     # Tasks (00000050-...-000000000050)
     "task_1": "00000050-0000-0000-0001-000000000050",
     "task_2": "00000050-0000-0000-0002-000000000050",
@@ -71,6 +78,9 @@ UUIDS = {
     "task_8": "00000050-0000-0000-0008-000000000050",
     "task_9": "00000050-0000-0000-0009-000000000050",
     "task_10": "00000050-0000-0000-000a-000000000050",
+    "task_11": "00000050-0000-0000-000b-000000000050",
+    "task_12": "00000050-0000-0000-000c-000000000050",
+    "task_13": "00000050-0000-0000-000d-000000000050",
     # Sprints (00000060-...-000000000060)
     "sprint_1": "00000060-0000-0000-0001-000000000060",
     "sprint_2": "00000060-0000-0000-0002-000000000060",
@@ -308,52 +318,155 @@ def _insert_features() -> None:
     org_id = UUIDS["org_acme"]
 
     # Parent features first (no parent)
+    # (key, name, ftype, summary, derived_guestimate)
     parent_features = [
         ("feature_user_mgmt", "User Management", "Product", "Complete user management system", None),
         ("feature_dashboard", "Dashboard", "Product", "Main application dashboard with widgets", None),
-        ("feature_api_gateway", "API Gateway", "Engineering", "Centralized API gateway for all services", None),
+        ("feature_api_gateway", "API Gateway", "Engineering", "Centralized API gateway for all services", 17.0),
         ("feature_mobile_app", "Mobile App", "Product", "Native mobile application for iOS and Android", None),
     ]
 
-    for key, name, ftype, summary, _parent in parent_features:
+    for key, name, ftype, summary, derived_guestimate in parent_features:
         uuid = UUIDS[key]
+        dg_sql = "NULL" if derived_guestimate is None else str(derived_guestimate)
         op.execute(f"""
             INSERT INTO k_feature (
                 id, org_id, name, parent, parent_path, feature_type,
-                summary, meta, deleted_at,
+                summary, derived_guestimate, meta, deleted_at,
                 created, created_by, last_modified, last_modified_by
             ) VALUES (
                 '{uuid}'::uuid, '{org_id}'::uuid, '{name}', NULL, NULL, '{ftype}',
-                '{summary}', '{{}}', NULL,
+                '{summary}', {dg_sql}, '{{}}', NULL,
                 '{TIMESTAMP}', '{ROOT_USER}'::uuid,
                 '{TIMESTAMP}', '{ROOT_USER}'::uuid
             )
         """)
 
     # Child features (with parent)
+    # (key, name, ftype, summary, parent_key, derived_guestimate)
     child_features = [
-        ("feature_user_auth", "User Authentication", "Engineering", "OAuth2, JWT, and session management", "feature_user_mgmt"),
-        ("feature_user_profiles", "User Profiles", "Engineering", "User profile CRUD and avatar management", "feature_user_mgmt"),
-        ("feature_analytics", "Analytics Widget", "Engineering", "Real-time analytics and charts", "feature_dashboard"),
-        ("feature_notifications", "Notification Center", "Engineering", "In-app and push notification system", "feature_dashboard"),
+        ("feature_user_auth", "User Authentication", "Engineering", "OAuth2, JWT, and session management", "feature_user_mgmt", None),
+        ("feature_user_profiles", "User Profiles", "Engineering", "User profile CRUD and avatar management", "feature_user_mgmt", 2.0),
+        ("feature_analytics", "Analytics Widget", "Engineering", "Real-time analytics and charts", "feature_dashboard", None),
+        ("feature_notifications", "Notification Center", "Engineering", "In-app and push notification system", "feature_dashboard", 4.0),
+        ("feature_user_mgmt_core", "Core User Management", "Engineering", "Core user management database and services", "feature_user_mgmt", 4.0),
     ]
 
-    for key, name, ftype, summary, parent_key in child_features:
+    for key, name, ftype, summary, parent_key, derived_guestimate in child_features:
         uuid = UUIDS[key]
         parent_uuid = UUIDS[parent_key]
+        dg_sql = "NULL" if derived_guestimate is None else str(derived_guestimate)
         op.execute(f"""
             INSERT INTO k_feature (
                 id, org_id, name, parent, parent_path, feature_type,
-                summary, meta, deleted_at,
+                summary, derived_guestimate, meta, deleted_at,
                 created, created_by, last_modified, last_modified_by
             ) VALUES (
                 '{uuid}'::uuid, '{org_id}'::uuid, '{name}',
                 '{parent_uuid}'::uuid, '/{parent_uuid}', '{ftype}',
-                '{summary}', '{{}}', NULL,
+                '{summary}', {dg_sql}, '{{}}', NULL,
                 '{TIMESTAMP}', '{ROOT_USER}'::uuid,
                 '{TIMESTAMP}', '{ROOT_USER}'::uuid
             )
         """)
+
+    # Grandchild and great-grandchild features
+    # (key, name, ftype, summary, parent_key, grandparent_key, derived_guestimate)
+    deeper_features = [
+        (
+            "feature_password_recovery",
+            "Password Recovery",
+            "Engineering",
+            "Password reset and account recovery flows",
+            "feature_user_auth",
+            "feature_user_mgmt",
+            None,
+        ),
+        (
+            "feature_chart_components",
+            "Chart Components",
+            "Engineering",
+            "Reusable chart component library",
+            "feature_analytics",
+            "feature_dashboard",
+            None,
+        ),
+        (
+            "feature_user_auth_core",
+            "Auth Implementation",
+            "Engineering",
+            "Core authentication implementation including login and OAuth",
+            "feature_user_auth",
+            "feature_user_mgmt",
+            8.0,
+        ),
+        (
+            "feature_analytics_core",
+            "Analytics Core",
+            "Engineering",
+            "Core analytics dashboard implementation",
+            "feature_analytics",
+            "feature_dashboard",
+            6.0,
+        ),
+    ]
+
+    for key, name, ftype, summary, parent_key, grandparent_key, derived_guestimate in deeper_features:
+        uuid = UUIDS[key]
+        parent_uuid = UUIDS[parent_key]
+        grandparent_uuid = UUIDS[grandparent_key]
+        dg_sql = "NULL" if derived_guestimate is None else str(derived_guestimate)
+        op.execute(f"""
+            INSERT INTO k_feature (
+                id, org_id, name, parent, parent_path, feature_type,
+                summary, derived_guestimate, meta, deleted_at,
+                created, created_by, last_modified, last_modified_by
+            ) VALUES (
+                '{uuid}'::uuid, '{org_id}'::uuid, '{name}',
+                '{parent_uuid}'::uuid, '/{grandparent_uuid}/{parent_uuid}', '{ftype}',
+                '{summary}', {dg_sql}, '{{}}', NULL,
+                '{TIMESTAMP}', '{ROOT_USER}'::uuid,
+                '{TIMESTAMP}', '{ROOT_USER}'::uuid
+            )
+        """)
+
+    # Great-grandchild features under Chart Components under Analytics under Dashboard
+    chart_uuid = UUIDS["feature_chart_components"]
+    analytics_uuid = UUIDS["feature_analytics"]
+    dashboard_uuid = UUIDS["feature_dashboard"]
+    great_grandchild_path = f"/{dashboard_uuid}/{analytics_uuid}/{chart_uuid}"
+
+    rt_uuid = UUIDS["feature_realtime_charts"]
+    op.execute(f"""
+        INSERT INTO k_feature (
+            id, org_id, name, parent, parent_path, feature_type,
+            summary, derived_guestimate, meta, deleted_at,
+            created, created_by, last_modified, last_modified_by
+        ) VALUES (
+            '{rt_uuid}'::uuid, '{org_id}'::uuid, 'Real-time Charts',
+            '{chart_uuid}'::uuid,
+            '{great_grandchild_path}', 'Engineering',
+            'Live-updating chart components with WebSocket data feeds', NULL, '{{}}', NULL,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid
+        )
+    """)
+
+    chart_core_uuid = UUIDS["feature_chart_core"]
+    op.execute(f"""
+        INSERT INTO k_feature (
+            id, org_id, name, parent, parent_path, feature_type,
+            summary, derived_guestimate, meta, deleted_at,
+            created, created_by, last_modified, last_modified_by
+        ) VALUES (
+            '{chart_core_uuid}'::uuid, '{org_id}'::uuid, 'Chart Integration',
+            '{chart_uuid}'::uuid,
+            '{great_grandchild_path}', 'Engineering',
+            'Wrapper and integration layer for chart component library', 5.0, '{{}}', NULL,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid
+        )
+    """)
 
 
 def _insert_tasks() -> None:
@@ -372,6 +485,8 @@ def _insert_tasks() -> None:
         ("task_8", "Add rate limiting", "Implement API rate limiting to prevent abuse and ensure fair usage", "team_platform", "Review", 3.0),
         ("task_9", "Create notification API", "Build REST API endpoints for managing user notifications", "team_backend", "OnDeck", 4.0),
         ("task_10", "Deploy staging environment", "Set up staging environment with Docker and Kubernetes", "team_platform", "Deployed", 2.0),
+        ("task_11", "Build password reset flow", "Implement complete password reset flow with email verification", "team_backend", "OnDeck", 3.0),
+        ("task_13", "Create chart library wrapper", "Build a wrapper around D3.js for reusable chart components", "team_frontend", "InProgress", 5.0),
     ]
 
     for key, summary, description, team_key, status, guestimate in tasks:
@@ -391,6 +506,25 @@ def _insert_tasks() -> None:
             )
         """)
 
+    # task_12 has NULL guestimate - insert separately
+    task_12_uuid = UUIDS["task_12"]
+    team_frontend_uuid = UUIDS["team_frontend"]
+    op.execute(f"""
+        INSERT INTO k_task (
+            id, org_id, summary, description, team_id, guestimate, status,
+            meta, deleted_at,
+            created, created_by, last_modified, last_modified_by
+        ) VALUES (
+            '{task_12_uuid}'::uuid, '{org_id}'::uuid,
+            'Design recovery email UI',
+            'Design and implement email templates for password recovery',
+            '{team_frontend_uuid}'::uuid, NULL, 'Backlog',
+            '{{}}', NULL,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid,
+            '{TIMESTAMP}', '{ROOT_USER}'::uuid
+        )
+    """)
+
 
 def _insert_task_owners() -> None:
     """Assign owners to tasks based on team membership."""
@@ -409,6 +543,9 @@ def _insert_task_owners() -> None:
         ("task_8", "user_eve"),  # Platform task -> Eve
         ("task_9", "user_charlie"),  # Backend task -> Charlie
         ("task_10", "user_diana"),  # Platform task -> Diana
+        ("task_11", "user_charlie"),  # Backend task -> Charlie
+        ("task_12", "user_alice"),  # Frontend task -> Alice
+        ("task_13", "user_bob"),  # Frontend task -> Bob
     ]
 
     for task_key, user_key in owners:
@@ -432,16 +569,19 @@ def _insert_task_features() -> None:
     org_id = UUIDS["org_acme"]
 
     links = [
-        ("task_1", "feature_user_auth"),  # Login form -> User Auth
-        ("task_2", "feature_user_auth"),  # OAuth2 -> User Auth
+        ("task_1", "feature_user_auth_core"),  # Login form -> Auth Implementation
+        ("task_2", "feature_user_auth_core"),  # OAuth2 -> Auth Implementation
         ("task_3", "feature_user_profiles"),  # Avatar upload -> User Profiles
-        ("task_4", "feature_user_mgmt"),  # DB schema -> User Management
+        ("task_4", "feature_user_mgmt_core"),  # DB schema -> Core User Management
         ("task_5", "feature_api_gateway"),  # CI/CD -> API Gateway
-        ("task_6", "feature_analytics"),  # Analytics dashboard -> Analytics Widget
+        ("task_6", "feature_analytics_core"),  # Analytics dashboard -> Analytics Core
         ("task_7", "feature_api_gateway"),  # Caching -> API Gateway
         ("task_8", "feature_api_gateway"),  # Rate limiting -> API Gateway
         ("task_9", "feature_notifications"),  # Notification API -> Notifications
         ("task_10", "feature_api_gateway"),  # Staging deploy -> API Gateway
+        ("task_11", "feature_password_recovery"),  # Password reset -> Password Recovery
+        ("task_12", "feature_password_recovery"),  # Recovery email UI -> Password Recovery
+        ("task_13", "feature_chart_core"),  # Chart library -> Chart Integration
     ]
 
     for task_key, feature_key in links:
@@ -608,16 +748,35 @@ def downgrade() -> None:
     op.execute(f"DELETE FROM k_task_owner WHERE org_id = '{org_id}'")
 
     # 5. Tasks
-    for i in range(1, 11):
+    for i in range(1, 14):
         key = f"task_{i}"
         op.execute(f"DELETE FROM k_task WHERE id = '{UUIDS[key]}'")
 
-    # 6. Features (delete children before parents due to FK)
+    # 6. Features (delete deepest children first, then parents due to FK)
+    # Great-grandchild features
+    greatgrandchild_features = [
+        "feature_realtime_charts",
+        "feature_chart_core",
+    ]
+    for key in greatgrandchild_features:
+        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
+
+    # Grandchild features
+    grandchild_features = [
+        "feature_password_recovery",
+        "feature_chart_components",
+        "feature_user_auth_core",
+        "feature_analytics_core",
+    ]
+    for key in grandchild_features:
+        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
+
     child_features = [
         "feature_user_auth",
         "feature_user_profiles",
         "feature_analytics",
         "feature_notifications",
+        "feature_user_mgmt_core",
     ]
     for key in child_features:
         op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
