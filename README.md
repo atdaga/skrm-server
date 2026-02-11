@@ -69,6 +69,26 @@ Install the following before proceeding:
    - Username: `root`
    - Password: `P@ssword12` (same for mock users)
 
+   **Mock Users (when `SEED_MOCK_DATA=true`):**
+
+   All mock users belong to **Acme Corporation** organization and share the password `P@ssword12`.
+
+   | Username | Name | Email | Role | Team(s) |
+   |----------|------|-------|------|---------|
+   | alice | Alice Anderson | alice@example.com | systemUser | Frontend |
+   | bob | Bob Builder | bob@example.com | systemUser | Frontend, Backend |
+   | charlie | Charlie Chen | charlie@example.com | systemUser | Backend |
+   | diana | Diana Davis | diana@example.com | systemAdmin | Platform |
+   | eve | Eve Evans | eve@example.com | systemUser | Platform |
+   | frank | Frank Fischer | frank@example.com | systemUser | QA |
+   | grace | Grace Garcia | grace@example.com | systemUser | QA |
+
+   **Teams:**
+   - **Frontend**: Alice, Bob
+   - **Backend**: Bob, Charlie
+   - **Platform**: Diana, Eve
+   - **QA**: Frank, Grace
+
 ### Start the Server
 
 ```bash
