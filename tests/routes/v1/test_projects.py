@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganization, KProject
 from app.routes.v1.projects import router
+from tests.conftest import get_test_org_id
 
 
 @pytest.fixture
@@ -211,6 +212,7 @@ class TestGetProject:
     ):
         """Test getting a project with wrong org_id."""
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -361,6 +363,7 @@ class TestUpdateProject:
         """Test that updating a project in unauthorized org fails."""
         # Create a project in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -442,6 +445,7 @@ class TestDeleteProject:
         """Test that deleting a project in unauthorized org fails."""
         # Create a project in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,

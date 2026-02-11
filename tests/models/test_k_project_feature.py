@@ -9,6 +9,7 @@ from sqlmodel import select
 
 from app.models import KFeature, KProject, KProjectFeature
 from app.models.k_feature import FeatureType
+from tests.conftest import get_test_feature_id
 
 
 class TestKProjectFeatureModel:
@@ -36,6 +37,7 @@ class TestKProjectFeatureModel:
     ) -> KFeature:
         """Create a test feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="Test Feature",
             org_id=test_org_id,
             feature_type=FeatureType.PRODUCT,

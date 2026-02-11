@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import KFeature, KOrganization
 from app.models.k_feature import FeatureType
 from app.routes.v1.features import router
+from tests.conftest import get_test_feature_id, get_test_org_id
 
 
 @pytest.fixture
@@ -92,6 +93,7 @@ class TestCreateFeature:
         """Test creating a feature with a parent reference."""
         # Create parent feature
         parent_feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             org_id=test_organization.id,
             name="Parent Feature",
             feature_type=FeatureType.PRODUCT,
@@ -172,6 +174,7 @@ class TestListFeatures:
         # Create multiple features
         features = [
             KFeature(
+                id=get_test_feature_id(test_organization.id),
                 name="Feature 1",
                 feature_type=FeatureType.PRODUCT,
                 org_id=test_organization.id,
@@ -179,6 +182,7 @@ class TestListFeatures:
                 last_modified_by=test_user_id,
             ),
             KFeature(
+                id=get_test_feature_id(test_organization.id),
                 name="Feature 2",
                 feature_type=FeatureType.ENGINEERING,
                 org_id=test_organization.id,
@@ -220,6 +224,7 @@ class TestGetFeature:
     ):
         """Test successfully retrieving a feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Test Feature",
             feature_type=FeatureType.PRODUCT,
             summary="Test summary",
@@ -260,6 +265,7 @@ class TestGetFeature:
     ):
         """Test getting a feature with wrong org_id."""
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -270,6 +276,7 @@ class TestGetFeature:
         await async_session.refresh(other_org)
 
         feature = KFeature(
+            id=get_test_feature_id(other_org.id),
             name="Secret Feature",
             feature_type=FeatureType.PRODUCT,
             org_id=other_org.id,
@@ -298,6 +305,7 @@ class TestUpdateFeature:
     ):
         """Test successfully updating a feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Old Name",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -336,6 +344,7 @@ class TestUpdateFeature:
     ):
         """Test updating only some fields of a feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Original Feature",
             feature_type=FeatureType.PRODUCT,
             summary="Original summary",
@@ -371,6 +380,7 @@ class TestUpdateFeature:
         """Test updating all optional fields including parent, parent_path, feature_type, details, and derived_guestimate."""
         # Create parent features
         parent1 = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Parent Feature 1",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -378,6 +388,7 @@ class TestUpdateFeature:
             last_modified_by=test_user_id,
         )
         parent2 = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Parent Feature 2",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -391,6 +402,7 @@ class TestUpdateFeature:
 
         # Create a feature with initial values
         feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Child Feature",
             feature_type=FeatureType.PRODUCT,
             parent=parent1.id,
@@ -455,6 +467,7 @@ class TestUpdateFeature:
     ):
         """Test that updating to a duplicate name fails."""
         feature1 = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Feature One",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -462,6 +475,7 @@ class TestUpdateFeature:
             last_modified_by=test_user_id,
         )
         feature2 = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="Feature Two",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -490,6 +504,7 @@ class TestUpdateFeature:
         """Test that updating a feature in unauthorized org fails."""
         # Create a feature in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -500,6 +515,7 @@ class TestUpdateFeature:
         await async_session.refresh(other_org)
 
         feature = KFeature(
+            id=get_test_feature_id(other_org.id),
             name="Other Feature",
             feature_type=FeatureType.PRODUCT,
             org_id=other_org.id,
@@ -531,6 +547,7 @@ class TestDeleteFeature:
     ):
         """Test successfully deleting a feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_organization.id),
             name="To Delete",
             feature_type=FeatureType.PRODUCT,
             org_id=test_organization.id,
@@ -573,6 +590,7 @@ class TestDeleteFeature:
         """Test that deleting a feature in unauthorized org fails."""
         # Create a feature in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -583,6 +601,7 @@ class TestDeleteFeature:
         await async_session.refresh(other_org)
 
         feature = KFeature(
+            id=get_test_feature_id(other_org.id),
             name="Other Feature",
             feature_type=FeatureType.PRODUCT,
             org_id=other_org.id,

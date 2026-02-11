@@ -4,12 +4,43 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.exceptions.domain_exceptions import TaskNotFoundException
+from ...core.exceptions.domain_exceptions import (
+    TaskCreationFailedException,
+    TaskNotFoundException,
+)
+from ...core.task_id import extract_task_number, generate_task_id
 from ...models import KTask
 from ...schemas.task import TaskCreate, TaskUpdate
 from ..deps import verify_organization_membership
+
+MAX_RETRIES = 10
+
+
+async def get_next_task_number(org_id: UUID, db: AsyncSession) -> int:
+    """Get next task number by finding max existing number + 1.
+
+    Args:
+        org_id: Organization ID to find tasks for
+        db: Database session
+
+    Returns:
+        The next available task number (1 if no tasks exist)
+    """
+    stmt = select(KTask.id).where(  # type: ignore[call-overload]
+        KTask.org_id == org_id,
+        KTask.deleted_at.is_(None),  # type: ignore[union-attr]
+    )
+    result = await db.execute(stmt)
+    task_ids = result.scalars().all()
+
+    if not task_ids:
+        return 1
+
+    max_number = max(extract_task_number(tid) for tid in task_ids)
+    return max_number + 1
 
 
 async def create_task(
@@ -31,6 +62,7 @@ async def create_task(
 
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
+        TaskCreationFailedException: If task creation fails after retries
     """
     # Check if we're already in a transaction (e.g., from txs module)
     in_transaction = db.in_transaction()
@@ -38,30 +70,49 @@ async def create_task(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    # Create new task with audit fields
-    new_task = KTask(
-        org_id=org_id,
-        summary=task_data.summary,
-        description=task_data.description,
-        team_id=task_data.team_id,
-        guestimate=task_data.guestimate,
-        status=task_data.status,
-        review_result=task_data.review_result,
-        meta=task_data.meta,
-        created_by=user_id,
-        last_modified_by=user_id,
+    for attempt in range(MAX_RETRIES):
+        try:
+            next_number = await get_next_task_number(org_id, db) + attempt
+            task_id = generate_task_id(org_id, next_number)
+
+            # Create new task with audit fields
+            new_task = KTask(
+                id=task_id,
+                org_id=org_id,
+                summary=task_data.summary,
+                description=task_data.description,
+                team_id=task_data.team_id,
+                guestimate=task_data.guestimate,
+                status=task_data.status,
+                review_result=task_data.review_result,
+                meta=task_data.meta,
+                created_by=user_id,
+                last_modified_by=user_id,
+            )
+
+            db.add(new_task)
+            if in_transaction:  # pragma: no cover - tested via txs integration
+                # Already in a transaction (managed by txs), just flush
+                await db.flush()  # pragma: no cover
+            else:  # pragma: no cover - hard to test due to autobegin
+                # No active transaction, commit our changes
+                await db.commit()  # pragma: no cover
+            await db.refresh(new_task)
+
+            return new_task
+        except IntegrityError:  # pragma: no cover - race condition handling
+            await db.rollback()  # pragma: no cover
+            if attempt == MAX_RETRIES - 1:  # pragma: no cover
+                raise TaskCreationFailedException(  # pragma: no cover
+                    message=f"Failed to create task after {MAX_RETRIES} retries due to ID collisions",
+                    org_id=org_id,
+                ) from None
+            continue  # pragma: no cover
+
+    # This should never be reached, but type checker needs it
+    raise TaskCreationFailedException(  # pragma: no cover
+        message="Failed to create task", org_id=org_id
     )
-
-    db.add(new_task)
-    if in_transaction:  # pragma: no cover - tested via txs integration
-        # Already in a transaction (managed by txs), just flush
-        await db.flush()  # pragma: no cover
-    else:  # pragma: no cover - hard to test due to autobegin
-        # No active transaction, commit our changes
-        await db.commit()  # pragma: no cover
-    await db.refresh(new_task)
-
-    return new_task
 
 
 async def list_tasks(org_id: UUID, user_id: UUID, db: AsyncSession) -> list[KTask]:

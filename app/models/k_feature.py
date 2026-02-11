@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Optional
-from uuid import UUID, uuid7
+from uuid import UUID
 
 from sqlalchemy import JSON, Text, UniqueConstraint
 from sqlmodel import Column, Field, Relationship, SQLModel, String
@@ -36,7 +36,7 @@ class KFeature(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_feature"
     __table_args__ = (UniqueConstraint("org_id", "name"),)
 
-    id: UUID = Field(default_factory=uuid7, primary_key=True)
+    id: UUID = Field(primary_key=True)
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     name: str = Field(..., max_length=255)
     parent: UUID | None = Field(default=None, foreign_key="k_feature.id", index=True)

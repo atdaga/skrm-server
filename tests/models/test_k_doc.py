@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.k_doc import KDoc
+from tests.conftest import get_test_org_id
 
 
 class TestKDocModel:
@@ -148,6 +149,7 @@ class TestKDocModel:
 
         # Create a second organization
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Organization",
             alias="other_org",
             created_by=creator_id,
@@ -272,6 +274,7 @@ python main.py
 
         # Create a second organization
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Organization",
             alias="other_org_query",
             created_by=creator_id,

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganization, KPrincipal
 from app.routes.v1.organizations import router
-from tests.conftest import add_user_to_organization
+from tests.conftest import add_user_to_organization, get_test_org_id
 
 
 @pytest.fixture
@@ -135,6 +135,7 @@ class TestCreateOrganization:
 
         # Create first organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Duplicate Org",
             alias="duplicate_org_1",
             created_by=test_user_id,
@@ -176,6 +177,7 @@ class TestCreateOrganization:
 
         # Create first organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="First Org",
             alias="same_alias",
             created_by=test_user_id,
@@ -353,6 +355,7 @@ class TestListOrganizations:
 
         for org_data in orgs_data:
             org = KOrganization(
+                id=get_test_org_id(),
                 name=org_data["name"],
                 alias=org_data["alias"],
                 meta=org_data["meta"],
@@ -432,6 +435,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Old Name",
             alias="old_alias",
             created_by=test_user_id,
@@ -478,6 +482,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="old_alias",
             created_by=test_user_id,
@@ -524,6 +529,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             meta={"old": "data"},
@@ -570,6 +576,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Old Name",
             alias="old_alias",
             meta={"old": "data"},
@@ -634,12 +641,14 @@ class TestUpdateOrganization:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Org 1",
             alias="org_1",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Org 2",
             alias="org_2",
             created_by=test_user_id,
@@ -684,12 +693,14 @@ class TestUpdateOrganization:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Org 1",
             alias="org_1",
             created_by=test_user_id,
             last_modified_by=test_user_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Org 2",
             alias="org_2",
             created_by=test_user_id,
@@ -734,6 +745,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -779,6 +791,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -819,6 +832,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -859,6 +873,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -899,6 +914,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -941,6 +957,7 @@ class TestUpdateOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -985,6 +1002,7 @@ class TestDeleteOrganization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="To Delete",
             alias="to_delete",
             created_by=test_user_id,
@@ -1282,6 +1300,7 @@ class TestSystemRoleAuthorization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -1352,6 +1371,7 @@ class TestSystemRoleAuthorization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,
@@ -1423,6 +1443,7 @@ class TestSystemRoleAuthorization:
 
         # Create organization
         org = KOrganization(
+            id=get_test_org_id(),
             name="Test Org",
             alias="test_org",
             created_by=test_user_id,

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.k_team import KTeam
+from tests.conftest import get_test_org_id
 
 
 class TestKTeamModel:
@@ -138,12 +139,14 @@ class TestKTeamModel:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org1",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org2",
             created_by=creator_id,
@@ -213,12 +216,14 @@ class TestKTeamModel:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org1_query",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org2_query",
             created_by=creator_id,
@@ -363,6 +368,7 @@ class TestKTeamModel:
         orgs = []
         for i in range(3):
             org = KOrganization(
+                id=get_test_org_id(),
                 name=f"Organization {i+1}",
                 alias=f"org{i+1}_list",
                 created_by=creator_id,
@@ -404,12 +410,14 @@ class TestKTeamModel:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org1_count",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org2_count",
             created_by=creator_id,

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid7
+from uuid import UUID
 
 from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
@@ -18,7 +18,7 @@ class KOrganization(SecureReprMixin, SQLModel, table=True):
         UniqueConstraint("alias"),
     )
 
-    id: UUID = Field(default_factory=uuid7, primary_key=True)
+    id: UUID = Field(primary_key=True)
     name: str = Field(..., max_length=255)
     alias: str = Field(..., max_length=255)
     meta: dict = Field(default_factory=dict, sa_type=JSON)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import KOrganization, KTask, KTeam
 from app.models.k_task import TaskStatus
 from app.routes.v1.tasks import router
+from tests.conftest import get_test_org_id, get_test_task_id
 
 
 @pytest.fixture
@@ -138,6 +139,47 @@ class TestCreateTask:
         )
         assert response.status_code == 403
 
+    async def test_create_task_increments_id_from_existing(
+        self,
+        client: AsyncClient,
+        test_organization: KOrganization,
+        test_team: KTeam,
+        async_session: AsyncSession,
+        test_user_id: UUID,
+    ):
+        """Test that creating a task increments ID based on existing tasks."""
+        # Create an existing task directly in the database
+        existing_task = KTask(
+            id=get_test_task_id(test_organization.id),
+            summary="Existing task",
+            org_id=test_organization.id,
+            team_id=test_team.id,
+            status=TaskStatus.BACKLOG,
+            created_by=test_user_id,
+            last_modified_by=test_user_id,
+        )
+        async_session.add(existing_task)
+        await async_session.commit()
+
+        # Now create a new task via the API (which uses get_next_task_number)
+        task_data = {
+            "team_id": str(test_team.id),
+            "summary": "New task after existing",
+        }
+
+        response = await client.post(
+            f"/tasks?org_id={test_organization.id}", json=task_data
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["summary"] == "New task after existing"
+        # The new task should have a higher task number than the existing one
+        new_task_id = UUID(data["id"])
+        existing_task_number = int(str(existing_task.id).split("-")[4])
+        new_task_number = int(str(new_task_id).split("-")[4])
+        assert new_task_number > existing_task_number
+
 
 class TestListTasks:
     """Test suite for GET /tasks endpoint."""
@@ -164,6 +206,7 @@ class TestListTasks:
         # Create multiple tasks
         tasks = [
             KTask(
+                id=get_test_task_id(test_organization.id),
                 summary="First task summary",
                 org_id=test_organization.id,
                 team_id=test_team.id,
@@ -172,6 +215,7 @@ class TestListTasks:
                 last_modified_by=test_user_id,
             ),
             KTask(
+                id=get_test_task_id(test_organization.id),
                 summary="Second task summary",
                 org_id=test_organization.id,
                 team_id=test_team.id,
@@ -215,6 +259,7 @@ class TestGetTask:
     ):
         """Test successfully retrieving a task."""
         task = KTask(
+            id=get_test_task_id(test_organization.id),
             summary="Test summary",
             org_id=test_organization.id,
             team_id=test_team.id,
@@ -254,6 +299,7 @@ class TestGetTask:
     ):
         """Test getting a task with wrong org_id."""
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -264,6 +310,7 @@ class TestGetTask:
         await async_session.refresh(other_org)
 
         task = KTask(
+            id=get_test_task_id(other_org.id),
             summary="Secret task summary",
             org_id=other_org.id,
             team_id=test_team.id,
@@ -293,6 +340,7 @@ class TestUpdateTask:
     ):
         """Test successfully updating a task."""
         task = KTask(
+            id=get_test_task_id(test_organization.id),
             summary="Old summary",
             org_id=test_organization.id,
             team_id=test_team.id,
@@ -333,6 +381,7 @@ class TestUpdateTask:
     ):
         """Test updating only some fields of a task."""
         task = KTask(
+            id=get_test_task_id(test_organization.id),
             summary="Original summary",
             guestimate=3.0,
             org_id=test_organization.id,
@@ -386,6 +435,7 @@ class TestUpdateTask:
 
         # Create a task with initial values
         task = KTask(
+            id=get_test_task_id(test_organization.id),
             summary="Initial summary",
             description="Initial description",
             team_id=team1.id,
@@ -448,6 +498,7 @@ class TestUpdateTask:
         """Test that updating a task in unauthorized org fails."""
         # Create a task in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -458,6 +509,7 @@ class TestUpdateTask:
         await async_session.refresh(other_org)
 
         task = KTask(
+            id=get_test_task_id(other_org.id),
             summary="Other task summary",
             org_id=other_org.id,
             team_id=test_team.id,
@@ -490,6 +542,7 @@ class TestDeleteTask:
     ):
         """Test successfully deleting a task."""
         task = KTask(
+            id=get_test_task_id(test_organization.id),
             summary="Task to delete",
             org_id=test_organization.id,
             team_id=test_team.id,
@@ -533,6 +586,7 @@ class TestDeleteTask:
         """Test that deleting a task in unauthorized org fails."""
         # Create a task in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -543,6 +597,7 @@ class TestDeleteTask:
         await async_session.refresh(other_org)
 
         task = KTask(
+            id=get_test_task_id(other_org.id),
             summary="Other task summary",
             org_id=other_org.id,
             team_id=test_team.id,

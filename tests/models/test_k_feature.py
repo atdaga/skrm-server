@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.k_feature import FeatureType, KFeature, ReviewResult
+from tests.conftest import get_test_feature_id, get_test_org_id
 
 
 class TestKFeatureModel:
@@ -20,6 +21,7 @@ class TestKFeatureModel:
     ):
         """Test creating a feature with only required fields."""
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="User Authentication",
             feature_type=FeatureType.ENGINEERING,
@@ -42,6 +44,7 @@ class TestKFeatureModel:
     ):
         """Test that default values are set correctly."""
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Dashboard UI",
             feature_type=FeatureType.PRODUCT,
@@ -71,6 +74,7 @@ class TestKFeatureModel:
     ):
         """Test creating a feature with all fields populated."""
         parent_feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Parent Feature",
             feature_type=FeatureType.PRODUCT,
@@ -82,6 +86,7 @@ class TestKFeatureModel:
         await session.refresh(parent_feature)
 
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Child Feature",
             parent=parent_feature.id,
@@ -116,6 +121,7 @@ class TestKFeatureModel:
     ):
         """Test that feature names must be unique per organization."""
         feature1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Duplicate Feature",
             feature_type=FeatureType.PRODUCT,
@@ -128,6 +134,7 @@ class TestKFeatureModel:
 
         # Try to create another feature with the same name in the same org
         feature2 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Duplicate Feature",
             feature_type=FeatureType.ENGINEERING,
@@ -148,6 +155,7 @@ class TestKFeatureModel:
 
         # Create a second organization
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Organization",
             alias="other_org",
             created_by=creator_id,
@@ -158,6 +166,7 @@ class TestKFeatureModel:
         await session.refresh(other_org)
 
         feature1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Payment Gateway",
             feature_type=FeatureType.PRODUCT,
@@ -166,6 +175,7 @@ class TestKFeatureModel:
         )
 
         feature2 = KFeature(
+            id=get_test_feature_id(other_org.id),
             org_id=other_org.id,
             name="Payment Gateway",
             feature_type=FeatureType.PRODUCT,
@@ -189,6 +199,7 @@ class TestKFeatureModel:
         """Test that feature type and review result enums work correctly."""
         # Test Product feature type
         product_feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Product Feature",
             feature_type=FeatureType.PRODUCT,
@@ -202,6 +213,7 @@ class TestKFeatureModel:
 
         # Test Engineering feature type
         eng_feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Engineering Feature",
             feature_type=FeatureType.ENGINEERING,
@@ -222,6 +234,7 @@ class TestKFeatureModel:
             ReviewResult.SKIPPED,
         ]:
             feature = KFeature(
+                id=get_test_feature_id(test_org_id),
                 org_id=test_org_id,
                 name=f"Feature {result.value}",
                 feature_type=FeatureType.PRODUCT,
@@ -240,6 +253,7 @@ class TestKFeatureModel:
         modifier_id = UUID("33333333-3333-3333-3333-333333333333")
 
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Audited Feature",
             feature_type=FeatureType.PRODUCT,
@@ -272,6 +286,7 @@ class TestKFeatureModel:
 
         # Create a second organization
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Organization",
             alias="other_org_query",
             created_by=creator_id,
@@ -283,6 +298,7 @@ class TestKFeatureModel:
 
         # Create features in different organizations
         feature1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Feature 1",
             feature_type=FeatureType.PRODUCT,
@@ -291,6 +307,7 @@ class TestKFeatureModel:
         )
 
         feature2 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Feature 2",
             feature_type=FeatureType.ENGINEERING,
@@ -299,6 +316,7 @@ class TestKFeatureModel:
         )
 
         feature3 = KFeature(
+            id=get_test_feature_id(other_org.id),
             org_id=other_org.id,
             name="Feature 3",
             feature_type=FeatureType.PRODUCT,
@@ -327,6 +345,7 @@ class TestKFeatureModel:
         """Test parent-child feature relationships."""
         # Create parent feature
         parent = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Parent Feature",
             feature_type=FeatureType.PRODUCT,
@@ -339,6 +358,7 @@ class TestKFeatureModel:
 
         # Create child features
         child1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Child Feature 1",
             parent=parent.id,
@@ -349,6 +369,7 @@ class TestKFeatureModel:
         )
 
         child2 = KFeature(
+            id=get_test_feature_id(test_org_id),
             org_id=test_org_id,
             name="Child Feature 2",
             parent=parent.id,

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import KFeature, KTask, KTaskFeature, KTeam
 from app.models.k_feature import FeatureType
 from app.routes.v1.task_features import feature_tasks_router, router
+from tests.conftest import get_test_feature_id, get_test_task_id
 
 
 @pytest.fixture
@@ -42,6 +43,7 @@ async def task(
 ) -> KTask:
     """Create a test task."""
     task = KTask(
+        id=get_test_task_id(test_org_id),
         summary="Test task summary",
         team_id=team.id,
         org_id=test_org_id,
@@ -60,6 +62,7 @@ async def feature(
 ) -> KFeature:
     """Create a test feature."""
     feature = KFeature(
+        id=get_test_feature_id(test_org_id),
         name="User Authentication",
         org_id=test_org_id,
         feature_type=FeatureType.PRODUCT,
@@ -199,6 +202,7 @@ class TestListTaskFeatures:
         """Test listing multiple features."""
         # Create multiple features
         feature1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="Authentication",
             org_id=test_org_id,
             feature_type=FeatureType.PRODUCT,
@@ -206,6 +210,7 @@ class TestListTaskFeatures:
             last_modified_by=test_user_id,
         )
         feature2 = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="Dashboard",
             org_id=test_org_id,
             feature_type=FeatureType.PRODUCT,
@@ -482,6 +487,7 @@ class TestListTasksByFeature:
 
         # Create multiple tasks
         task1 = KTask(
+            id=get_test_task_id(test_org_id),
             summary="Task one",
             team_id=team.id,
             org_id=test_org_id,
@@ -489,6 +495,7 @@ class TestListTasksByFeature:
             last_modified_by=test_user_id,
         )
         task2 = KTask(
+            id=get_test_task_id(test_org_id),
             summary="Task two",
             team_id=team.id,
             org_id=test_org_id,
@@ -558,6 +565,7 @@ class TestListTasksByFeature:
 
         # Create multiple tasks
         task1 = KTask(
+            id=get_test_task_id(test_org_id),
             summary="Task one",
             team_id=team.id,
             org_id=test_org_id,
@@ -565,6 +573,7 @@ class TestListTasksByFeature:
             last_modified_by=test_user_id,
         )
         task2 = KTask(
+            id=get_test_task_id(test_org_id),
             summary="Task two",
             team_id=team.id,
             org_id=test_org_id,
@@ -618,4 +627,14 @@ class TestListTasksByFeature:
         non_existent_id = uuid7()
 
         response = await client.get(f"/tasks/feature/{non_existent_id}")
+        assert response.status_code == 404
+
+    async def test_list_tasks_by_feature_nonexistent_no_detail(
+        self,
+        client: AsyncClient,
+    ):
+        """Test listing tasks for a non-existent feature with detail=False returns 404."""
+        non_existent_id = uuid7()
+
+        response = await client.get(f"/tasks/feature/{non_existent_id}?detail=false")
         assert response.status_code == 404

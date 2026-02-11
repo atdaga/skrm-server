@@ -7,9 +7,10 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import KSprint
+from app.models import KOrganization, KSprint
 from app.models.k_sprint import SprintStatus
 from app.routes.v1.sprints import router
+from tests.conftest import get_test_org_id
 
 
 @pytest.fixture
@@ -191,9 +192,9 @@ class TestGetSprint:
         test_user_id: UUID,
     ):
         """Test getting a sprint with wrong org_id."""
-        from app.models import KOrganization
 
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -310,10 +311,10 @@ class TestUpdateSprint:
         test_user_id: UUID,
     ):
         """Test that updating a sprint in unauthorized org fails."""
-        from app.models import KOrganization
 
         # Create a sprint in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -393,10 +394,10 @@ class TestDeleteSprint:
         test_user_id: UUID,
     ):
         """Test that deleting a sprint in unauthorized org fails."""
-        from app.models import KOrganization
 
         # Create a sprint in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,

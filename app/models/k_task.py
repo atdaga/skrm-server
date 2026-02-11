@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid7
+from uuid import UUID
 
 from sqlalchemy import JSON, Text
 from sqlmodel import Column, Field, Relationship, SQLModel, String
@@ -36,7 +36,7 @@ class TaskStatus(StrEnum):
 class KTask(SecureReprMixin, SQLModel, table=True):
     __tablename__ = "k_task"
 
-    id: UUID = Field(default_factory=uuid7, primary_key=True)
+    id: UUID = Field(primary_key=True)
     org_id: UUID = Field(foreign_key="k_organization.id", index=True)
     summary: str | None = Field(default=None, sa_type=Text)
     description: str | None = Field(default=None, sa_type=Text)

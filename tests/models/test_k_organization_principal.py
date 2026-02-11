@@ -11,6 +11,7 @@ from sqlmodel import select
 from app.models.k_organization import KOrganization
 from app.models.k_organization_principal import KOrganizationPrincipal
 from app.models.k_principal import KPrincipal
+from tests.conftest import get_test_org_id
 
 
 class TestKOrganizationPrincipalModel:
@@ -22,6 +23,7 @@ class TestKOrganizationPrincipalModel:
     ) -> KOrganization:
         """Create a test organization."""
         organization = KOrganization(
+            id=get_test_org_id(),
             name="Test Organization",
             alias="test-org",
             created_by=creator_id,
@@ -193,12 +195,14 @@ class TestKOrganizationPrincipalModel:
     ):
         """Test that a principal can be a member of multiple organizations."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org-1",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org-2",
             created_by=creator_id,

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KDeploymentEnv, KOrganization
 from app.routes.v1.deployment_envs import router
+from tests.conftest import get_test_org_id
 
 
 @pytest.fixture
@@ -215,6 +216,7 @@ class TestGetDeploymentEnv:
     ):
         """Test getting a deployment environment with wrong org_id."""
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -369,6 +371,7 @@ class TestUpdateDeploymentEnv:
         """Test that updating a deployment environment in unauthorized org fails."""
         # Create a deployment environment in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -453,6 +456,7 @@ class TestDeleteDeploymentEnv:
         """Test that deleting a deployment environment in unauthorized org fails."""
         # Create a deployment environment in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,

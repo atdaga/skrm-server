@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models import KPrincipal, KTask, KTaskOwner, KTeam
+from tests.conftest import get_test_task_id
 
 
 class TestKTaskOwnerModel:
@@ -36,7 +37,8 @@ class TestKTaskOwnerModel:
     ) -> KTask:
         """Create a test task."""
         task = KTask(
-            name="Test Task",
+            id=get_test_task_id(test_org_id),
+            summary="Test Task",
             org_id=test_org_id,
             team_id=team.id,
             created_by=creator_id,

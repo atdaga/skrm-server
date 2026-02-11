@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganizationPrincipal, KPrincipal, KTask, KTaskReviewer, KTeam
 from app.routes.v1.task_reviewers import router
+from tests.conftest import get_test_task_id
 
 
 @pytest.fixture
@@ -40,6 +41,7 @@ async def task(
 ) -> KTask:
     """Create a test task."""
     task = KTask(
+        id=get_test_task_id(test_org_id),
         summary="Test task summary",
         team_id=team.id,
         org_id=test_org_id,

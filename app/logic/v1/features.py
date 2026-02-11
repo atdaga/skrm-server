@@ -9,12 +9,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.exceptions.domain_exceptions import (
     FeatureAlreadyExistsException,
+    FeatureCreationFailedException,
     FeatureNotFoundException,
     FeatureUpdateConflictException,
 )
+from ...core.feature_id import extract_feature_number, generate_feature_id
 from ...models import KFeature
 from ...schemas.feature import FeatureCreate, FeatureUpdate
 from ..deps import verify_organization_membership
+
+MAX_RETRIES = 10
+
+
+async def get_next_feature_number(org_id: UUID, db: AsyncSession) -> int:
+    """Get next feature number by finding max existing number + 1.
+
+    Args:
+        org_id: Organization ID to find features for
+        db: Database session
+
+    Returns:
+        The next available feature number (1 if no features exist)
+    """
+    stmt = select(KFeature.id).where(  # type: ignore[call-overload]
+        KFeature.org_id == org_id,
+        KFeature.deleted_at.is_(None),  # type: ignore[union-attr]
+    )
+    result = await db.execute(stmt)
+    feature_ids = result.scalars().all()
+
+    if not feature_ids:
+        return 1
+
+    max_number = max(extract_feature_number(fid) for fid in feature_ids)
+    return max_number + 1
 
 
 async def create_feature(
@@ -37,6 +65,7 @@ async def create_feature(
     Raises:
         UnauthorizedOrganizationAccessException: If user is not a member of the organization
         FeatureAlreadyExistsException: If a feature with the same name already exists in the organization
+        FeatureCreationFailedException: If feature creation fails after retries
     """
     # Check if we're already in a transaction (e.g., from txs module)
     in_transaction = db.in_transaction()
@@ -44,41 +73,61 @@ async def create_feature(
     # Verify user has access to this organization
     await verify_organization_membership(org_id=org_id, user_id=user_id, db=db)
 
-    # Create new feature with audit fields
-    new_feature = KFeature(
-        name=feature_data.name,
-        org_id=org_id,
-        parent=feature_data.parent,
-        parent_path=feature_data.parent_path,
-        feature_type=feature_data.feature_type,
-        summary=feature_data.summary,
-        details=feature_data.details,
-        guestimate=feature_data.guestimate,
-        derived_guestimate=feature_data.derived_guestimate,
-        review_result=feature_data.review_result,
-        meta=feature_data.meta,
-        created_by=user_id,
-        last_modified_by=user_id,
+    for attempt in range(MAX_RETRIES):
+        try:
+            next_number = await get_next_feature_number(org_id, db) + attempt
+            feature_id = generate_feature_id(org_id, next_number)
+
+            # Create new feature with audit fields
+            new_feature = KFeature(
+                id=feature_id,
+                name=feature_data.name,
+                org_id=org_id,
+                parent=feature_data.parent,
+                parent_path=feature_data.parent_path,
+                feature_type=feature_data.feature_type,
+                summary=feature_data.summary,
+                details=feature_data.details,
+                guestimate=feature_data.guestimate,
+                derived_guestimate=feature_data.derived_guestimate,
+                review_result=feature_data.review_result,
+                meta=feature_data.meta,
+                created_by=user_id,
+                last_modified_by=user_id,
+            )
+
+            db.add(new_feature)
+
+            if in_transaction:  # pragma: no cover - tested via txs integration
+                # Already in a transaction (managed by txs), just flush
+                await db.flush()  # pragma: no cover
+            else:
+                # No active transaction, commit our changes
+                await db.commit()
+            await db.refresh(new_feature)
+
+            return new_feature
+        except IntegrityError as e:
+            if not in_transaction:  # pragma: no cover
+                await db.rollback()  # pragma: no cover
+            # Check if it's a name uniqueness violation vs ID collision
+            error_str = str(e).lower()
+            if "name" in error_str or "unique" in error_str:
+                raise FeatureAlreadyExistsException(
+                    name=feature_data.name, scope=str(org_id)
+                ) from e
+            # ID collision - retry with next number
+            if attempt == MAX_RETRIES - 1:  # pragma: no cover
+                raise FeatureCreationFailedException(  # pragma: no cover
+                    message=f"Failed to create feature after {MAX_RETRIES} retries due to ID collisions",
+                    org_id=org_id,
+                ) from None
+            continue  # pragma: no cover
+
+    # This should never be reached, but type checker needs it
+    raise FeatureCreationFailedException(  # pragma: no cover
+        message="Failed to create feature", org_id=org_id
     )
-
-    db.add(new_feature)
-
-    try:
-        if in_transaction:  # pragma: no cover - tested via txs integration
-            # Already in a transaction (managed by txs), just flush
-            await db.flush()  # pragma: no cover
-        else:
-            # No active transaction, commit our changes
-            await db.commit()
-        await db.refresh(new_feature)
-    except IntegrityError as e:  # pragma: no cover
-        if not in_transaction:  # pragma: no cover
-            await db.rollback()  # pragma: no cover
-        raise FeatureAlreadyExistsException(  # pragma: no cover
-            name=feature_data.name, scope=str(org_id)
-        ) from e
-
-    return new_feature
 
 
 async def list_features(

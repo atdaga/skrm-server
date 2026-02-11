@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import KDoc, KFeature, KFeatureDoc
 from app.models.k_feature import FeatureType
 from app.routes.v1.feature_docs import router
+from tests.conftest import get_test_feature_id
 
 
 @pytest.fixture
@@ -24,6 +25,7 @@ async def feature(
 ) -> KFeature:
     """Create a test feature."""
     feature = KFeature(
+        id=get_test_feature_id(test_org_id),
         name="User Authentication Feature",
         org_id=test_org_id,
         feature_type=FeatureType.PRODUCT,

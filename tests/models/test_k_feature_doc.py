@@ -11,6 +11,7 @@ from sqlmodel import select
 from app.models.k_doc import KDoc
 from app.models.k_feature import FeatureType, KFeature
 from app.models.k_feature_doc import KFeatureDoc
+from tests.conftest import get_test_feature_id, get_test_org_id
 
 
 class TestKFeatureDocModel:
@@ -22,6 +23,7 @@ class TestKFeatureDocModel:
     ) -> KFeature:
         """Create a test feature."""
         feature = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="User Authentication",
             org_id=test_org_id,
             feature_type=FeatureType.PRODUCT,
@@ -210,6 +212,7 @@ class TestKFeatureDocModel:
     ):
         """Test that a doc can be associated with multiple features."""
         feature1 = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="Feature One",
             org_id=test_org_id,
             feature_type=FeatureType.PRODUCT,
@@ -217,6 +220,7 @@ class TestKFeatureDocModel:
             last_modified_by=creator_id,
         )
         feature2 = KFeature(
+            id=get_test_feature_id(test_org_id),
             name="Feature Two",
             org_id=test_org_id,
             feature_type=FeatureType.ENGINEERING,
@@ -580,12 +584,14 @@ class TestKFeatureDocModel:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org1_feature_doc_scope",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org2_feature_doc_scope",
             created_by=creator_id,
@@ -610,6 +616,7 @@ class TestKFeatureDocModel:
 
         # Create another feature and doc and add with different org_id
         feature2 = KFeature(
+            id=get_test_feature_id(org2.id),
             name="Another Feature",
             org_id=org2.id,
             feature_type=FeatureType.PRODUCT,

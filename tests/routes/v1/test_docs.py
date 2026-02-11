@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KDoc, KOrganization
 from app.routes.v1.docs import router
+from tests.conftest import get_test_org_id
 
 
 @pytest.fixture
@@ -224,6 +225,7 @@ class TestGetDoc:
     ):
         """Test getting a doc with wrong org_id."""
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -382,6 +384,7 @@ class TestUpdateDoc:
         """Test that updating a doc in unauthorized org fails."""
         # Create a doc in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,
@@ -463,6 +466,7 @@ class TestDeleteDoc:
         """Test that deleting a doc in unauthorized org fails."""
         # Create a doc in a different org
         other_org = KOrganization(
+            id=get_test_org_id(),
             name="Other Org",
             alias="other_org",
             created_by=test_user_id,

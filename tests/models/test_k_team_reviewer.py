@@ -11,6 +11,7 @@ from sqlmodel import select
 from app.models.k_principal import KPrincipal
 from app.models.k_team import KTeam
 from app.models.k_team_reviewer import KTeamReviewer
+from tests.conftest import get_test_org_id
 
 
 class TestKTeamReviewerModel:
@@ -579,12 +580,14 @@ class TestKTeamReviewerModel:
 
         # Create two organizations
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 1",
             alias="org1_reviewer_scope",
             created_by=creator_id,
             last_modified_by=creator_id,
         )
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Organization 2",
             alias="org2_reviewer_scope",
             created_by=creator_id,

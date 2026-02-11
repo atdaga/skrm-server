@@ -10,13 +10,33 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.exceptions.domain_exceptions import (
     InsufficientPrivilegesException,
     OrganizationAlreadyExistsException,
+    OrganizationCreationFailedException,
     OrganizationNotFoundException,
     OrganizationUpdateConflictException,
 )
+from ...core.org_id import extract_org_prefix, generate_org_id
 from ...models import KOrganization
 from ...models.k_principal import SystemRole
 from ...schemas.organization import OrganizationCreate, OrganizationUpdate
 from ..deps import verify_organization_membership
+
+MAX_RETRIES = 10
+
+
+async def get_existing_org_prefixes(db: AsyncSession) -> set[str]:
+    """Get all existing organization ID prefixes.
+
+    Args:
+        db: Database session
+
+    Returns:
+        Set of org ID prefixes (first 4 sections of each org's UUID)
+    """
+    stmt = select(KOrganization.id)  # type: ignore[call-overload]
+    result = await db.execute(stmt)
+    org_ids = result.scalars().all()
+
+    return {extract_org_prefix(org_id) for org_id in org_ids}
 
 
 async def create_organization(
@@ -41,6 +61,7 @@ async def create_organization(
     Raises:
         InsufficientPrivilegesException: If user does not have SYSTEM or SYSTEM_ROOT role
         OrganizationAlreadyExistsException: If an organization with the same name or alias already exists
+        OrganizationCreationFailedException: If organization creation fails after retries
     """
     # Check authorization: only SYSTEM, SYSTEM_ROOT, or SYSTEM_ADMIN can create organizations
     if system_role not in (
@@ -53,35 +74,57 @@ async def create_organization(
             user_id=user_id,
         )
 
-    # Create new organization with audit fields
-    new_org = KOrganization(
-        name=org_data.name,
-        alias=org_data.alias,
-        meta=org_data.meta,
-        created_by=user_id,
-        last_modified_by=user_id,
+    # Get existing org prefixes to ensure uniqueness
+    existing_prefixes = await get_existing_org_prefixes(db)
+
+    for attempt in range(MAX_RETRIES):
+        # Generate a new org ID with unique prefix
+        org_id = generate_org_id()
+        org_prefix = extract_org_prefix(org_id)
+
+        # Check if prefix is unique (collision check before DB insert)
+        if org_prefix in existing_prefixes:  # pragma: no cover
+            continue  # Try again with a new ID
+
+        # Create new organization with audit fields
+        new_org = KOrganization(
+            id=org_id,
+            name=org_data.name,
+            alias=org_data.alias,
+            meta=org_data.meta,
+            created_by=user_id,
+            last_modified_by=user_id,
+        )
+
+        db.add(new_org)
+
+        try:
+            await db.commit()
+            await db.refresh(new_org)
+            return new_org
+        except IntegrityError as e:
+            await db.rollback()
+            # Determine which constraint failed based on error message
+            error_msg = str(e.orig).lower()
+            if "alias" in error_msg:
+                raise OrganizationAlreadyExistsException(
+                    identifier=org_data.alias, identifier_type="alias"
+                ) from e
+            elif "name" in error_msg:
+                raise OrganizationAlreadyExistsException(
+                    identifier=org_data.name, identifier_type="name"
+                ) from e
+            # ID collision - add prefix to set and retry
+            existing_prefixes.add(org_prefix)  # pragma: no cover
+            if attempt == MAX_RETRIES - 1:  # pragma: no cover
+                raise OrganizationCreationFailedException(  # pragma: no cover
+                    message=f"Failed to create organization after {MAX_RETRIES} retries due to ID prefix collisions"
+                ) from None
+
+    # This should never be reached, but type checker needs it
+    raise OrganizationCreationFailedException(  # pragma: no cover
+        message="Failed to create organization"
     )
-
-    db.add(new_org)
-
-    try:
-        await db.commit()
-        await db.refresh(new_org)
-    except IntegrityError as e:
-        await db.rollback()
-        # Determine which constraint failed based on error message
-        error_msg = str(e.orig).lower()
-        if "alias" in error_msg:
-            raise OrganizationAlreadyExistsException(
-                identifier=org_data.alias, identifier_type="alias"
-            ) from e
-        else:
-            # Default to name constraint
-            raise OrganizationAlreadyExistsException(
-                identifier=org_data.name, identifier_type="name"
-            ) from e
-
-    return new_org
 
 
 async def list_organizations(scope: str, db: AsyncSession) -> list[KOrganization]:

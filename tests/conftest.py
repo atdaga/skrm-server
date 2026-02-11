@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
+from app.core.feature_id import generate_feature_id
+from app.core.org_id import generate_org_id
+from app.core.task_id import generate_task_id
 from app.schemas.user import TokenData
 
 if TYPE_CHECKING:
@@ -146,6 +149,7 @@ async def test_org_id(async_session: AsyncSession, test_user_id: UUID) -> UUID:
     from app.models import KOrganization
 
     org = KOrganization(
+        id=generate_org_id(),
         name="Test Organization",
         alias="test_org",
         meta={},
@@ -156,6 +160,67 @@ async def test_org_id(async_session: AsyncSession, test_user_id: UUID) -> UUID:
     await async_session.commit()
     await async_session.refresh(org)
     return org.id
+
+
+# Task ID generation for tests
+_task_counter: dict[UUID, int] = {}
+
+
+def get_test_task_id(org_id: UUID) -> UUID:
+    """Generate a test task ID for the given organization.
+
+    This uses a simple counter per organization to generate sequential task IDs.
+
+    Args:
+        org_id: The organization ID to generate a task ID for
+
+    Returns:
+        A UUID in the task ID format (org prefix + sequential number)
+    """
+    if org_id not in _task_counter:
+        _task_counter[org_id] = 0
+    _task_counter[org_id] += 1
+    return generate_task_id(org_id, _task_counter[org_id])
+
+
+# Feature ID generation for tests
+_feature_counter: dict[UUID, int] = {}
+
+
+def get_test_feature_id(org_id: UUID) -> UUID:
+    """Generate a test feature ID for the given organization.
+
+    This uses a simple counter per organization to generate sequential feature IDs.
+
+    Args:
+        org_id: The organization ID to generate a feature ID for
+
+    Returns:
+        A UUID in the feature ID format (org prefix + sequential number)
+    """
+    if org_id not in _feature_counter:
+        _feature_counter[org_id] = 0
+    _feature_counter[org_id] += 1
+    return generate_feature_id(org_id, _feature_counter[org_id])
+
+
+def get_test_org_id() -> UUID:
+    """Generate a test organization ID.
+
+    This generates a unique organization ID for use in tests.
+
+    Returns:
+        A UUID suitable for organization identification
+    """
+    return generate_org_id()
+
+
+@pytest.fixture(autouse=True)
+def reset_id_counters():
+    """Reset the task and feature counters before each test."""
+    _task_counter.clear()
+    _feature_counter.clear()
+    yield
 
 
 @pytest.fixture
@@ -224,6 +289,7 @@ async def test_organization(async_session: AsyncSession, test_user_id: UUID):
     await async_session.commit()
 
     org = KOrganization(
+        id=generate_org_id(),
         name="Test Organization",
         alias="test_org",
         meta={"test": "data"},
@@ -277,6 +343,7 @@ async def test_organization_without_membership(
         await async_session.commit()
 
     org = KOrganization(
+        id=generate_org_id(),
         name="Unauthorized Organization",
         alias="unauth_org",
         meta={},

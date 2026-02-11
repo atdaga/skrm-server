@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import KOrganization, KTeam
 from app.routes.v1.teams import router
+from tests.conftest import get_test_org_id
 
 
 @pytest.fixture
@@ -555,6 +556,7 @@ class TestUnauthorizedAccess:
         """Test creating a team in an organization user is not a member of."""
         # Create an organization WITHOUT adding test user as member
         org = KOrganization(
+            id=get_test_org_id(),
             name="Unauthorized Org",
             alias="unauth_org",
             created_by=test_user_id,
@@ -579,6 +581,7 @@ class TestUnauthorizedAccess:
         """Test listing teams in an organization user is not a member of."""
         # Create an organization WITHOUT adding test user as member
         org = KOrganization(
+            id=get_test_org_id(),
             name="Unauthorized Org",
             alias="unauth_org",
             created_by=test_user_id,
@@ -602,6 +605,7 @@ class TestUnauthorizedAccess:
         """Test getting a team in an organization user is not a member of."""
         # Create an organization WITHOUT adding test user as member
         org = KOrganization(
+            id=get_test_org_id(),
             name="Unauthorized Org",
             alias="unauth_org",
             created_by=test_user_id,
@@ -636,6 +640,7 @@ class TestUnauthorizedAccess:
         """Test updating a team in an organization user is not a member of."""
         # Create an organization WITHOUT adding test user as member
         org = KOrganization(
+            id=get_test_org_id(),
             name="Unauthorized Org",
             alias="unauth_org",
             created_by=test_user_id,
@@ -673,6 +678,7 @@ class TestUnauthorizedAccess:
         """Test deleting a team in an organization user is not a member of."""
         # Create an organization WITHOUT adding test user as member
         org = KOrganization(
+            id=get_test_org_id(),
             name="Unauthorized Org",
             alias="unauth_org",
             created_by=test_user_id,

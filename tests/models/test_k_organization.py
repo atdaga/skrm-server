@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.k_organization import KOrganization
+from tests.conftest import get_test_org_id
 
 
 class TestKOrganizationModel:
@@ -20,6 +21,7 @@ class TestKOrganizationModel:
     ):
         """Test creating an organization with only required fields."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Acme Corporation",
             alias="acme_corp",
             created_by=creator_id,
@@ -41,6 +43,7 @@ class TestKOrganizationModel:
     ):
         """Test that default values are set correctly."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Tech Inc",
             alias="tech_inc",
             created_by=creator_id,
@@ -61,6 +64,7 @@ class TestKOrganizationModel:
     ):
         """Test creating an organization with a custom name."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Sales Corp",
             alias="sales_corp",
             created_by=creator_id,
@@ -86,6 +90,7 @@ class TestKOrganizationModel:
         }
 
         org = KOrganization(
+            id=get_test_org_id(),
             name="Backend Corp",
             alias="backend_corp",
             meta=meta_data,
@@ -108,6 +113,7 @@ class TestKOrganizationModel:
     ):
         """Test that name must be unique."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Engineering Corp",
             alias="eng_corp",
             created_by=creator_id,
@@ -119,6 +125,7 @@ class TestKOrganizationModel:
 
         # Try to create another organization with same name
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Engineering Corp",
             alias="different_alias",
             created_by=creator_id,
@@ -135,6 +142,7 @@ class TestKOrganizationModel:
     ):
         """Test that alias must be unique."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Marketing Corp",
             alias="marketing",
             created_by=creator_id,
@@ -146,6 +154,7 @@ class TestKOrganizationModel:
 
         # Try to create another organization with same alias
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Different Name",
             alias="marketing",
             created_by=creator_id,
@@ -162,6 +171,7 @@ class TestKOrganizationModel:
     ):
         """Test that multiple organizations can exist with different names and aliases."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Engineering Corp A",
             alias="eng_corp_a",
             created_by=creator_id,
@@ -169,6 +179,7 @@ class TestKOrganizationModel:
         )
 
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Engineering Corp B",
             alias="eng_corp_b",
             created_by=creator_id,
@@ -192,6 +203,7 @@ class TestKOrganizationModel:
     ):
         """Test that organizations with different names and aliases can coexist."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Marketing Corp A",
             alias="marketing_a",
             created_by=creator_id,
@@ -199,6 +211,7 @@ class TestKOrganizationModel:
         )
 
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Marketing Corp B",
             alias="marketing_b",
             created_by=creator_id,
@@ -220,6 +233,7 @@ class TestKOrganizationModel:
     async def test_organization_query(self, session: AsyncSession, creator_id: UUID):
         """Test querying organizations from database."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Product Corp",
             alias="product_corp",
             created_by=creator_id,
@@ -248,6 +262,7 @@ class TestKOrganizationModel:
     ):
         """Test querying organizations by alias."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Data Corp",
             alias="data_corp",
             created_by=creator_id,
@@ -276,6 +291,7 @@ class TestKOrganizationModel:
     ):
         """Test querying organizations by name."""
         org1 = KOrganization(
+            id=get_test_org_id(),
             name="Org A",
             alias="org_a",
             created_by=creator_id,
@@ -283,6 +299,7 @@ class TestKOrganizationModel:
         )
 
         org2 = KOrganization(
+            id=get_test_org_id(),
             name="Org B",
             alias="org_b",
             created_by=creator_id,
@@ -290,6 +307,7 @@ class TestKOrganizationModel:
         )
 
         org3 = KOrganization(
+            id=get_test_org_id(),
             name="Org C",
             alias="org_c",
             created_by=creator_id,
@@ -318,6 +336,7 @@ class TestKOrganizationModel:
     async def test_organization_update(self, session: AsyncSession, creator_id: UUID):
         """Test updating organization fields."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Old Name",
             alias="old_alias",
             created_by=creator_id,
@@ -344,6 +363,7 @@ class TestKOrganizationModel:
     async def test_organization_delete(self, session: AsyncSession, creator_id: UUID):
         """Test deleting an organization."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="To Delete",
             alias="to_delete",
             created_by=creator_id,
@@ -381,6 +401,7 @@ class TestKOrganizationModel:
         }
 
         org = KOrganization(
+            id=get_test_org_id(),
             name="Complex Meta Org",
             alias="complex_meta_org",
             meta=meta_data,
@@ -409,6 +430,7 @@ class TestKOrganizationModel:
 
         for org_data in orgs_data:
             org = KOrganization(
+                id=get_test_org_id(),
                 **org_data,
                 created_by=creator_id,
                 last_modified_by=creator_id,
@@ -432,6 +454,7 @@ class TestKOrganizationModel:
         # Create multiple organizations
         for i in range(5):
             org = KOrganization(
+                id=get_test_org_id(),
                 name=f"Org {i}",
                 alias=f"org_{i}",
                 created_by=creator_id,
@@ -454,6 +477,7 @@ class TestKOrganizationModel:
     ):
         """Test that organizations can have empty meta dictionaries."""
         org = KOrganization(
+            id=get_test_org_id(),
             name="Empty Meta Org",
             alias="empty_meta_org",
             meta={},
@@ -484,6 +508,7 @@ class TestKOrganizationModel:
 
         for i, alias in enumerate(valid_aliases):
             org = KOrganization(
+                id=get_test_org_id(),
                 name=f"Org {i}",
                 alias=alias,
                 created_by=creator_id,

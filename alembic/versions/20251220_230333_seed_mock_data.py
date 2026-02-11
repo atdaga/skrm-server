@@ -51,36 +51,36 @@ UUIDS = {
     "team_frontend": "00000030-0000-0000-0001-000000000030",
     "team_backend": "00000030-0000-0000-0002-000000000030",
     "team_platform": "00000030-0000-0000-0003-000000000030",
-    # Features (00000040-...-000000000040)
-    "feature_user_mgmt": "00000040-0000-0000-0001-000000000040",
-    "feature_user_auth": "00000040-0000-0000-0002-000000000040",
-    "feature_user_profiles": "00000040-0000-0000-0003-000000000040",
-    "feature_dashboard": "00000040-0000-0000-0004-000000000040",
-    "feature_analytics": "00000040-0000-0000-0005-000000000040",
-    "feature_notifications": "00000040-0000-0000-0006-000000000040",
-    "feature_api_gateway": "00000040-0000-0000-0007-000000000040",
-    "feature_mobile_app": "00000040-0000-0000-0008-000000000040",
-    "feature_password_recovery": "00000040-0000-0000-0009-000000000040",
-    "feature_chart_components": "00000040-0000-0000-000a-000000000040",
-    "feature_realtime_charts": "00000040-0000-0000-000b-000000000040",
-    "feature_user_mgmt_core": "00000040-0000-0000-000c-000000000040",
-    "feature_user_auth_core": "00000040-0000-0000-000d-000000000040",
-    "feature_analytics_core": "00000040-0000-0000-000e-000000000040",
-    "feature_chart_core": "00000040-0000-0000-000f-000000000040",
-    # Tasks (00000050-...-000000000050)
-    "task_1": "00000050-0000-0000-0001-000000000050",
-    "task_2": "00000050-0000-0000-0002-000000000050",
-    "task_3": "00000050-0000-0000-0003-000000000050",
-    "task_4": "00000050-0000-0000-0004-000000000050",
-    "task_5": "00000050-0000-0000-0005-000000000050",
-    "task_6": "00000050-0000-0000-0006-000000000050",
-    "task_7": "00000050-0000-0000-0007-000000000050",
-    "task_8": "00000050-0000-0000-0008-000000000050",
-    "task_9": "00000050-0000-0000-0009-000000000050",
-    "task_10": "00000050-0000-0000-000a-000000000050",
-    "task_11": "00000050-0000-0000-000b-000000000050",
-    "task_12": "00000050-0000-0000-000c-000000000050",
-    "task_13": "00000050-0000-0000-000d-000000000050",
+    # Features - use org prefix (00000010-0000-0000-0001) with incrementing feature numbers
+    "feature_user_mgmt": "00000010-0000-0000-0001-000000000001",
+    "feature_user_auth": "00000010-0000-0000-0001-000000000002",
+    "feature_user_profiles": "00000010-0000-0000-0001-000000000003",
+    "feature_dashboard": "00000010-0000-0000-0001-000000000004",
+    "feature_analytics": "00000010-0000-0000-0001-000000000005",
+    "feature_notifications": "00000010-0000-0000-0001-000000000006",
+    "feature_api_gateway": "00000010-0000-0000-0001-000000000007",
+    "feature_mobile_app": "00000010-0000-0000-0001-000000000008",
+    "feature_password_recovery": "00000010-0000-0000-0001-000000000009",
+    "feature_chart_components": "00000010-0000-0000-0001-000000000010",
+    "feature_realtime_charts": "00000010-0000-0000-0001-000000000011",
+    "feature_user_mgmt_core": "00000010-0000-0000-0001-000000000012",
+    "feature_user_auth_core": "00000010-0000-0000-0001-000000000013",
+    "feature_analytics_core": "00000010-0000-0000-0001-000000000014",
+    "feature_chart_core": "00000010-0000-0000-0001-000000000015",
+    # Tasks - use org prefix (00000010-0000-0000-0001) with incrementing task numbers
+    "task_1": "00000010-0000-0000-0001-000000000001",
+    "task_2": "00000010-0000-0000-0001-000000000002",
+    "task_3": "00000010-0000-0000-0001-000000000003",
+    "task_4": "00000010-0000-0000-0001-000000000004",
+    "task_5": "00000010-0000-0000-0001-000000000005",
+    "task_6": "00000010-0000-0000-0001-000000000006",
+    "task_7": "00000010-0000-0000-0001-000000000007",
+    "task_8": "00000010-0000-0000-0001-000000000008",
+    "task_9": "00000010-0000-0000-0001-000000000009",
+    "task_10": "00000010-0000-0000-0001-000000000010",
+    "task_11": "00000010-0000-0000-0001-000000000011",
+    "task_12": "00000010-0000-0000-0001-000000000012",
+    "task_13": "00000010-0000-0000-0001-000000000013",
     # Sprints (00000060-...-000000000060)
     "sprint_1": "00000060-0000-0000-0001-000000000060",
     "sprint_2": "00000060-0000-0000-0002-000000000060",
@@ -747,48 +747,13 @@ def downgrade() -> None:
     op.execute(f"DELETE FROM k_task_feature WHERE org_id = '{org_id}'")
     op.execute(f"DELETE FROM k_task_owner WHERE org_id = '{org_id}'")
 
-    # 5. Tasks
-    for i in range(1, 14):
-        key = f"task_{i}"
-        op.execute(f"DELETE FROM k_task WHERE id = '{UUIDS[key]}'")
+    # 5. Tasks (delete by org_id to handle ID format changes)
+    op.execute(f"DELETE FROM k_task WHERE org_id = '{org_id}'")
 
-    # 6. Features (delete deepest children first, then parents due to FK)
-    # Great-grandchild features
-    greatgrandchild_features = [
-        "feature_realtime_charts",
-        "feature_chart_core",
-    ]
-    for key in greatgrandchild_features:
-        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
-
-    # Grandchild features
-    grandchild_features = [
-        "feature_password_recovery",
-        "feature_chart_components",
-        "feature_user_auth_core",
-        "feature_analytics_core",
-    ]
-    for key in grandchild_features:
-        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
-
-    child_features = [
-        "feature_user_auth",
-        "feature_user_profiles",
-        "feature_analytics",
-        "feature_notifications",
-        "feature_user_mgmt_core",
-    ]
-    for key in child_features:
-        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
-
-    parent_features = [
-        "feature_user_mgmt",
-        "feature_dashboard",
-        "feature_api_gateway",
-        "feature_mobile_app",
-    ]
-    for key in parent_features:
-        op.execute(f"DELETE FROM k_feature WHERE id = '{UUIDS[key]}'")
+    # 6. Features (delete by org_id to handle ID format changes)
+    # Due to parent FK constraints, delete children first by setting parent to NULL
+    op.execute(f"UPDATE k_feature SET parent = NULL WHERE org_id = '{org_id}'")
+    op.execute(f"DELETE FROM k_feature WHERE org_id = '{org_id}'")
 
     # 7. Project-team associations
     op.execute(f"DELETE FROM k_project_team WHERE org_id = '{org_id}'")

@@ -184,6 +184,13 @@ class OrganizationUpdateConflictException(DomainException):
         self.scope = scope
 
 
+class OrganizationCreationFailedException(DomainException):  # pragma: no cover
+    """Raised when organization creation fails after retries."""
+
+    def __init__(self, message: str):
+        super().__init__(message, entity_type="organization", entity_id=None)
+
+
 # ============================================================================
 # User/Principal-related exceptions
 # ============================================================================
@@ -519,6 +526,14 @@ class FeatureUpdateConflictException(DomainException):
         self.scope = scope
 
 
+class FeatureCreationFailedException(DomainException):  # pragma: no cover
+    """Raised when feature creation fails after retries."""
+
+    def __init__(self, message: str, org_id: UUID | None = None):
+        super().__init__(message, entity_type="feature", entity_id=org_id)
+        self.org_id = org_id
+
+
 # ============================================================================
 # Task-related exceptions
 # ============================================================================
@@ -534,6 +549,14 @@ class TaskNotFoundException(DomainException):
         super().__init__(message, entity_type="task", entity_id=task_id)
         self.task_id = task_id
         self.scope = scope
+
+
+class TaskCreationFailedException(DomainException):  # pragma: no cover
+    """Raised when task creation fails after retries."""
+
+    def __init__(self, message: str, org_id: UUID | None = None):
+        super().__init__(message, entity_type="task", entity_id=org_id)
+        self.org_id = org_id
 
 
 # ============================================================================
